@@ -3,13 +3,13 @@ package vn.uth.gamificationservice.service;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import vn.uth.gamificationservice.dto.RewardRequest;
+import vn.uth.gamificationservice.dto.*;
 
-import vn.uth.gamificationservice.dto.RewardResponse;
 import vn.uth.gamificationservice.model.Reward;
 import vn.uth.gamificationservice.repository.RewardRepository;
 
 import java.time.LocalDateTime;
+import java.util.UUID;
 
 @Service
 public class RewardService {
@@ -44,5 +44,13 @@ public class RewardService {
         RewardResponse resp = new RewardResponse(reward.getRewardId(), "SUCCESS");
 
         return resp;
+    }
+
+    public UserReward getUserReward(UUID userId) {
+        Double score = redisTemplate.opsForZSet().score(LEADERBOARD_KEY, userId.toString());
+        if (score == null) {
+            score = 0.0;
+        }
+        return new UserReward(userId, score);
     }
 }

@@ -5,9 +5,11 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import vn.uth.gamificationservice.dto.RewardRequest;
 import vn.uth.gamificationservice.dto.RewardResponse;
+import vn.uth.gamificationservice.dto.UserReward;
 import vn.uth.gamificationservice.service.RewardService;
 
 import java.util.List;
+import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/v1/gamify")
@@ -22,6 +24,12 @@ public class RewardController {
     @PostMapping("/reward")
     public ResponseEntity<RewardResponse> addReward(@Valid @RequestBody RewardRequest req) {
         RewardResponse resp = rewardService.addReward(req);
+        return ResponseEntity.ok(resp);
+    }
+
+    @GetMapping("/reward/{userId}")
+    public ResponseEntity<UserReward> getRewards(@PathVariable("userId") UUID userId) {
+        UserReward resp = rewardService.getUserReward(userId);
         return ResponseEntity.ok(resp);
     }
 }
