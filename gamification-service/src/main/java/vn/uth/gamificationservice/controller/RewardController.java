@@ -8,7 +8,6 @@ import vn.uth.gamificationservice.dto.RewardResponse;
 import vn.uth.gamificationservice.dto.UserReward;
 import vn.uth.gamificationservice.service.RewardService;
 
-import java.util.List;
 import java.util.UUID;
 
 @RestController

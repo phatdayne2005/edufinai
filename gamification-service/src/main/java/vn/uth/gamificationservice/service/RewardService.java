@@ -41,9 +41,7 @@ public class RewardService {
         // ZINCRBY có thể dùng hoặc lấy điểm hiện tại rồi cộng thủ công
         this.redisTemplate.opsForZSet().incrementScore(LEADERBOARD_KEY, req.getUserId().toString(), req.getScore());
 
-        RewardResponse resp = new RewardResponse(reward.getRewardId(), "SUCCESS");
-
-        return resp;
+        return new RewardResponse(reward.getRewardId(), "SUCCESS");
     }
 
     public UserReward getUserReward(UUID userId) {
