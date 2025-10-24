@@ -8,7 +8,7 @@ spring:
     name: auth-service
   
   datasource:
-    url: jdbc:mysql://localhost:3307/edufinai_auth?useSSL=false&allowPublicKeyRetrieval=true
+    url: jdbc:mysql://localhost:3306/edufinai_auth?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=Asia/Ho_Chi_Minh
     username: edufinai_user
     password: edufinai_password
     driver-class-name: com.mysql.cj.jdbc.Driver
@@ -21,8 +21,6 @@ spring:
       hibernate:
         dialect: org.hibernate.dialect.MySQLDialect
         format_sql: true
-        jdbc:
-          time_zone: Asia/Ho_Chi_Minh
   
   flyway:
     locations: classpath:db/migration
@@ -31,7 +29,7 @@ spring:
 
 jwt:
   secret: "EduFinAISecretKeyForJWTGeneration2023With32Characters"
-  expiration: 86400000 # 24 hours in milliseconds
+  expiration: 86400000
 
 logging:
   level:
