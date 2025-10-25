@@ -32,7 +32,7 @@
             <artifactId>spring-boot-starter-validation</artifactId>
         </dependency>
 
-        <!-- Database -->
+        <!-- Database: JPA + MySQL  -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-data-jpa</artifactId>
@@ -64,7 +64,7 @@
             <optional>true</optional>
         </dependency>
 
-        <!-- Lombok -->
+        <!-- Lombok (giảm code getter/setter) -->
         <dependency>
             <groupId>org.projectlombok</groupId>
             <artifactId>lombok</artifactId>

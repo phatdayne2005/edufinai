@@ -1,22 +1,26 @@
+server:
+  port: 8085  # chạy ở cổng 8085 cho an toàn
+
 spring:
   datasource:
-    url: jdbc:mysql://localhost:3306/ai_service?createDatabaseIfNotExist=true&useSSL=false
-    username: root
-    password: root
+    url: ${DB_URL:jdbc:mysql://localhost:3306/ai_service?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true}
+    username: ${SPRING_DATASOURCE_USERNAME:root}
+    password: ${SPRING_DATASOURCE_PASSWORD:root}
     driver-class-name: com.mysql.cj.jdbc.Driver
-
   jpa:
     hibernate:
-      ddl-auto: update
-    show-sql: true
-
+      ddl-auto: update # để Hibernate tự tạo/cập nhật bảng
+    show-sql: true # in SQL ra log (dễ debug)
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.MySQLDialect
   data:
     redis:
-      host: localhost
-      port: 6379
+      host: ${SPRING_REDIS_HOST:localhost}
+      port: ${SPRING_REDIS_PORT:6379}
 
-server:
-  port: 8085
 springdoc:
+  api-docs:
+    path: /v3/api-docs   # nơi swagger lấy JSON mô tả API
   swagger-ui:
     path: /swagger-ui.html
