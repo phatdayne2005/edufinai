@@ -1,0 +1,104 @@
+package vn.uth.learningservice.model;
+
+import jakarta.persistence.*;
+import jakarta.validation.constraints.*;
+import lombok.*;
+
+@Data
+//@NoArgsConstructor
+//@AllArgsConstructor
+public class Lesson {
+
+    @Id
+    @Column(name = "lesson_id")
+    @GeneratedValue(strategy = GenerationType.UUID)
+    private String id;
+
+    @NotBlank
+    @Size(max = 150)
+    @Column(name = "title", nullable = false, length = 150)
+    private String title;
+
+    @NotBlank
+    @Size(max = 180)
+    @Column(name = "slug", nullable = false, length = 180, unique = true)
+    private String slug;
+
+    @Size(max = 1000)
+    @Column(name = "description", length = 1000)
+    private String description;
+
+    // Rich text / Markdown / HTML
+    @Lob
+    @Basic(fetch = FetchType.LAZY)
+    @Column(name = "content")
+    private String content;
+
+    // minutes
+    @Min(1)
+    @Column(name = "duration_minutes", nullable = false)
+    private Integer durationMinutes = 5;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "difficulty", length = 20, nullable = false)
+    private Difficulty difficulty = Difficulty.BASIC;
+
+    // DRAFT/PENDING/APPROVED/REJECTED
+    @Enumerated(EnumType.STRING)
+    @Column(name = "status", length = 20, nullable = false)
+    private Status status = Status.DRAFT;
+
+    // Cross-service references to User Service
+    @Column(name = "creator_id", columnDefinition = "CHAR(36)")
+    private String creatorId;
+
+    @Column(name = "moderator_id", columnDefinition = "CHAR(36)")
+    private UUID moderatorId;
+
+    // Optional media
+    @Size(max = 255)
+    @Column(name = "thumbnail_url", length = 255)
+    private String thumbnailUrl;
+
+    @Size(max = 255)
+    @Column(name = "video_url", length = 255)
+    private String videoUrl;
+
+    // Simple tagging without extra file (ElementCollection → join table)
+    @ElementCollection
+    @CollectionTable(name = "lesson_tags", joinColumns = @JoinColumn(name = "lesson_id"))
+    @Column(name = "tag", length = 50)
+    private Set<String> tags = new HashSet<>();
+
+    // Quiz payload (JSON-as-text); keep flexible for now
+    @Lob
+    @Basic(fetch = FetchType.LAZY)
+    @Column(name = "quiz_json")
+    private String quizJson;
+
+    // Versioning & auditing
+    @Version
+    private Long version;
+
+    @Column(name = "approved_at")
+    private Instant approvedAt;
+
+    @Column(name = "published_at")
+    private Instant publishedAt;
+
+    @Column(name = "created_at", nullable = false)
+    private Instant createdAt;
+
+    @Column(name = "updated_at", nullable = false)
+    private Instant updatedAt;
+
+    public enum Difficulty { BASIC, INTERMEDIATE, ADVANCED }
+    public enum Status { DRAFT, PENDING, APPROVED, REJECTED }
+
+    private String slugify(String input) {
+        String s = input == null ? "" : input.trim().toLowerCase(Locale.ROOT);
+        s = s.replaceAll("[^a-z0-9\\s-]", "");
+        s = s.replaceAll("\\s+", "-");
+        return s.length() > 180 ? s.substring(0, 180) : s;
+    }
+}
