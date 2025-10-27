@@ -3,16 +3,22 @@ package vn.uth.learningservice.model;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.*;
 import lombok.*;
+import java.time.LocalDateTime;
+import java.util.*;
 
+@Data
 public class Learner {
+
     @Id
-    @Column(name = "learner_id", columnDefinition = "CHAR(36)")
+    @Column(name = "learner_id")
+    @GeneratedValue
     private UUID id;
 
-    // Cross-service reference to User Service
-    @NotNull
-    @Column(name = "user_id", columnDefinition = "CHAR(36)", nullable = false, unique = true)
-    private UUID userId;
+    @ManyToMany
+    @JoinTable(name = "learner_lesson",
+        joinColumns =  @JoinColumn(name = "learner_id"),
+        inverseJoinColumns = @JoinColumn(name = "lesson_id"))
+    private List<Lesson> lessons;
 
     @Size(max = 100)
     @Column(name = "display_name", length = 100)
@@ -38,10 +44,10 @@ public class Learner {
     private Integer totalPoints = 0;
 
     @Column(name = "created_at", nullable = false)
-    private Instant createdAt;
+    private LocalDateTime createdAt;
 
     @Column(name = "updated_at", nullable = false)
-    private Instant updatedAt;
+    private LocalDateTime updatedAt;
 
     public enum Level { BEGINNER, INTERMEDIATE, ADVANCED }
 }

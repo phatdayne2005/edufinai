@@ -3,6 +3,8 @@ package vn.uth.learningservice.model;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.*;
 import lombok.*;
+import java.time.*;
+import java.util.*;
 
 @Data
 //@NoArgsConstructor
@@ -11,8 +13,19 @@ public class Lesson {
 
     @Id
     @Column(name = "lesson_id")
-    @GeneratedValue(strategy = GenerationType.UUID)
-    private String id;
+    @GeneratedValue
+    private UUID id;
+
+    @ManyToMany(mappedBy = "lessons")
+    private List<Learner> learners;
+
+    @ManyToOne
+    @JoinColumn(name = "creator_id")
+    private Creator creator;
+
+    @ManyToOne()
+    @JoinColumn(name = "moderator_id")
+    private Moderator moderator;
 
     @NotBlank
     @Size(max = 150)
@@ -29,31 +42,28 @@ public class Lesson {
     private String description;
 
     // Rich text / Markdown / HTML
+    @NotBlank
     @Lob
     @Basic(fetch = FetchType.LAZY)
-    @Column(name = "content")
+    @Column(name = "content", nullable = false)
     private String content;
 
     // minutes
+    @NotBlank
     @Min(1)
     @Column(name = "duration_minutes", nullable = false)
     private Integer durationMinutes = 5;
 
+    @NotBlank
     @Enumerated(EnumType.STRING)
     @Column(name = "difficulty", length = 20, nullable = false)
     private Difficulty difficulty = Difficulty.BASIC;
 
     // DRAFT/PENDING/APPROVED/REJECTED
+    @NotBlank
     @Enumerated(EnumType.STRING)
     @Column(name = "status", length = 20, nullable = false)
     private Status status = Status.DRAFT;
-
-    // Cross-service references to User Service
-    @Column(name = "creator_id", columnDefinition = "CHAR(36)")
-    private String creatorId;
-
-    @Column(name = "moderator_id", columnDefinition = "CHAR(36)")
-    private UUID moderatorId;
 
     // Optional media
     @Size(max = 255)
@@ -76,29 +86,37 @@ public class Lesson {
     @Column(name = "quiz_json")
     private String quizJson;
 
+    @Column(name = "quiz_result")
+    private String quizResult;
+
+    @Column(name = "rating")
+    private float rating;
+
     // Versioning & auditing
     @Version
     private Long version;
 
     @Column(name = "approved_at")
-    private Instant approvedAt;
+    private LocalDateTime approvedAt;
 
     @Column(name = "published_at")
-    private Instant publishedAt;
+    private LocalDateTime publishedAt;
 
+    @NotBlank
     @Column(name = "created_at", nullable = false)
-    private Instant createdAt;
+    private LocalDateTime createdAt;
 
+    @NotBlank
     @Column(name = "updated_at", nullable = false)
-    private Instant updatedAt;
+    private LocalDateTime updatedAt;
 
     public enum Difficulty { BASIC, INTERMEDIATE, ADVANCED }
     public enum Status { DRAFT, PENDING, APPROVED, REJECTED }
 
-    private String slugify(String input) {
+    /*private String slugify(String input) {
         String s = input == null ? "" : input.trim().toLowerCase(Locale.ROOT);
         s = s.replaceAll("[^a-z0-9\\s-]", "");
         s = s.replaceAll("\\s+", "-");
         return s.length() > 180 ? s.substring(0, 180) : s;
-    }
+    }*/
 }
