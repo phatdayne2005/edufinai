@@ -15,13 +15,16 @@ import java.util.UUID;
 public class RewardService {
     private final RewardRepository rewardRepository;
 
+    private final UserRewardSummaryService userRewardSummaryService;
+
     private final RedisTemplate<String, String> redisTemplate;
 
     private static final String LEADERBOARD_KEY = "leaderboard:global";
 
-    public RewardService(RewardRepository rewardRepository,  RedisTemplate<String, String> redisTemplate) {
+    public RewardService(RewardRepository rewardRepository,  RedisTemplate<String, String> redisTemplate,  UserRewardSummaryService userRewardSummaryService) {
         this.rewardRepository = rewardRepository;
         this.redisTemplate = redisTemplate;
+        this.userRewardSummaryService = userRewardSummaryService;
     }
 
     @Transactional
@@ -36,6 +39,7 @@ public class RewardService {
         reward.setCreatedAt(LocalDateTime.now());
 
         this.rewardRepository.save(reward);
+        this.userRewardSummaryService.addSumaryReward(reward.getUserId(), reward.getScore());
 
         // Cộng điểm hiện tại với điểm mới (nếu không có sẽ thêm)
         // ZINCRBY có thể dùng hoặc lấy điểm hiện tại rồi cộng thủ công
