@@ -14,7 +14,7 @@ import java.util.UUID;
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
-@Table(name = "user_reward")
+@Table(name = "user_rewards")
 public class UserRewardSummary {
     @Id
     @Column(name = "user_id", nullable = false, columnDefinition = "BINARY(16)")
