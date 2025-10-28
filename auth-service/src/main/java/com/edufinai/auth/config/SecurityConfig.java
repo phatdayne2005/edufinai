@@ -41,21 +41,23 @@ public class SecurityConfig {
     public AuthenticationManager authenticationManager(AuthenticationConfiguration config) throws Exception {
         return config.getAuthenticationManager();
     }
-    
+
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
-        http.csrf(csrf -> csrf.disable())
-            .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-            .authorizeHttpRequests(auth -> auth
-                .requestMatchers("/api/v1/auth/**").permitAll()
-                .requestMatchers("/swagger-ui/**", "/api-docs/**").permitAll()
-                .requestMatchers("/api/v1/user/info").permitAll() // For other services
-                .anyRequest().authenticated()
-            );
-        
+        http.csrf(csrf -> csrf.disable())  // QUAN TRỌNG: Tắt CSRF cho API
+                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                .authorizeHttpRequests(auth -> auth
+                        .requestMatchers("/api/v1/auth/**").permitAll()
+                        .requestMatchers("/swagger-ui/**", "/api-docs/**").permitAll()
+                        .requestMatchers("/api/v1/user/info").permitAll() // Cho internal services
+                        .requestMatchers("/api/v1/user/profile").authenticated() // Cần authentication
+                        .requestMatchers("/api/v1/user/**").authenticated() // Tất cả user APIs cần auth
+                        .anyRequest().authenticated()
+                );
+
         http.authenticationProvider(authenticationProvider());
         http.addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
-        
+
         return http.build();
     }
 }

@@ -5,13 +5,10 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="40502acc-35a2-4717-b020-bdbe3585ff5e" name="Changes" comment="">
-      <change afterPath="$PROJECT_DIR$/.idea/edufinai.iml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/.idea/modules.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/compiler.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/compiler.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/misc.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/misc.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/auth-service/src/main/java/com/edufinai/auth/dto/UserProfileResponse.java" beforeDir="false" afterPath="$PROJECT_DIR$/auth-service/src/main/java/com/edufinai/auth/dto/UserProfileResponse.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/auth-service/src/main/java/com/edufinai/auth/service/AuthenticationService.java" beforeDir="false" afterPath="$PROJECT_DIR$/auth-service/src/main/java/com/edufinai/auth/service/AuthenticationService.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/auth-service/src/main/java/com/edufinai/auth/util/JwtUtil.java" beforeDir="false" afterPath="$PROJECT_DIR$/auth-service/src/main/java/com/edufinai/auth/util/JwtUtil.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/auth-service/pom.xml" beforeDir="false" afterPath="$PROJECT_DIR$/auth-service/pom.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/auth-service/src/main/java/com/edufinai/auth/config/SecurityConfig.java" beforeDir="false" afterPath="$PROJECT_DIR$/auth-service/src/main/java/com/edufinai/auth/config/SecurityConfig.java" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -158,7 +155,13 @@
       <workItem from="1761319806513" duration="798000" />
       <workItem from="1761320619753" duration="554000" />
       <workItem from="1761321195290" duration="391000" />
-      <workItem from="1761321600487" duration="640000" />
+      <workItem from="1761321600487" duration="1468000" />
+      <workItem from="1761580724289" duration="131000" />
+      <workItem from="1761580877536" duration="257000" />
+      <workItem from="1761581225339" duration="1589000" />
+      <workItem from="1761636329133" duration="1460000" />
+      <workItem from="1761637833686" duration="8000" />
+      <workItem from="1761637858692" duration="1372000" />
     </task>
     <servers />
   </component>
