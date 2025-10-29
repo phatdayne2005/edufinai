@@ -7,17 +7,16 @@ import java.time.*;
 import java.util.*;
 
 @Data
-//@NoArgsConstructor
-//@AllArgsConstructor
 public class Lesson {
 
     @Id
     @Column(name = "lesson_id")
-    @GeneratedValue
+    @GeneratedValue(strategy =  GenerationType.UUID)
     private UUID id;
 
-    @ManyToMany(mappedBy = "lessons")
-    private List<Learner> learners;
+    @OneToMany(mappedBy = "lesson")
+    @ToString.Exclude @EqualsAndHashCode.Exclude
+    private List<Enrollment> enrollments = new ArrayList<>();
 
     @ManyToOne
     @JoinColumn(name = "creator_id")
@@ -49,18 +48,18 @@ public class Lesson {
     private String content;
 
     // minutes
-    @NotBlank
+    @NotNull
     @Min(1)
     @Column(name = "duration_minutes", nullable = false)
     private Integer durationMinutes = 5;
 
-    @NotBlank
+    @NotNull
     @Enumerated(EnumType.STRING)
     @Column(name = "difficulty", length = 20, nullable = false)
     private Difficulty difficulty = Difficulty.BASIC;
 
     // DRAFT/PENDING/APPROVED/REJECTED
-    @NotBlank
+    @NotNull
     @Enumerated(EnumType.STRING)
     @Column(name = "status", length = 20, nullable = false)
     private Status status = Status.DRAFT;
@@ -86,12 +85,6 @@ public class Lesson {
     @Column(name = "quiz_json")
     private String quizJson;
 
-    @Column(name = "quiz_result")
-    private String quizResult;
-
-    @Column(name = "rating")
-    private float rating;
-
     // Versioning & auditing
     @Version
     private Long version;
@@ -102,11 +95,11 @@ public class Lesson {
     @Column(name = "published_at")
     private LocalDateTime publishedAt;
 
-    @NotBlank
+    @NotNull
     @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt;
 
-    @NotBlank
+    @NotNull
     @Column(name = "updated_at", nullable = false)
     private LocalDateTime updatedAt;
 

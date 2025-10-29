@@ -11,7 +11,7 @@ public class Moderator {
 
     @Id
     @Column(name = "moderator_id")
-    @GeneratedValue
+    @GeneratedValue(strategy =  GenerationType.UUID)
     private UUID id;
 
     @OneToMany(mappedBy = "moderator")
@@ -25,14 +25,15 @@ public class Moderator {
     @Column(name = "comment", length = 500)
     private String comment;
 
-    @Column(name = "handled_items", nullable = false)
-    private Integer handledItems = 0;
+    // Bỏ
+//    @Column(name = "handled_items", nullable = false)
+//    private Integer handledItems = 0;
 
-    @NotBlank
+    @NotNull
     @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt;
 
-    @NotBlank
+    @NotNull
     @Column(name = "updated_at", nullable = false)
     private LocalDateTime updatedAt;
 }
