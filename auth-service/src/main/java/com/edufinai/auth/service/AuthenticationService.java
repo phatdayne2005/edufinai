@@ -107,7 +107,7 @@ public class AuthenticationService {
             user.setLastLogin(LocalDateTime.now());
             userRepository.save(user);
 
-            String jwt = jwtUtil.generateToken(user.getUsername(), user.getRole());
+            String jwt = jwtUtil.generateToken(user.getUsername(), user.getUserId(), user.getRole());
 
             UserProfileResponse profile = new UserProfileResponse(
                     user.getUserId(),

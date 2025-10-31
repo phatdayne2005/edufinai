@@ -13,6 +13,7 @@ import javax.crypto.SecretKey;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.UUID;
 import java.util.function.Function;
 
 @Slf4j
@@ -51,9 +52,11 @@ public class JwtUtil {
         return extractExpiration(token).before(new Date());
     }
 
-    public String generateToken(String username, UserRole role) {
+    // THÊM THAM SỐ userId
+    public String generateToken(String username, UUID userId, UserRole role) {
         Map<String, Object> claims = new HashMap<>();
         claims.put("role", role.name());
+        claims.put("userId", userId.toString()); // THÊM userId vào token
         return createToken(claims, username);
     }
 
@@ -76,5 +79,25 @@ public class JwtUtil {
         Claims claims = extractAllClaims(token);
         String role = claims.get("role", String.class);
         return UserRole.valueOf(role);
+    }
+
+    // THÊM METHOD để lấy userId từ token
+    public UUID extractUserId(String token) {
+        Claims claims = extractAllClaims(token);
+        String userId = claims.get("userId", String.class);
+        return UUID.fromString(userId);
+    }
+
+    public Boolean validateToken(String token) {
+        try {
+            Jwts.parserBuilder()
+                    .setSigningKey(getSigningKey())
+                    .build()
+                    .parseClaimsJws(token);
+            return !isTokenExpired(token);
+        } catch (Exception e) {
+            log.error("Token validation failed: {}", e.getMessage());
+            return false;
+        }
     }
 }
