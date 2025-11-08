@@ -9,7 +9,7 @@ spring:
     driver-class-name: com.mysql.cj.jdbc.Driver
   jpa:
     hibernate:
-      ddl-auto: update # để Hibernate tự tạo/cập nhật bảng
+      ddl-auto: create # để Hibernate tự tạo/cập nhật bảng
     show-sql: true # in SQL ra log (dễ debug)
     properties:
       hibernate:
