@@ -1,5 +1,6 @@
 package com.xdpm.service5.ai_service.service;
 
+import com.xdpm.service5.ai_service.dto.DevEventRequest;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.xdpm.service5.ai_service.dto.RecommendationResponse;
@@ -58,32 +59,32 @@ public class AiRecommendationService {
             }
         }
 
-        // 1) Build features
+        // 1️⃣ Build features
         Map<String, Object> feats = featureBuilder.buildFeatures(userId, recentContext);
 
-        // 2) Evaluate rules
+        // 2️⃣ Evaluate rules
         var rr = ruleEngine.evaluate(feats);
 
-        // 3) Build chart
+        // 3️⃣ Build chart
         Map<String, Object> chart = featureBuilder.buildChartData(feats);
 
-        // 4) Persist
+        // 4️⃣ Persist to DB
         String analyzedJson = om.writeValueAsString(feats);
         String chartJson = om.writeValueAsString(chart);
 
         AiRecommendation entity = AiRecommendation.builder()
                 .userId(userId)
-                .category(rr.category)
-                .type(rr.category)  // khớp field type trong entity
-                .message(rr.message)
+                .category(rr.getCategory())
+                .type(rr.getCategory())
+                .message(rr.getMessage())
                 .analyzedData(analyzedJson)
                 .chartData(chartJson)
                 .createdAt(LocalDateTime.now())
                 .build();
 
-        repo.save(entity);
+        repo.saveAndFlush(entity);
 
-        log.info("recommendation_saved user={} id={} rules={}", userId, entity.getId(), rr.rulesHit);
+        log.info("recommendation_saved user={} id={} rules={}", userId, entity.getId(), rr.getRulesHit());
 
         return RecommendationResponse.builder()
                 .id(entity.getId())
@@ -94,19 +95,59 @@ public class AiRecommendationService {
                 .chart(chart)
                 .createdAt(entity.getCreatedAt())
                 .idempotent(!firstTime)
-                .rulesHit(rr.rulesHit.toArray(String[]::new))
+                .rulesHit(rr.getRulesHit().toArray(String[]::new))
                 .build();
     }
 
     // --------------------------------------------------------
-    // 2️⃣ Lấy bản ghi gần nhất
+    // 2️⃣ Handle DevEvent (Event-driven)
+    // --------------------------------------------------------
+    @Transactional  // ✅ thêm để có transaction context khi persist
+    public RecommendationResponse ingestEvent(DevEventRequest req) throws Exception {
+        log.info("[Event] Received type={} event_id={} user_id={}", req.getEventType(), req.getEventId(), req.getUserId());
+
+        var features = featureBuilder.fromEvent(req);
+        var result = ruleEngine.evaluate(features);
+
+        AiRecommendation rec = new AiRecommendation();
+        rec.setUserId(req.getUserId());
+        rec.setCategory(result.getCategory());
+        rec.setMessage(result.getSuggestion());
+        rec.setCreatedAt(LocalDateTime.now());
+        rec.setAnalyzedData(om.writeValueAsString(features)); // ✅ JSON thật
+        rec.setRuleHits(String.join(",", result.getRuleIds()));
+        rec.setScore(result.getScore());
+        rec.setExplanation(result.getExplanation());
+
+        repo.saveAndFlush(rec);
+
+        return RecommendationResponse.builder()
+                .id(rec.getId())
+                .userId(rec.getUserId())
+                .category(rec.getCategory())
+                .message(rec.getMessage())
+                .analyzed(Map.of(
+                        "salary_month", features.getSalaryMonth(),
+                        "spend_salary_ratio", features.getSpendSalaryRatio(),
+                        "by_category", features.getByCategory()
+                ))
+                .chart(Map.of())
+                .createdAt(rec.getCreatedAt())
+                .idempotent(false)
+                .rulesHit(result.getRuleIds().toArray(String[]::new))
+                .build();
+    }
+
+
+    // --------------------------------------------------------
+    // 3️⃣ Lấy bản ghi gần nhất
     // --------------------------------------------------------
     public List<AiRecommendation> recentByUser(String userId) {
         return repo.findTop20ByUserIdOrderByCreatedAtDesc(userId);
     }
 
     // --------------------------------------------------------
-    // 3️⃣ Helper: JSON → Map
+    // 4️⃣ Helper: JSON → Map
     // --------------------------------------------------------
     private Map<String, Object> jsonToMap(String json) throws Exception {
         if (json == null) return Map.of();
@@ -114,7 +155,7 @@ public class AiRecommendationService {
     }
 
     // --------------------------------------------------------
-    // 4️⃣ Mock methods
+    // 5️⃣ Mock methods
     // --------------------------------------------------------
     public Map<String, Object> generateMockRecommendation(String userId) {
         AiRecommendation rec = AiRecommendation.builder()

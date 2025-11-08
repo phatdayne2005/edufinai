@@ -10,7 +10,9 @@ import java.util.Map;
 @Data
 public class DevEventRequest {
     @NotBlank
-    private String type;  // expense.created | module.quiz.submitted | salary.updated ...
+    private String eventId;
+    @NotBlank
+    private String eventType;  // expense.created | module.quiz.submitted | salary.updated ...
     @NotBlank
     private String userId;
     private Instant occurredAt = Instant.now();

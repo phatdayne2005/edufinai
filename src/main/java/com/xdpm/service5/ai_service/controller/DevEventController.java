@@ -23,39 +23,42 @@ public class DevEventController {
     private final IdempotencyService idem;
     private final AiRecommendationService aiService;
 
-    @Operation(summary = "Mô phỏng event (expense.created, module.quiz.submitted, salary.updated, ...)",
+    @Operation(
+            summary = "Mô phỏng event (expense.created, module.quiz.submitted, salary.updated, ...)",
             description = "Dùng header Idempotency-Key để đảm bảo event lặp không tạo record mới. " +
-                    "payload có thể chứa: amount, category, salary_month, food_spend, bills_spend, last_30d_total ...")
+                    "Payload có thể chứa: amount, category, salary_month, food_spend, bills_spend, last_30d_total ..."
+    )
     @PostMapping("/event")
     public ResponseEntity<?> emitEvent(
             @RequestHeader(value = "Idempotency-Key", required = false) String idemKey,
             @Valid @RequestBody DevEventRequest req) throws Exception {
 
-        // Nếu không có key → tự sinh key đơn giản từ type+occurredAt+user
+        // ✅ Nếu không có key → tự sinh key từ eventType + timestamp + user
         String key = (idemKey == null || idemKey.isBlank())
-                ? ("evt:" + req.getType() + ":" + req.getUserId() + ":" + req.getOccurredAt().toEpochMilli())
+                ? ("evt:" + req.getEventType() + ":" + req.getUserId() + ":" + req.getOccurredAt().toEpochMilli())
                 : idemKey;
 
+        // ✅ Kiểm tra idempotency bằng Redis
         boolean acquired = idem.tryAcquire(key, Duration.ofMinutes(10));
         if (!acquired) {
-            log.info("event_duplicate key={} type={} user={}", key, req.getType(), req.getUserId());
+            log.info("event_duplicate key={} type={} user={}", key, req.getEventType(), req.getUserId());
             return ResponseEntity.ok(Map.of(
                     "status", "duplicate_ignored",
                     "idempotencyKey", key
             ));
         }
 
-        // “Ingest event → build features → rule → save”
-        RecommendationResponse resp = aiService.generateAndSave(
-                req.getUserId(),
-                req.getPayload() == null ? Map.of() : req.getPayload(),
-                key // dùng chung key cho recommend
-        );
+        // ✅ Gọi đúng flow ingestion (Tuần 2)
+        RecommendationResponse resp = aiService.ingestEvent(req);
 
+        // ✅ Trả response chứa recommendation + key
         return ResponseEntity.ok(Map.of(
                 "status", "processed",
                 "idempotencyKey", key,
-                "recommendation", resp
+                "category", resp.getCategory(),
+                "message", resp.getMessage(),
+                "rulesHit", resp.getRulesHit()
         ));
+
     }
 }
