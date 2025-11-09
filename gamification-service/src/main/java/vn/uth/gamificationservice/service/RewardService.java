@@ -19,12 +19,13 @@ public class RewardService {
 
     private final RedisTemplate<String, String> redisTemplate;
 
-    private static final String LEADERBOARD_KEY = "leaderboard:global";
+    private final LeaderboardService leaderboardService;
 
-    public RewardService(RewardRepository rewardRepository,  RedisTemplate<String, String> redisTemplate,  UserRewardSummaryService userRewardSummaryService) {
+    public RewardService(RewardRepository rewardRepository,  RedisTemplate<String, String> redisTemplate,  UserRewardSummaryService userRewardSummaryService, LeaderboardService leaderboardService) {
         this.rewardRepository = rewardRepository;
         this.redisTemplate = redisTemplate;
         this.userRewardSummaryService = userRewardSummaryService;
+        this.leaderboardService = leaderboardService;
     }
 
     @Transactional
@@ -41,15 +42,27 @@ public class RewardService {
         this.rewardRepository.save(reward);
         this.userRewardSummaryService.addSumaryReward(reward.getUserId(), reward.getScore());
 
-        // Cộng điểm hiện tại với điểm mới (nếu không có sẽ thêm)
-        // ZINCRBY có thể dùng hoặc lấy điểm hiện tại rồi cộng thủ công
-        this.redisTemplate.opsForZSet().incrementScore(LEADERBOARD_KEY, req.getUserId().toString(), req.getScore());
+        String userIdStr = req.getUserId().toString();
+        double score = req.getScore();
+
+        // Cập nhật tất cả 4 leaderboards: daily, weekly, monthly, alltime
+        String dailyKey = leaderboardService.getLeaderboardKeyForType(LeaderboardType.DAILY);
+        String weeklyKey = leaderboardService.getLeaderboardKeyForType(LeaderboardType.WEEKLY);
+        String monthlyKey = leaderboardService.getLeaderboardKeyForType(LeaderboardType.MONTHLY);
+        String alltimeKey = leaderboardService.getLeaderboardKeyForType(LeaderboardType.ALLTIME);
+
+        this.redisTemplate.opsForZSet().incrementScore(dailyKey, userIdStr, score);
+        this.redisTemplate.opsForZSet().incrementScore(weeklyKey, userIdStr, score);
+        this.redisTemplate.opsForZSet().incrementScore(monthlyKey, userIdStr, score);
+        this.redisTemplate.opsForZSet().incrementScore(alltimeKey, userIdStr, score);
 
         return new RewardResponse(reward.getRewardId(), "SUCCESS");
     }
 
     public UserReward getUserReward(UUID userId) {
-        Double score = redisTemplate.opsForZSet().score(LEADERBOARD_KEY, userId.toString());
+        // Lấy điểm từ alltime leaderboard
+        String alltimeKey = leaderboardService.getLeaderboardKeyForType(LeaderboardType.ALLTIME);
+        Double score = redisTemplate.opsForZSet().score(alltimeKey, userId.toString());
         if (score == null) {
             score = 0.0;
         }
