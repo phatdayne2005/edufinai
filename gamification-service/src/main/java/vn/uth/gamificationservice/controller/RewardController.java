@@ -1,5 +1,7 @@
 package vn.uth.gamificationservice.controller;
 
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -12,6 +14,7 @@ import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/v1/gamify")
+@Tag(name = "Reward Controller")
 public class RewardController {
     private final RewardService rewardService;
 
@@ -20,12 +23,14 @@ public class RewardController {
 
     }
 
+    @Operation(summary = "Add user reward")
     @PostMapping("/reward")
     public ResponseEntity<RewardResponse> addReward(@Valid @RequestBody RewardRequest req) {
         RewardResponse resp = rewardService.addReward(req);
         return ResponseEntity.ok(resp);
     }
 
+    @Operation(summary = "Check user reward")
     @GetMapping("/reward/{userId}")
     public ResponseEntity<UserReward> getRewards(@PathVariable("userId") UUID userId) {
         UserReward resp = rewardService.getUserReward(userId);
