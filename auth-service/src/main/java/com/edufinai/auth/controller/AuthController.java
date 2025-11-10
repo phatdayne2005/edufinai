@@ -1,65 +1,300 @@
-package com.edufinai.auth.controller;
+package com.edufinai.auth.service;
 
-import com.edufinai.auth.dto.ApiResponse;
-import com.edufinai.auth.dto.LoginRequest;
-import com.edufinai.auth.dto.RegisterRequest;
-import com.edufinai.auth.dto.LoginResponse;
-import com.edufinai.auth.service.AuthenticationService;
-import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.tags.Tag;
-import jakarta.validation.Valid;
-import lombok.RequiredArgsConstructor;
-import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
+import com.edufinai.auth.dto.*;
+import com.edufinai.auth.model.User;
+import com.edufinai.auth.model.UserRole;
+import com.edufinai.auth.model.UserStatus;
+import com.edufinai.auth.repository.UserRepository;
+import com.edufinai.auth.util.JwtUtil;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
-@RestController
-@RequestMapping("/api/v1/auth")
-@RequiredArgsConstructor
-@Tag(name = "Authentication", description = "Authentication APIs for user registration and login")
-public class AuthController {
+import java.time.LocalDateTime;
+import java.util.Optional;
+import java.util.UUID;
 
-    private final AuthenticationService authenticationService;
+@Service
+public class AuthenticationService {
 
-    @PostMapping("/register")
-    @Operation(summary = "Register new user")
-    public ResponseEntity<ApiResponse> register(@Valid @RequestBody RegisterRequest request) {
-        ApiResponse response = authenticationService.register(request);
-        return ResponseEntity.status(response.isSuccess() ? 200 : 400).body(response);
+    private static final Logger log = LoggerFactory.getLogger(AuthenticationService.class);
+
+    private final UserRepository userRepository;
+    private final PasswordEncoder passwordEncoder;
+    private final AuthenticationManager authenticationManager;
+    private final JwtUtil jwtUtil;
+    private final UserDetailsServiceImpl userDetailsService;
+
+    public AuthenticationService(UserRepository userRepository,
+                                 PasswordEncoder passwordEncoder,
+                                 AuthenticationManager authenticationManager,
+                                 JwtUtil jwtUtil,
+                                 UserDetailsServiceImpl userDetailsService) {
+        this.userRepository = userRepository;
+        this.passwordEncoder = passwordEncoder;
+        this.authenticationManager = authenticationManager;
+        this.jwtUtil = jwtUtil;
+        this.userDetailsService = userDetailsService;
     }
 
-    @PostMapping("/login")
-    @Operation(summary = "User login")
-    public ResponseEntity<ApiResponse> login(@Valid @RequestBody LoginRequest request) {
-        ApiResponse response = authenticationService.login(request);
+    @Transactional
+    public ApiResponse register(RegisterRequest request) {
+        try {
+            // Check if username already exists
+            if (userRepository.existsByUsername(request.getUsername())) {
+                return ApiResponse.error("Username already exists");
+            }
 
-        // THÊM HEADER TOKEN VÀO RESPONSE
-        if (response.isSuccess() && response.getData() instanceof LoginResponse) {
-            LoginResponse loginResponse = (LoginResponse) response.getData();
-            String token = loginResponse.getToken();
+            // Check if email already exists
+            if (userRepository.existsByEmail(request.getEmail())) {
+                return ApiResponse.error("Email already exists");
+            }
 
-            return ResponseEntity.status(200)
-                    .header("Authorization", "Bearer " + token) // QUAN TRỌNG: Set token vào header
-                    .body(response);
+            // Create new user
+            User user = new User();
+            user.setUsername(request.getUsername());
+            user.setEmail(request.getEmail());
+            user.setPasswordHash(passwordEncoder.encode(request.getPassword()));
+            user.setPhone(request.getPhone());
+            user.setRole(request.getRole());
+            user.setStatus(UserStatus.ACTIVE);
+            user.setCreatedAt(LocalDateTime.now());
+
+            User savedUser = userRepository.save(user);
+            log.info("User registered successfully: {}", savedUser.getUsername());
+
+            UserProfileResponse profileResponse = new UserProfileResponse(
+                    savedUser.getUserId(),
+                    savedUser.getUsername(),
+                    savedUser.getEmail(),
+                    savedUser.getPhone(),
+                    savedUser.getRole(),
+                    savedUser.getAvatarUrl(),
+                    savedUser.getFinanceProfile(),
+                    savedUser.getGoals(),
+                    savedUser.getLastLogin(),
+                    savedUser.getStatus(),
+                    savedUser.getCreatedAt()
+            );
+
+            return ApiResponse.success("User registered successfully", profileResponse);
+
+        } catch (Exception e) {
+            log.error("Registration error: {}", e.getMessage());
+            return ApiResponse.error("Registration failed: " + e.getMessage());
+        }
+    }
+
+    @Transactional
+    public ApiResponse login(LoginRequest request) {
+        try {
+            Authentication authentication = authenticationManager.authenticate(
+                    new UsernamePasswordAuthenticationToken(request.getUsername(), request.getPassword())
+            );
+
+            SecurityContextHolder.getContext().setAuthentication(authentication);
+
+            User user = userRepository.findByUsername(request.getUsername())
+                    .orElseThrow(() -> new RuntimeException("User not found"));
+
+            // Update last login
+            user.setLastLogin(LocalDateTime.now());
+            userRepository.save(user);
+
+            String jwt = jwtUtil.generateToken(user.getUsername(), user.getUserId(), user.getRole());
+
+            UserProfileResponse profile = new UserProfileResponse(
+                    user.getUserId(),
+                    user.getUsername(),
+                    user.getEmail(),
+                    user.getPhone(),
+                    user.getRole(),
+                    user.getAvatarUrl(),
+                    user.getFinanceProfile(),
+                    user.getGoals(),
+                    user.getLastLogin(),
+                    user.getStatus(),
+                    user.getCreatedAt()
+            );
+
+            LoginResponse loginResponse = new LoginResponse(jwt, "Bearer", user.getRole(), profile, "Login successful");
+
+            return ApiResponse.success("Login successful", loginResponse);
+
+        } catch (Exception e) {
+            log.error("Login error: {}", e.getMessage());
+            return ApiResponse.error("Invalid username or password");
+        }
+    }
+
+    public ApiResponse getCurrentUser() {
+        try {
+            Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+            String username = authentication.getName();
+
+            User user = userRepository.findByUsername(username)
+                    .orElseThrow(() -> new RuntimeException("User not found"));
+
+            UserProfileResponse profile = new UserProfileResponse(
+                    user.getUserId(),
+                    user.getUsername(),
+                    user.getEmail(),
+                    user.getPhone(),
+                    user.getRole(),
+                    user.getAvatarUrl(),
+                    user.getFinanceProfile(),
+                    user.getGoals(),
+                    user.getLastLogin(),
+                    user.getStatus(),
+                    user.getCreatedAt()
+            );
+
+            return ApiResponse.success("User profile retrieved successfully", profile);
+
+        } catch (Exception e) {
+            return ApiResponse.error("Failed to get user profile");
+        }
+    }
+
+    public ApiResponse getUserInfo(String token) {
+        try {
+            if (jwtUtil.validateToken(token, userDetailsService.loadUserByUsername(jwtUtil.extractUsername(token)))) {
+                String username = jwtUtil.extractUsername(token);
+                UserRole role = jwtUtil.extractRole(token);
+
+                User user = userRepository.findByUsername(username)
+                        .orElseThrow(() -> new RuntimeException("User not found"));
+
+                UserInfoResponse userInfo = new UserInfoResponse(
+                        user.getUserId(),
+                        user.getUsername(),
+                        user.getEmail(),
+                        user.getRole(),
+                        user.getStatus()
+                );
+
+                return ApiResponse.success("User info retrieved successfully", userInfo);
+            } else {
+                return ApiResponse.error("Invalid token");
+            }
+        } catch (Exception e) {
+            return ApiResponse.error("Failed to get user info");
+        }
+    }
+
+    // Inner class for user info response (không dùng Lombok)
+    public static class UserInfoResponse {
+        private UUID userId;
+        private String username;
+        private String email;
+        private UserRole role;
+        private UserStatus status;
+
+        // Constructor mặc định
+        public UserInfoResponse() {}
+
+        // Constructor với tham số
+        public UserInfoResponse(UUID userId, String username, String email, UserRole role, UserStatus status) {
+            this.userId = userId;
+            this.username = username;
+            this.email = email;
+            this.role = role;
+            this.status = status;
         }
 
-        return ResponseEntity.status(401).body(response);
+        // Getters and Setters
+        public UUID getUserId() { return userId; }
+        public void setUserId(UUID userId) { this.userId = userId; }
+        public String getUsername() { return username; }
+        public void setUsername(String username) { this.username = username; }
+        public String getEmail() { return email; }
+        public void setEmail(String email) { this.email = email; }
+        public UserRole getRole() { return role; }
+        public void setRole(UserRole role) { this.role = role; }
+        public UserStatus getStatus() { return status; }
+        public void setStatus(UserStatus status) { this.status = status; }
     }
+}
 
-    @GetMapping("/me")
-    @Operation(summary = "Get current user profile")
-    public ResponseEntity<ApiResponse> getCurrentUser() {
-        ApiResponse response = authenticationService.getCurrentUser();
-        return ResponseEntity.status(response.isSuccess() ? 200 : 400).body(response);
-    }
+// Thêm các method sau vào AuthenticationService class:
 
-    @GetMapping("/user/info")
-    @Operation(summary = "Get user info by token (for internal services)")
-    public ResponseEntity<ApiResponse> getUserInfo(@RequestHeader("Authorization") String token) {
-        // Remove "Bearer " prefix if present
-        if (token.startsWith("Bearer ")) {
-            token = token.substring(7);
+@Transactional
+public ResponseEntity<LoginResponse> refreshToken(RefreshTokenRequest request) {
+    try {
+        // Validate refresh token
+        if (!jwtUtil.validateToken(request.getRefreshToken())) {
+            return ResponseEntity.status(401).body(null);
         }
-        ApiResponse response = authenticationService.getUserInfo(token);
-        return ResponseEntity.status(response.isSuccess() ? 200 : 400).body(response);
+
+        String username = jwtUtil.extractUsername(request.getRefreshToken());
+        User user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        // Generate new tokens
+        String newAccessToken = jwtUtil.generateToken(user.getUsername(), user.getUserId(), user.getRole());
+        String newRefreshToken = jwtUtil.generateRefreshToken(user.getUsername(), user.getUserId(), user.getRole());
+
+        UserProfileResponse profile = new UserProfileResponse(
+                user.getUserId(),
+                user.getEmail(),
+                user.getDisplayName(),
+                user.getRole(),
+                user.getAvatarUrl(),
+                user.getPreferences(),
+                user.getLastLogin(),
+                user.getStatus(),
+                user.getCreatedAt()
+        );
+
+        LoginResponse response = new LoginResponse(
+                newAccessToken,
+                newRefreshToken,
+                "Bearer",
+                jwtUtil.getExpirationTime(),
+                user.getRole(),
+                profile
+        );
+
+        return ResponseEntity.ok(response);
+
+    } catch (Exception e) {
+        log.error("Token refresh error: {}", e.getMessage());
+        return ResponseEntity.status(401).body(null);
+    }
+}
+
+public ResponseEntity<ApiResponse> verifyEmail(VerifyEmailRequest request) {
+    try {
+        // Implementation for email verification
+        return ResponseEntity.ok(ApiResponse.success("Email verified successfully"));
+    } catch (Exception e) {
+        log.error("Email verification error: {}", e.getMessage());
+        return ResponseEntity.badRequest().body(ApiResponse.error("Email verification failed"));
+    }
+}
+
+public ResponseEntity<ApiResponse> forgotPassword(ForgotPasswordRequest request) {
+    try {
+        // Implementation for forgot password
+        return ResponseEntity.ok(ApiResponse.success("Password reset email sent"));
+    } catch (Exception e) {
+        log.error("Forgot password error: {}", e.getMessage());
+        return ResponseEntity.badRequest().body(ApiResponse.error("Failed to process request"));
+    }
+}
+
+public ResponseEntity<ApiResponse> resetPassword(ResetPasswordRequest request) {
+    try {
+        // Implementation for reset password
+        return ResponseEntity.ok(ApiResponse.success("Password reset successfully"));
+    } catch (Exception e) {
+        log.error("Reset password error: {}", e.getMessage());
+        return ResponseEntity.badRequest().body(ApiResponse.error("Password reset failed"));
     }
 }

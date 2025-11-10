@@ -101,3 +101,24 @@ public class JwtUtil {
         }
     }
 }
+
+// Thêm các method sau vào JwtUtil class:
+
+public String generateRefreshToken(String username, UUID userId, UserRole role) {
+    Map<String, Object> claims = new HashMap<>();
+    claims.put("role", role.name());
+    claims.put("userId", userId.toString());
+    claims.put("type", "refresh");
+
+    return Jwts.builder()
+            .setClaims(claims)
+            .setSubject(username)
+            .setIssuedAt(new Date(System.currentTimeMillis()))
+            .setExpiration(new Date(System.currentTimeMillis() + jwtProperties.getRefreshExpiration()))
+            .signWith(getSigningKey(), SignatureAlgorithm.HS256)
+            .compact();
+}
+
+public Long getExpirationTime() {
+    return jwtProperties.getExpiration() / 1000; // Return in seconds
+}

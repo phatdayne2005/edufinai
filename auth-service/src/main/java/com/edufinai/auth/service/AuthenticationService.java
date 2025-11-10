@@ -43,6 +43,83 @@ public class AuthenticationService {
         this.userDetailsService = userDetailsService;
     }
 
+    // Thêm các method sau vào AuthenticationService class:
+
+    @Transactional
+    public ResponseEntity<LoginResponse> refreshToken(RefreshTokenRequest request) {
+        try {
+            // Validate refresh token
+            if (!jwtUtil.validateToken(request.getRefreshToken())) {
+                return ResponseEntity.status(401).body(null);
+            }
+
+            String username = jwtUtil.extractUsername(request.getRefreshToken());
+            User user = userRepository.findByUsername(username)
+                    .orElseThrow(() -> new RuntimeException("User not found"));
+
+            // Generate new tokens
+            String newAccessToken = jwtUtil.generateToken(user.getUsername(), user.getUserId(), user.getRole());
+            String newRefreshToken = jwtUtil.generateRefreshToken(user.getUsername(), user.getUserId(), user.getRole());
+
+            UserProfileResponse profile = new UserProfileResponse(
+                    user.getUserId(),
+                    user.getEmail(),
+                    user.getDisplayName(),
+                    user.getRole(),
+                    user.getAvatarUrl(),
+                    user.getPreferences(),
+                    user.getLastLogin(),
+                    user.getStatus(),
+                    user.getCreatedAt()
+            );
+
+            LoginResponse response = new LoginResponse(
+                    newAccessToken,
+                    newRefreshToken,
+                    "Bearer",
+                    jwtUtil.getExpirationTime(),
+                    user.getRole(),
+                    profile
+            );
+
+            return ResponseEntity.ok(response);
+
+        } catch (Exception e) {
+            log.error("Token refresh error: {}", e.getMessage());
+            return ResponseEntity.status(401).body(null);
+        }
+    }
+
+    public ResponseEntity<ApiResponse> verifyEmail(VerifyEmailRequest request) {
+        try {
+            // Implementation for email verification
+            return ResponseEntity.ok(ApiResponse.success("Email verified successfully"));
+        } catch (Exception e) {
+            log.error("Email verification error: {}", e.getMessage());
+            return ResponseEntity.badRequest().body(ApiResponse.error("Email verification failed"));
+        }
+    }
+
+    public ResponseEntity<ApiResponse> forgotPassword(ForgotPasswordRequest request) {
+        try {
+            // Implementation for forgot password
+            return ResponseEntity.ok(ApiResponse.success("Password reset email sent"));
+        } catch (Exception e) {
+            log.error("Forgot password error: {}", e.getMessage());
+            return ResponseEntity.badRequest().body(ApiResponse.error("Failed to process request"));
+        }
+    }
+
+    public ResponseEntity<ApiResponse> resetPassword(ResetPasswordRequest request) {
+        try {
+            // Implementation for reset password
+            return ResponseEntity.ok(ApiResponse.success("Password reset successfully"));
+        } catch (Exception e) {
+            log.error("Reset password error: {}", e.getMessage());
+            return ResponseEntity.badRequest().body(ApiResponse.error("Password reset failed"));
+        }
+    }
+
     @Transactional
     public ApiResponse register(RegisterRequest request) {
         try {

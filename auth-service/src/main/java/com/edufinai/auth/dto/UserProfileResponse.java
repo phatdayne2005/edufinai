@@ -14,13 +14,11 @@ import java.util.UUID;
 @AllArgsConstructor
 public class UserProfileResponse {
     private UUID userId;
-    private String username;
     private String email;
-    private String phone;
+    private String displayName;
     private UserRole role;
     private String avatarUrl;
-    private String financeProfile;
-    private String goals;
+    private String preferences;
     private LocalDateTime lastLogin;
     private UserStatus status;
     private LocalDateTime createdAt;
