@@ -5,17 +5,11 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="40502acc-35a2-4717-b020-bdbe3585ff5e" name="Changes" comment="">
-      <change afterPath="$PROJECT_DIR$/auth-service/src/main/resources/db/migration/V3__Add_display_name_to_users.sql" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/auth-service/src/main/resources/db/migration/V4__Add_refresh_token_support.sql" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/auth-service/src/main/java/com/edufinai/auth/dto/RegisterResponse.java" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/auth-service/src/main/java/com/edufinai/auth/config/JwtProperties.java" beforeDir="false" afterPath="$PROJECT_DIR$/auth-service/src/main/java/com/edufinai/auth/config/JwtProperties.java" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/auth-service/src/main/java/com/edufinai/auth/controller/AuthController.java" beforeDir="false" afterPath="$PROJECT_DIR$/auth-service/src/main/java/com/edufinai/auth/controller/AuthController.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/auth-service/src/main/java/com/edufinai/auth/controller/TokenValidationController.java" beforeDir="false" afterPath="$PROJECT_DIR$/auth-service/src/main/java/com/edufinai/auth/controller/TokenValidationController.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/auth-service/src/main/java/com/edufinai/auth/controller/UserController.java" beforeDir="false" afterPath="$PROJECT_DIR$/auth-service/src/main/java/com/edufinai/auth/controller/UserController.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/auth-service/src/main/java/com/edufinai/auth/dto/LoginResponse.java" beforeDir="false" afterPath="$PROJECT_DIR$/auth-service/src/main/java/com/edufinai/auth/dto/LoginResponse.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/auth-service/src/main/java/com/edufinai/auth/dto/RegisterRequest.java" beforeDir="false" afterPath="$PROJECT_DIR$/auth-service/src/main/java/com/edufinai/auth/dto/RegisterRequest.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/auth-service/src/main/java/com/edufinai/auth/dto/UserProfileResponse.java" beforeDir="false" afterPath="$PROJECT_DIR$/auth-service/src/main/java/com/edufinai/auth/dto/UserProfileResponse.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/auth-service/src/main/java/com/edufinai/auth/model/User.java" beforeDir="false" afterPath="$PROJECT_DIR$/auth-service/src/main/java/com/edufinai/auth/model/User.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/auth-service/src/main/java/com/edufinai/auth/dto/AdminUserResponse.java" beforeDir="false" afterPath="$PROJECT_DIR$/auth-service/src/main/java/com/edufinai/auth/dto/AdminUserResponse.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/auth-service/src/main/java/com/edufinai/auth/repository/UserRepository.java" beforeDir="false" afterPath="$PROJECT_DIR$/auth-service/src/main/java/com/edufinai/auth/repository/UserRepository.java" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/auth-service/src/main/java/com/edufinai/auth/service/AuthenticationService.java" beforeDir="false" afterPath="$PROJECT_DIR$/auth-service/src/main/java/com/edufinai/auth/service/AuthenticationService.java" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/auth-service/src/main/java/com/edufinai/auth/service/UserService.java" beforeDir="false" afterPath="$PROJECT_DIR$/auth-service/src/main/java/com/edufinai/auth/service/UserService.java" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/auth-service/src/main/java/com/edufinai/auth/util/JwtUtil.java" beforeDir="false" afterPath="$PROJECT_DIR$/auth-service/src/main/java/com/edufinai/auth/util/JwtUtil.java" afterDir="false" />
@@ -158,8 +152,8 @@
   <component name="SharedIndexes">
     <attachedChunks>
       <set>
-        <option value="bundled-jdk-9823dce3aa75-fbdcb00ec9e3-intellij.indexing.shared.core-IU-251.25410.129" />
-        <option value="bundled-js-predefined-d6986cc7102b-6a121458b545-JavaScript-IU-251.25410.129" />
+        <option value="bundled-jdk-9823dce3aa75-bf35d07a577b-intellij.indexing.shared.core-IU-252.27397.103" />
+        <option value="bundled-js-predefined-d6986cc7102b-3aa1da707db6-JavaScript-IU-252.27397.103" />
       </set>
     </attachedChunks>
   </component>
@@ -187,6 +181,8 @@
       <workItem from="1761811398374" duration="2175000" />
       <workItem from="1761896730275" duration="3149000" />
       <workItem from="1762311545771" duration="2707000" />
+      <workItem from="1762785385791" duration="38000" />
+      <workItem from="1762785443961" duration="3005000" />
     </task>
     <servers />
   </component>

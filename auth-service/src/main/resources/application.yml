@@ -50,4 +50,6 @@ springdoc:
 
 app:
   jwt:
-    secret: your_jwt_secret_key_here_same_as_in_auth_service
+    secret: "mySuperSecretKeyForJWTTokenGenerationThatIsAtLeast32CharactersLong"
+    expiration: 86400000    # 24 hours
+    refresh-expiration: 604800000  # 7 days

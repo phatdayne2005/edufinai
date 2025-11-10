@@ -52,11 +52,10 @@ public class JwtUtil {
         return extractExpiration(token).before(new Date());
     }
 
-    // THÊM THAM SỐ userId
     public String generateToken(String username, UUID userId, UserRole role) {
         Map<String, Object> claims = new HashMap<>();
         claims.put("role", role.name());
-        claims.put("userId", userId.toString()); // THÊM userId vào token
+        claims.put("userId", userId.toString());
         return createToken(claims, username);
     }
 
@@ -81,7 +80,6 @@ public class JwtUtil {
         return UserRole.valueOf(role);
     }
 
-    // THÊM METHOD để lấy userId từ token
     public UUID extractUserId(String token) {
         Claims claims = extractAllClaims(token);
         String userId = claims.get("userId", String.class);
@@ -100,25 +98,24 @@ public class JwtUtil {
             return false;
         }
     }
-}
 
-// Thêm các method sau vào JwtUtil class:
+    // THÊM CÁC METHOD MỚI VÀO TRONG CLASS
+    public String generateRefreshToken(String username, UUID userId, UserRole role) {
+        Map<String, Object> claims = new HashMap<>();
+        claims.put("role", role.name());
+        claims.put("userId", userId.toString());
+        claims.put("type", "refresh");
 
-public String generateRefreshToken(String username, UUID userId, UserRole role) {
-    Map<String, Object> claims = new HashMap<>();
-    claims.put("role", role.name());
-    claims.put("userId", userId.toString());
-    claims.put("type", "refresh");
+        return Jwts.builder()
+                .setClaims(claims)
+                .setSubject(username)
+                .setIssuedAt(new Date(System.currentTimeMillis()))
+                .setExpiration(new Date(System.currentTimeMillis() + jwtProperties.getRefreshExpiration()))
+                .signWith(getSigningKey(), SignatureAlgorithm.HS256)
+                .compact();
+    }
 
-    return Jwts.builder()
-            .setClaims(claims)
-            .setSubject(username)
-            .setIssuedAt(new Date(System.currentTimeMillis()))
-            .setExpiration(new Date(System.currentTimeMillis() + jwtProperties.getRefreshExpiration()))
-            .signWith(getSigningKey(), SignatureAlgorithm.HS256)
-            .compact();
-}
-
-public Long getExpirationTime() {
-    return jwtProperties.getExpiration() / 1000; // Return in seconds
+    public Long getExpirationTime() {
+        return jwtProperties.getExpiration() / 1000; // Return in seconds
+    }
 }
