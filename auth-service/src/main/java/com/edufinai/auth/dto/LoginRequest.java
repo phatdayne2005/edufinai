@@ -1,14 +1,12 @@
 package com.edufinai.auth.dto;
 
-import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import lombok.Data;
 
 @Data
 public class LoginRequest {
-    @NotBlank(message = "Email is required")
-    @Email(message = "Email should be valid")
-    private String email;
+    @NotBlank(message = "Username or email is required")
+    private String usernameOrEmail;
 
     @NotBlank(message = "Password is required")
     private String password;

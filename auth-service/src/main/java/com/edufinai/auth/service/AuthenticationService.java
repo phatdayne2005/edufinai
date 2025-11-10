@@ -47,6 +47,11 @@ public class AuthenticationService {
     @Transactional
     public ResponseEntity<ApiResponse> register(RegisterRequest request) {
         try {
+            // Check if username already exists
+            if (userRepository.existsByUsername(request.getUsername())) {
+                return ResponseEntity.badRequest().body(ApiResponse.error("Username already exists"));
+            }
+
             // Check if email already exists
             if (userRepository.existsByEmail(request.getEmail())) {
                 return ResponseEntity.badRequest().body(ApiResponse.error("Email already exists"));
@@ -54,16 +59,16 @@ public class AuthenticationService {
 
             // Create new user
             User user = new User();
-            user.setUsername(request.getEmail()); // Use email as username
+            user.setUsername(request.getUsername());
             user.setEmail(request.getEmail());
             user.setPasswordHash(passwordEncoder.encode(request.getPassword()));
             user.setDisplayName(request.getDisplayName());
+            user.setPhone(request.getPhone());
             user.setRole(UserRole.LEARNER);
             user.setStatus(UserStatus.ACTIVE);
-            user.setCreatedAt(LocalDateTime.now());
 
             User savedUser = userRepository.save(user);
-            log.info("User registered successfully: {}", savedUser.getEmail());
+            log.info("User registered successfully: {}", savedUser.getUsername());
 
             // Return response according to API spec
             RegisterResponse registerResponse = new RegisterResponse(
@@ -82,19 +87,22 @@ public class AuthenticationService {
     @Transactional
     public ResponseEntity<LoginResponse> login(LoginRequest request) {
         try {
+            // Tìm user bằng username hoặc email
+            User user = userRepository.findByUsernameOrEmail(request.getUsernameOrEmail())
+                    .orElseThrow(() -> new RuntimeException("Invalid username/email or password"));
+
+            // Xác thực với Spring Security
             Authentication authentication = authenticationManager.authenticate(
-                    new UsernamePasswordAuthenticationToken(request.getEmail(), request.getPassword())
+                    new UsernamePasswordAuthenticationToken(user.getUsername(), request.getPassword())
             );
 
             SecurityContextHolder.getContext().setAuthentication(authentication);
-
-            User user = userRepository.findByEmail(request.getEmail())
-                    .orElseThrow(() -> new RuntimeException("User not found"));
 
             // Update last login
             user.setLastLogin(LocalDateTime.now());
             userRepository.save(user);
 
+            // Generate tokens
             String accessToken = jwtUtil.generateToken(user.getUsername(), user.getUserId(), user.getRole());
             String refreshToken = jwtUtil.generateRefreshToken(user.getUsername(), user.getUserId(), user.getRole());
 
@@ -123,7 +131,7 @@ public class AuthenticationService {
 
         } catch (Exception e) {
             log.error("Login error: {}", e.getMessage());
-            throw new RuntimeException("Invalid email or password");
+            throw new RuntimeException("Invalid username/email or password");
         }
     }
 
