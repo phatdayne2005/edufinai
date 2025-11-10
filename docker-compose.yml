@@ -26,6 +26,7 @@ services:
   ai-service:
     build: .
     container_name: ai-service
+    restart: always
     depends_on:
       - mysql
       - redis
@@ -38,6 +39,10 @@ services:
       SPRING_REDIS_HOST: redis
       SPRING_REDIS_PORT: 6379
       TZ: "Asia/Ho_Chi_Minh"
-
+    healthcheck:                  # 🔹 optional: kiểm tra khi DB sẵn sàng
+      test: ["CMD", "mysqladmin", "ping", "-h", "mysql", "-uroot", "-proot"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 volumes:
   mysql_data:

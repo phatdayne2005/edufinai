@@ -1,3 +1,5 @@
+// === Week 3: Bổ sung generateCoreMessage() & getHitRules() ===
+
 package com.xdpm.service5.ai_service.service;
 
 import lombok.Data;
@@ -5,76 +7,46 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.util.*;
 
-/**
- * Rule-based Engine (Tuần 2)
- * Đánh giá chi tiêu, phát hiện các hành vi bất thường và sinh khuyến nghị.
- */
 @Slf4j
 @Service
 public class RuleEngine {
 
-    /** 🧠 Evaluate rules dựa trên FeatureBundle (dùng cho /dev/event) */
+    private List<String> lastHitRules = new ArrayList<>();
+
+    // --------------------------------------------------------
+    // 1️⃣ Evaluate bằng FeatureBundle (dành cho /dev/event)
+    // --------------------------------------------------------
     public RuleResult evaluate(FeatureBuilder.FeatureBundle fb) {
-        List<String> hitRules = new ArrayList<>();
-        String suggestion = "Giữ thói quen chi tiêu lành mạnh.";
-        String explanation = "Không có bất thường trong chi tiêu.";
-        int score = 80;
-        String category = "General";
-
-        // Rule 1️⃣: saving_target
-        if (fb.getSpendSalaryRatio().compareTo(BigDecimal.valueOf(0.8)) > 0) {
-            hitRules.add("saving_target");
-            category = "Saving";
-            suggestion = "Nên tăng mục tiêu tiết kiệm, giảm chi tiêu xuống 15%.";
-            explanation = "Chi tiêu vượt 80% thu nhập.";
-            score = 90;
-        }
-
-        // Rule 2️⃣: food_overspend
-        BigDecimal food = fb.getByCategory().getOrDefault("Food", BigDecimal.ZERO);
-        BigDecimal total = fb.getLast30dTotal();
-        if (food.divide(total, 2, BigDecimal.ROUND_HALF_UP)
-                .compareTo(BigDecimal.valueOf(0.3)) > 0) {
-            hitRules.add("food_overspend");
-            category = "Food";
-            suggestion = "Bạn đang chi tiêu quá nhiều cho ăn uống.";
-            explanation = "Tỷ lệ Food > 30% tổng chi.";
-            score = 85;
-        }
-
-        // Rule 3️⃣: bill_spike
-        BigDecimal bills = fb.getByCategory().getOrDefault("Bills", BigDecimal.ZERO);
-        if (bills.compareTo(BigDecimal.valueOf(1500000)) > 0) {
-            hitRules.add("bill_spike");
-            category = "Bills";
-            suggestion = "Cảnh báo tăng bất thường trong hóa đơn.";
-            explanation = "Bills tháng này cao hơn 1.5 lần bình thường.";
-            score = 75;
-        }
-
-        RuleResult r = new RuleResult();
-        r.setRuleIds(hitRules);
-        r.setRulesHit(hitRules);
-        r.setCategory(category);
-        r.setSuggestion(suggestion);
-        r.setMessage(suggestion);        // alias cho message
-        r.setExplanation(explanation);
-        r.setScore(score);
-
-        log.info("rule_evaluated ruleHits={} score={} category={}", hitRules, score, category);
-        return r;
+        RuleResult result = evaluateInternal(fb.getSpendSalaryRatio().doubleValue(),
+                fb.getLast30dTotal().doubleValue(),
+                fb.getByCategory());
+        lastHitRules = result.getRulesHit();
+        return result;
     }
 
-    /** 🧩 Overload: Evaluate rule khi đầu vào là Map (dùng cho generateAndSave) */
+    // --------------------------------------------------------
+    // 2️⃣ Evaluate từ Map (dành cho generateAndSave)
+    // --------------------------------------------------------
     @SuppressWarnings("unchecked")
     public RuleResult evaluate(Map<String, Object> feats) {
-        double ratio = d(feats.get("spend_salary_ratio"));
-        double salary = d(feats.get("salary_month"));
+        double ratio = toDouble(feats.get("spend_salary_ratio"));
+        double salary = toDouble(feats.get("salary_month"));
         Map<String, Object> byCat = (Map<String, Object>) feats.getOrDefault("by_category", Map.of());
-        double food = d(byCat.get("Food"));
-        double bills = d(byCat.get("Bills"));
+        RuleResult result = evaluateInternal(ratio, salary, byCat);
+        lastHitRules = result.getRulesHit();
+        return result;
+    }
+
+    // --------------------------------------------------------
+    // 3️⃣ Core logic dùng chung
+    // --------------------------------------------------------
+    private RuleResult evaluateInternal(double ratio, double salary, Map<?, ?> byCatRaw) {
+        Map<String, Object> byCat = (Map<String, Object>) byCatRaw;
+        double food = toDouble(byCat.get("Food"));
+        double bills = toDouble(byCat.get("Bills"));
 
         List<String> rulesHit = new ArrayList<>();
         String suggestion = "Giữ thói quen chi tiêu lành mạnh.";
@@ -89,16 +61,14 @@ public class RuleEngine {
             explanation = "Chi tiêu vượt 80% lương.";
             score = 90;
         }
-
-        if (food > 0.3 * salary) {
+        if (salary > 0 && food > 0.3 * salary) {
             rulesHit.add("food_overspend");
             category = "Food";
             suggestion = "Chi tiêu ăn uống vượt 30% lương, cân nhắc cắt giảm.";
             explanation = "Food > 30% salary.";
             score = 85;
         }
-
-        if (bills > 0.25 * salary) {
+        if (salary > 0 && bills > 0.25 * salary) {
             rulesHit.add("bill_spike");
             category = "Bills";
             suggestion = "Hóa đơn tháng này tăng cao, kiểm tra điện/nước/internet.";
@@ -108,32 +78,59 @@ public class RuleEngine {
 
         RuleResult r = new RuleResult();
         r.setRuleIds(rulesHit);
-        r.setRulesHit(rulesHit);
-        r.setCategory(category);
+        r.setRulesHit(rulesHit != null ? rulesHit : new ArrayList<>());        r.setCategory(category);
         r.setSuggestion(suggestion);
         r.setMessage(suggestion);
         r.setExplanation(explanation);
         r.setScore(score);
 
-        log.info("rule_evaluated rulesHit={} score={}", rulesHit, score);
+        log.info("[RuleEngine] rules_hit={} category={} score={}", rulesHit, category, score);
         return r;
     }
 
-    /** Helper parse double */
-    private double d(Object o) {
-        if (o instanceof Number n) return n.doubleValue();
-        try { return Double.parseDouble(String.valueOf(o)); } catch (Exception e) { return 0d; }
+    // --------------------------------------------------------
+    // 4️⃣ Hàm mới: generateCoreMessage() cho RULE_LLM mode
+    // --------------------------------------------------------
+    public String generateCoreMessage(Map<String, Object> feats) {
+        RuleResult result = evaluate(feats);
+        StringBuilder prompt = new StringBuilder();
+        prompt.append("Phân tích chi tiêu người dùng: ");
+        prompt.append(result.getExplanation()).append(". ");
+        prompt.append("Gợi ý: ").append(result.getSuggestion()).append(". ");
+        prompt.append("Các quy tắc áp dụng: ").append(String.join(", ", result.getRulesHit()));
+        return prompt.toString();
     }
 
-    /** 🧾 Kết quả rule evaluation */
+    // --------------------------------------------------------
+    // 5️⃣ Getter cho hitRules (để service dùng lại)
+    // --------------------------------------------------------
+    public List<String> getHitRules() {
+        return lastHitRules == null ? List.of() : lastHitRules;
+    }
+
+    // --------------------------------------------------------
+    // 6️⃣ Helper
+    // --------------------------------------------------------
+    private double toDouble(Object o) {
+        if (o instanceof Number n) return n.doubleValue();
+        try {
+            return Double.parseDouble(String.valueOf(o));
+        } catch (Exception e) {
+            return 0d;
+        }
+    }
+
+    // --------------------------------------------------------
+    // 7️⃣ Result DTO
+    // --------------------------------------------------------
     @Data
     public static class RuleResult {
-        private List<String> ruleIds;      // cho getRuleIds()
-        private List<String> rulesHit;     // alias để service truy cập
-        private String suggestion;         // nội dung khuyến nghị chính
-        private String message;            // alias suggestion
-        private String explanation;        // giải thích chi tiết
-        private String category;           // nhóm khuyến nghị
-        private int score;                 // điểm hoặc độ nghiêm trọng
+        private List<String> ruleIds;
+        private List<String> rulesHit;
+        private String suggestion;
+        private String message;
+        private String explanation;
+        private String category;
+        private int score;
     }
 }

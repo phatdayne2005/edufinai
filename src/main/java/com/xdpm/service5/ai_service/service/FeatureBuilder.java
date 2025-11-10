@@ -8,28 +8,39 @@ import org.springframework.stereotype.Service;
 import java.time.LocalDate;
 import java.util.*;
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 
 /**
- * Xây dựng các feature phân tích chi tiêu / thu nhập
- * từ payload hoặc event (mock dữ liệu tuần 2).
+ * 🧩 FeatureBuilder — xây dựng các đặc trưng chi tiêu/thu nhập
+ * dùng cho rule-based AI và event-driven ingestion (Tuần 2).
  */
 @Slf4j
 @Service
 public class FeatureBuilder {
 
-    /** 🧩 build các feature đơn giản từ "sự kiện" đã nhận (ở tuần 2 mock dữ liệu) */
+    /**
+     * 🔹 Build feature từ context (dành cho /api/v1/ai/recommend)
+     */
+    @SuppressWarnings("unchecked")
     public Map<String, Object> buildFeatures(String userId, Map<String, Object> recentContext) {
-        // Mock/giả lập: lấy từ payload gần nhất nếu có, fallback giá trị demo
         double salaryMonth = asDouble(recentContext.getOrDefault("salary_month", 1500));
         double last30dTotal = asDouble(recentContext.getOrDefault("last_30d_total", 1200));
-        double food = asDouble(recentContext.getOrDefault("food_spend", 450));
-        double bills = asDouble(recentContext.getOrDefault("bills_spend", 300));
-        double saving = Math.max(0, salaryMonth - last30dTotal);
 
-        double ratioSpend = last30dTotal / Math.max(1, salaryMonth); // 0.0 ~ 2.0
-        Map<String, Object> byCategory = Map.of(
-                "Food", food, "Bills", bills, "Saving", saving
-        );
+        // ✅ Ưu tiên đọc từ "by_category" nếu có
+        Map<String, Object> byCategory = (Map<String, Object>) recentContext.get("by_category");
+        if (byCategory == null || byCategory.isEmpty()) {
+            // fallback sang các key cũ
+            double food = asDouble(recentContext.getOrDefault("food_spend", 450));
+            double bills = asDouble(recentContext.getOrDefault("bills_spend", 300));
+            double saving = Math.max(0, salaryMonth - last30dTotal);
+            byCategory = Map.of(
+                    "Food", food,
+                    "Bills", bills,
+                    "Saving", saving
+            );
+        }
+
+        double ratioSpend = (salaryMonth > 0) ? last30dTotal / salaryMonth : 0.0;
 
         Map<String, Object> feats = new LinkedHashMap<>();
         feats.put("user_id", userId);
@@ -39,16 +50,15 @@ public class FeatureBuilder {
         feats.put("spend_salary_ratio", ratioSpend);
         feats.put("by_category", byCategory);
 
-        log.info("features_built user={} ratio={} last30d={} byCat={}", userId, ratioSpend, last30dTotal, byCategory);
+        log.info("[FeatureBuilder] Built features user={} ratio={} by_category={}", userId, ratioSpend, byCategory);
         return feats;
     }
 
-    private double asDouble(Object o) {
-        if (o instanceof Number n) return n.doubleValue();
-        try { return Double.parseDouble(String.valueOf(o)); } catch (Exception e) { return 0d; }
-    }
 
-    /** 📊 data cho Chart.js (dạng phổ biến) */
+    /**
+     * 📊 Dữ liệu cho Chart.js (trả về dạng phổ biến {labels, datasets})
+     */
+    @SuppressWarnings("unchecked")
     public Map<String, Object> buildChartData(Map<String, Object> feats) {
         Map<String, Object> byCat = (Map<String, Object>) feats.getOrDefault("by_category", Map.of());
         List<String> labels = new ArrayList<>(byCat.keySet());
@@ -56,25 +66,28 @@ public class FeatureBuilder {
 
         return Map.of(
                 "labels", labels,
-                "datasets", List.of(Map.of("label", "Spending vs Saving", "data", data))
+                "datasets", List.of(Map.of(
+                        "label", "Spending vs Saving",
+                        "data", data
+                ))
         );
     }
 
-    /** 🧠 từ DevEventRequest (dành cho ingestEvent) */
+    /**
+     * 🧠 Xây dựng feature bundle từ event request (/dev/event)
+     */
     public FeatureBundle fromEvent(DevEventRequest req) {
         Map<String, Object> p = Optional.ofNullable(req.getPayload()).orElse(Map.of());
 
-        BigDecimal salaryMonth = BigDecimal.valueOf(
-                ((Number) p.getOrDefault("salary_month", 1500)).doubleValue());
-        BigDecimal last30dTotal = BigDecimal.valueOf(
-                ((Number) p.getOrDefault("last_30d_total", 1200)).doubleValue());
-        BigDecimal food = BigDecimal.valueOf(
-                ((Number) p.getOrDefault("food_spend", 450)).doubleValue());
-        BigDecimal bills = BigDecimal.valueOf(
-                ((Number) p.getOrDefault("bills_spend", 300)).doubleValue());
+        BigDecimal salaryMonth = bd(p.getOrDefault("salary_month", 1500));
+        BigDecimal last30dTotal = bd(p.getOrDefault("last_30d_total", 1200));
+        BigDecimal food = bd(p.getOrDefault("food_spend", 450));
+        BigDecimal bills = bd(p.getOrDefault("bills_spend", 300));
         BigDecimal saving = salaryMonth.subtract(last30dTotal).max(BigDecimal.ZERO);
 
-        BigDecimal ratio = last30dTotal.divide(salaryMonth, 2, BigDecimal.ROUND_HALF_UP);
+        BigDecimal ratio = (salaryMonth.compareTo(BigDecimal.ZERO) > 0)
+                ? last30dTotal.divide(salaryMonth, 2, RoundingMode.HALF_UP)
+                : BigDecimal.ZERO;
 
         Map<String, BigDecimal> byCat = new LinkedHashMap<>();
         byCat.put("Food", food);
@@ -84,19 +97,43 @@ public class FeatureBuilder {
         FeatureBundle fb = new FeatureBundle();
         fb.setSpendSalaryRatio(ratio);
         fb.setLast30dTotal(last30dTotal);
-        fb.setSalaryMonth(String.valueOf(salaryMonth));
+        fb.setSalaryMonth(salaryMonth);
         fb.setByCategory(byCat);
 
-        log.info("[FeatureBuilder] fromEvent={} ratio={} -> {}", req.getEventType(), ratio, fb);
+        log.info("[FeatureBuilder] Event={} ratio={} user={}", req.getEventType(), ratio, req.getUserId());
         return fb;
     }
 
-    /** 💡 Nhóm các feature để RuleEngine sử dụng */
+    // --------------------------------------------------------
+    // 🔧 Helper methods
+    // --------------------------------------------------------
+
+    private double asDouble(Object o) {
+        if (o instanceof Number n) return n.doubleValue();
+        try {
+            return Double.parseDouble(String.valueOf(o));
+        } catch (Exception e) {
+            return 0d;
+        }
+    }
+
+    private BigDecimal bd(Object o) {
+        if (o instanceof Number n) return BigDecimal.valueOf(n.doubleValue());
+        try {
+            return new BigDecimal(String.valueOf(o));
+        } catch (Exception e) {
+            return BigDecimal.ZERO;
+        }
+    }
+
+    // --------------------------------------------------------
+    // 📦 Feature bundle cho RuleEngine
+    // --------------------------------------------------------
     @Data
     public static class FeatureBundle {
         private BigDecimal spendSalaryRatio;
         private BigDecimal last30dTotal;
-        private String salaryMonth;
+        private BigDecimal salaryMonth;
         private Map<String, BigDecimal> byCategory;
     }
 }
