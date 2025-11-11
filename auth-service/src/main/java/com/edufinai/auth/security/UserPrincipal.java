@@ -1,18 +1,17 @@
-package com.edufinai.auth.dto;
+// src/main/java/com/edufinai/auth/security/UserPrincipal.java
+package com.edufinai.auth.security;
 
 import com.edufinai.auth.model.UserRole;
 import lombok.AllArgsConstructor;
 import lombok.Data;
-import lombok.NoArgsConstructor;
 
 import java.util.UUID;
 
 @Data
-@NoArgsConstructor
 @AllArgsConstructor
-public class TokenVerificationResponse {
-    private boolean valid;
-    private String username;
-    private UserRole role;
+public class UserPrincipal {
     private UUID userId;
+    private String username;
+    private String email;
+    private UserRole role;
 }

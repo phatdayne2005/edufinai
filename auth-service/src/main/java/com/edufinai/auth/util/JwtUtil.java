@@ -1,121 +1,114 @@
 package com.edufinai.auth.util;
 
-import com.edufinai.auth.config.JwtProperties;
+import com.edufinai.auth.config.JwtConfig;
 import com.edufinai.auth.model.UserRole;
-import io.jsonwebtoken.*;
-import io.jsonwebtoken.security.Keys;
+import com.nimbusds.jose.JWSAlgorithm;
+import com.nimbusds.jose.JWSHeader;
+import com.nimbusds.jose.crypto.RSASSASigner;
+import com.nimbusds.jose.jwk.RSAKey;
+import com.nimbusds.jwt.JWTClaimsSet;
+import com.nimbusds.jwt.SignedJWT;
+import io.jsonwebtoken.Claims;
+import io.jsonwebtoken.Jwts;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Component;
 
-import javax.crypto.SecretKey;
+import java.time.Instant;
 import java.util.Date;
-import java.util.HashMap;
-import java.util.Map;
 import java.util.UUID;
-import java.util.function.Function;
 
-@Slf4j
 @Component
 @RequiredArgsConstructor
 public class JwtUtil {
 
-    private final JwtProperties jwtProperties;
+    private final RSAKey rsaKey;
 
-    private SecretKey getSigningKey() {
-        return Keys.hmacShaKeyFor(jwtProperties.getSecret().getBytes());
+    private static final String ISSUER = "edufinai-auth-service";
+    private static final long ACCESS_EXP = 86400L; // 24h
+    private static final long REFRESH_EXP = 604800L; // 7 days
+
+    // GENERATE ACCESS TOKEN
+    public String generateAccessToken(String username, UUID userId, UserRole role, String email) {
+        return generateToken(username, userId, role, email, ACCESS_EXP, false);
     }
 
-    public String extractUsername(String token) {
-        return extractClaim(token, Claims::getSubject);
+    // GENERATE REFRESH TOKEN
+    public String generateRefreshToken(String username, UUID userId, UserRole role) {
+        return generateToken(username, userId, role, null, REFRESH_EXP, true);
     }
 
-    public Date extractExpiration(String token) {
-        return extractClaim(token, Claims::getExpiration);
+    private String generateToken(String username, UUID userId, UserRole role, String email, long expSeconds, boolean isRefresh) {
+        Instant now = Instant.now();
+        JWTClaimsSet.Builder claims = new JWTClaimsSet.Builder()
+                .issuer(ISSUER)
+                .subject(username)
+                .issueTime(Date.from(now))
+                .expirationTime(Date.from(now.plusSeconds(expSeconds)))
+                .jwtID(UUID.randomUUID().toString())
+                .claim("userId", userId.toString())
+                .claim("role", role.name());
+
+        if (!isRefresh && email != null) {
+            claims.claim("email", email);
+        }
+        if (isRefresh) {
+            claims.claim("type", "refresh");
+        }
+
+        JWSHeader header = new JWSHeader.Builder(JWSAlgorithm.RS256)
+                .keyID(rsaKey.getKeyID())
+                .build();
+
+        SignedJWT signedJWT = new SignedJWT(header, claims.build());
+        try {
+            signedJWT.sign(new RSASSASigner(rsaKey.toRSAPrivateKey()));
+            return signedJWT.serialize();
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to sign JWT", e);
+        }
     }
 
-    public <T> T extractClaim(String token, Function<Claims, T> claimsResolver) {
-        final Claims claims = extractAllClaims(token);
-        return claimsResolver.apply(claims);
-    }
-
-    private Claims extractAllClaims(String token) {
-        return Jwts.parserBuilder()
-                .setSigningKey(getSigningKey())
-                .build()
-                .parseClaimsJws(token)
-                .getBody();
-    }
-
-    private Boolean isTokenExpired(String token) {
-        return extractExpiration(token).before(new Date());
-    }
-
-    public String generateToken(String username, UUID userId, UserRole role) {
-        Map<String, Object> claims = new HashMap<>();
-        claims.put("role", role.name());
-        claims.put("userId", userId.toString());
-        return createToken(claims, username);
-    }
-
-    private String createToken(Map<String, Object> claims, String subject) {
-        return Jwts.builder()
-                .setClaims(claims)
-                .setSubject(subject)
-                .setIssuedAt(new Date(System.currentTimeMillis()))
-                .setExpiration(new Date(System.currentTimeMillis() + jwtProperties.getExpiration()))
-                .signWith(getSigningKey(), SignatureAlgorithm.HS256)
-                .compact();
-    }
-
-    public Boolean validateToken(String token, UserDetails userDetails) {
-        final String username = extractUsername(token);
-        return (username.equals(userDetails.getUsername()) && !isTokenExpired(token));
-    }
-
-    public UserRole extractRole(String token) {
-        Claims claims = extractAllClaims(token);
-        String role = claims.get("role", String.class);
-        return UserRole.valueOf(role);
-    }
-
-    public UUID extractUserId(String token) {
-        Claims claims = extractAllClaims(token);
-        String userId = claims.get("userId", String.class);
-        return UUID.fromString(userId);
-    }
-
-    public Boolean validateToken(String token) {
+    // VALIDATE TOKEN
+    public boolean validateToken(String token) {
         try {
             Jwts.parserBuilder()
-                    .setSigningKey(getSigningKey())
+                    .requireIssuer(ISSUER)
                     .build()
                     .parseClaimsJws(token);
-            return !isTokenExpired(token);
+            return true;
         } catch (Exception e) {
-            log.error("Token validation failed: {}", e.getMessage());
             return false;
         }
     }
 
-    // THÊM CÁC METHOD MỚI VÀO TRONG CLASS
-    public String generateRefreshToken(String username, UUID userId, UserRole role) {
-        Map<String, Object> claims = new HashMap<>();
-        claims.put("role", role.name());
-        claims.put("userId", userId.toString());
-        claims.put("type", "refresh");
-
-        return Jwts.builder()
-                .setClaims(claims)
-                .setSubject(username)
-                .setIssuedAt(new Date(System.currentTimeMillis()))
-                .setExpiration(new Date(System.currentTimeMillis() + jwtProperties.getRefreshExpiration()))
-                .signWith(getSigningKey(), SignatureAlgorithm.HS256)
-                .compact();
+    // EXTRACT USERNAME
+    public String extractUsername(String token) {
+        return extractClaim(token, Claims::getSubject);
     }
 
-    public Long getExpirationTime() {
-        return jwtProperties.getExpiration() / 1000; // Return in seconds
+    // EXTRACT ROLE
+    public UserRole extractRole(String token) {
+        String role = extractClaim(token, claims -> claims.get("role", String.class));
+        return UserRole.valueOf(role);
+    }
+
+    // EXTRACT USER ID
+    public UUID extractUserId(String token) {
+        String userId = extractClaim(token, claims -> claims.get("userId", String.class));
+        return UUID.fromString(userId);
+    }
+
+    private <T> T extractClaim(String token, java.util.function.Function<Claims, T> resolver) {
+        Claims claims = Jwts.parserBuilder()
+                .requireIssuer(ISSUER)
+                .build()
+                .parseClaimsJws(token)
+                .getBody();
+        return resolver.apply(claims);
+    }
+
+    // GET EXPIRATION (giây)
+    public long getExpirationTime() {
+        return ACCESS_EXP;
     }
 }

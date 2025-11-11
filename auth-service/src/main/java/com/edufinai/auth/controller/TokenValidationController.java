@@ -1,6 +1,7 @@
 package com.edufinai.auth.controller;
 
 import com.edufinai.auth.dto.ApiResponse;
+import com.edufinai.auth.dto.TokenVerificationResponse; // THÊM DÒNG NÀY
 import com.edufinai.auth.util.JwtUtil;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -35,7 +36,6 @@ public class TokenValidationController {
                 return ResponseEntity.ok(ApiResponse.error("Invalid or expired token"));
             }
 
-            // Extract user info from token
             String username = jwtUtil.extractUsername(token);
             String role = jwtUtil.extractRole(token).name();
             String userId = jwtUtil.extractUserId(token).toString();
@@ -52,5 +52,20 @@ public class TokenValidationController {
             log.error("Token verification error: {}", e.getMessage());
             return ResponseEntity.ok(ApiResponse.error("Token verification failed: " + e.getMessage()));
         }
+    }
+
+    @PostMapping("/validate")
+    public ResponseEntity<TokenVerificationResponse> validate(@RequestBody Map<String, String> request) {
+        String token = request.get("token");
+        if (token == null || !jwtUtil.validateToken(token)) {
+            return ResponseEntity.ok(new TokenVerificationResponse(false, null, null, null));
+        }
+
+        return ResponseEntity.ok(new TokenVerificationResponse(
+                true,
+                jwtUtil.extractUsername(token),
+                jwtUtil.extractRole(token),
+                jwtUtil.extractUserId(token)
+        ));
     }
 }

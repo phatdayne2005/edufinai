@@ -103,8 +103,13 @@ public class AuthenticationService {
             userRepository.save(user);
 
             // Generate tokens
-            String accessToken = jwtUtil.generateToken(user.getUsername(), user.getUserId(), user.getRole());
-            String refreshToken = jwtUtil.generateRefreshToken(user.getUsername(), user.getUserId(), user.getRole());
+            // Chỉ sửa phần login
+            String accessToken = jwtUtil.generateAccessToken(
+                    user.getUsername(), user.getUserId(), user.getRole(), user.getEmail()
+            );
+            String refreshToken = jwtUtil.generateRefreshToken(
+                    user.getUsername(), user.getUserId(), user.getRole()
+            );
 
             UserProfileResponse profile = new UserProfileResponse(
                     user.getUserId(),
@@ -147,8 +152,12 @@ public class AuthenticationService {
                     .orElseThrow(() -> new RuntimeException("User not found"));
 
             // Generate new tokens
-            String newAccessToken = jwtUtil.generateToken(user.getUsername(), user.getUserId(), user.getRole());
-            String newRefreshToken = jwtUtil.generateRefreshToken(user.getUsername(), user.getUserId(), user.getRole());
+            String newAccessToken = jwtUtil.generateAccessToken(
+                    user.getUsername(), user.getUserId(), user.getRole(), user.getEmail()
+            );
+            String newRefreshToken = jwtUtil.generateRefreshToken(
+                    user.getUsername(), user.getUserId(), user.getRole()
+            );
 
             UserProfileResponse profile = new UserProfileResponse(
                     user.getUserId(),
