@@ -44,6 +44,10 @@ public class AiRecommendation {
     @Column(name = "chart_data", columnDefinition = "JSON")
     private String chartData;
 
+    // 🧩 Thêm mới cho tuần 3 — flag kết quả kiểm tra an toàn nội dung (OutputGuard)
+    @Column(name = "guard_pass")
+    private Boolean guardPass;
+
     @Builder.Default
     @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt = LocalDateTime.now();
