@@ -1,0 +1,49 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: gateway
+
+  cloud:
+    gateway:
+      server:
+        webflux:
+          # TẮT discovery locator (tự sinh route từ Eureka, tạm thời tắt)
+          discovery:
+            locator:
+              enabled: false
+
+          # CORS GLOBAL
+          globalcors:
+            cors-configurations:
+              '[/**]':
+                allowedOrigins: "*"
+                allowedMethods:
+                  - GET
+                  - POST
+                  - PUT
+                  - DELETE
+                  - OPTIONS
+                allowedHeaders: "*"
+                allowCredentials: false
+
+          # ROUTE GAMIFICATION
+          routes:
+            - id: gamification-service
+              uri: lb://GAMIFICATION-SERVICE     # tên đúng như trong Eureka
+              predicates:
+                - Path=/gamification/**
+              filters:
+                - name: RewritePath
+                  args:
+                    regexp: /gamification/?(?<segment>.*)
+                    replacement: /api/v1/gamify/${segment}
+                    # /gamification/challenge -> /api/v1/gamify/challenge
+
+eureka:
+  client:
+    service-url:
+      defaultZone: http://localhost:8761/eureka/
+    register-with-eureka: true
+    fetch-registry: true
