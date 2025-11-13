@@ -8,11 +8,12 @@ import com.nimbusds.jose.crypto.RSASSASigner;
 import com.nimbusds.jose.jwk.RSAKey;
 import com.nimbusds.jwt.JWTClaimsSet;
 import com.nimbusds.jwt.SignedJWT;
-import io.jsonwebtoken.Claims;
-import io.jsonwebtoken.Jwts;
+import io.jsonwebtoken.*;
+import io.jsonwebtoken.security.Keys;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
+import java.security.interfaces.RSAPublicKey;
 import java.time.Instant;
 import java.util.Date;
 import java.util.UUID;
@@ -23,23 +24,31 @@ public class JwtUtil {
 
     private final RSAKey rsaKey;
 
-    private static final String ISSUER = "edufinai-auth-service";
-    private static final long ACCESS_EXP = 86400L; // 24h
+    // PUBLIC STATIC ISSUER
+    public static final String ISSUER = "edufinai-auth-service";
+
+    private static final long ACCESS_EXP = 86400L;  // 24h
     private static final long REFRESH_EXP = 604800L; // 7 days
+
+    // GETTER CHO RSA KEY (dùng trong AuthenticationService)
+    public RSAKey getRsaKey() {
+        return rsaKey;
+    }
 
     // GENERATE ACCESS TOKEN
     public String generateAccessToken(String username, UUID userId, UserRole role, String email) {
         return generateToken(username, userId, role, email, ACCESS_EXP, false);
     }
 
-    // GENERATE REFRESH TOKEN
+    // GENERATE REFRESH TOKEN → DÙNG JWT, KHÔNG UUID
     public String generateRefreshToken(String username, UUID userId, UserRole role) {
         return generateToken(username, userId, role, null, REFRESH_EXP, true);
     }
 
     private String generateToken(String username, UUID userId, UserRole role, String email, long expSeconds, boolean isRefresh) {
         Instant now = Instant.now();
-        JWTClaimsSet.Builder claims = new JWTClaimsSet.Builder()
+
+        JWTClaimsSet.Builder claimsBuilder = new JWTClaimsSet.Builder()
                 .issuer(ISSUER)
                 .subject(username)
                 .issueTime(Date.from(now))
@@ -49,21 +58,24 @@ public class JwtUtil {
                 .claim("role", role.name());
 
         if (!isRefresh && email != null) {
-            claims.claim("email", email);
+            claimsBuilder.claim("email", email);
         }
         if (isRefresh) {
-            claims.claim("type", "refresh");
+            claimsBuilder.claim("type", "refresh");
         }
 
         JWSHeader header = new JWSHeader.Builder(JWSAlgorithm.RS256)
                 .keyID(rsaKey.getKeyID())
                 .build();
 
-        SignedJWT signedJWT = new SignedJWT(header, claims.build());
+        SignedJWT signedJWT = new SignedJWT(header, claimsBuilder.build());
+
         try {
-            signedJWT.sign(new RSASSASigner(rsaKey.toRSAPrivateKey()));
+            // SỬA: Bắt JOSEException
+            RSASSASigner signer = new RSASSASigner(rsaKey);
+            signedJWT.sign(signer);
             return signedJWT.serialize();
-        } catch (Exception e) {
+        } catch (com.nimbusds.jose.JOSEException e) {
             throw new RuntimeException("Failed to sign JWT", e);
         }
     }
@@ -72,6 +84,7 @@ public class JwtUtil {
     public boolean validateToken(String token) {
         try {
             Jwts.parserBuilder()
+                    .setSigningKey(rsaKey.toRSAPublicKey())
                     .requireIssuer(ISSUER)
                     .build()
                     .parseClaimsJws(token);
@@ -98,16 +111,26 @@ public class JwtUtil {
         return UUID.fromString(userId);
     }
 
-    private <T> T extractClaim(String token, java.util.function.Function<Claims, T> resolver) {
-        Claims claims = Jwts.parserBuilder()
-                .requireIssuer(ISSUER)
-                .build()
-                .parseClaimsJws(token)
-                .getBody();
-        return resolver.apply(claims);
+    // EXTRACT TYPE (refresh/access)
+    public String extractType(String token) {
+        return extractClaim(token, claims -> claims.get("type", String.class));
     }
 
-    // GET EXPIRATION (giây)
+    private <T> T extractClaim(String token, java.util.function.Function<Claims, T> resolver) {
+        try {
+            Claims claims = Jwts.parserBuilder()
+                    .setSigningKey(rsaKey.toRSAPublicKey())
+                    .requireIssuer(ISSUER)
+                    .build()
+                    .parseClaimsJws(token)
+                    .getBody();
+            return resolver.apply(claims);
+        } catch (Exception e) {
+            throw new RuntimeException("Invalid JWT token", e);
+        }
+    }
+
+    // GET EXPIRATION (access token)
     public long getExpirationTime() {
         return ACCESS_EXP;
     }

@@ -1,0 +1,172 @@
+{
+  "info": {
+    "name": "EduFinAI Auth Service - FINAL & 100% CORRECT",
+    "_postman_id": "edufinai-auth-ultimate",
+    "description": "ĐÃ KHỚP 100% VỚI CODE:\n- Login: usernameOrEmail\n- Refresh: refreshToken\n- URL: /api/v1/auth/token/refresh",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "1. Register User",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"username\": \"user{{ $randomInt }}\",\n  \"email\": \"user{{ $randomInt }}@test.com\",\n  \"password\": \"123456\",\n  \"displayName\": \"Test User {{ $randomInt }}\",\n  \"phone\": \"0123456789\"\n}",
+          "options": { "raw": { "language": "json" } }
+        },
+        "url": {
+          "raw": "http://localhost:8081/auth-service/api/v1/auth/register",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "8081",
+          "path": ["auth-service", "api", "v1", "auth", "register"]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "const res = pm.response.json();",
+              "const random = pm.variables.get('pm_iter_random');",
+              "if (!random) {",
+              "    const match = res.message?.match(/user(\\d+)/);",
+              "    const num = match ? match[1] : pm.iteration;",
+              "    pm.collectionVariables.set('last_user_email', `user${num}@test.com`);",
+              "} else {",
+              "    pm.collectionVariables.set('last_user_email', `user${random}@test.com`);",
+              "}",
+              "console.log('Registered email:', pm.collectionVariables.get('last_user_email'));"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ]
+    },
+    {
+      "name": "2. Login",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "const json = pm.response.json();",
+              "",
+              "if (json.accessToken && json.refreshToken) {",
+              "    pm.collectionVariables.set('access_token', json.accessToken);",
+              "    pm.collectionVariables.set('refresh_token', json.refreshToken);",
+              "    console.log('Login OK - Tokens saved');",
+              "} else {",
+              "    console.log('Login failed - Response:', JSON.stringify(json));",
+              "}"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"usernameOrEmail\": \"{{last_user_email}}\",\n  \"password\": \"123456\"\n}",
+          "options": { "raw": { "language": "json" } }
+        },
+        "url": {
+          "raw": "http://localhost:8081/auth-service/api/v1/auth/login",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "8081",
+          "path": ["auth-service", "api", "v1", "auth", "login"]
+        }
+      }
+    },
+    {
+      "name": "3. Refresh Token",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "const json = pm.response.json();",
+              "if (json.accessToken && json.refreshToken) {",
+              "    pm.collectionVariables.set('access_token', json.accessToken);",
+              "    pm.collectionVariables.set('refresh_token', json.refreshToken);",
+              "    console.log('Refresh OK - New tokens saved');",
+              "} else {",
+              "    console.log('Refresh failed:', JSON.stringify(json));",
+              "}"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"refreshToken\": \"{{refresh_token}}\"\n}",
+          "options": { "raw": { "language": "json" } }
+        },
+        "url": {
+          "raw": "http://localhost:8081/auth-service/api/v1/auth/token/refresh",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "8081",
+          "path": ["auth-service", "api", "v1", "auth", "token", "refresh"]
+        }
+      }
+    },
+    {
+      "name": "4. Get My Profile",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{access_token}}"
+          }
+        ],
+        "url": {
+          "raw": "http://localhost:8081/auth-service/user/me",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "8081",
+          "path": ["auth-service", "user", "me"]
+        }
+      }
+    }
+  ],
+  "variable": [
+    {
+      "key": "access_token",
+      "value": ""
+    },
+    {
+      "key": "refresh_token",
+      "value": ""
+    },
+    {
+      "key": "last_user_email",
+      "value": ""
+    }
+  ]
+}

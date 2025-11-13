@@ -12,29 +12,26 @@ spring:
     username: edufinai_user
     password: edufinai_password
     driver-class-name: com.mysql.cj.jdbc.Driver
-  
+
   jpa:
     hibernate:
-      ddl-auto: validate
+      ddl-auto: update
     show-sql: true
     properties:
       hibernate:
         dialect: org.hibernate.dialect.MySQLDialect
         format_sql: true
-  
+
   flyway:
     locations: classpath:db/migration
     enabled: true
     baseline-on-migrate: true
 
-jwt:
-  secret: "EduFinAISecretKeyForJWTGeneration2023With32Characters"
-  expiration: 86400000
-
 logging:
   level:
     com.edufinai.auth: DEBUG
     org.springframework.security: DEBUG
+    org.springframework.web: DEBUG
 
 springdoc:
   api-docs:
@@ -47,9 +44,3 @@ springdoc:
     url: /auth-service/v3/api-docs
     operations-sorter: method
     tags-sorter: alpha
-
-app:
-  jwt:
-    secret: "mySuperSecretKeyForJWTTokenGenerationThatIsAtLeast32CharactersLong"
-    expiration: 86400000    # 24 hours
-    refresh-expiration: 604800000  # 7 days

@@ -20,13 +20,11 @@ public class UserService {
     private final UserRepository userRepository;
 
     public ResponseEntity<ApiResponse> getCurrentUser() {
-        // TODO: Implementation
-        return ResponseEntity.ok(ApiResponse.success("Not implemented yet"));
+        return ResponseEntity.ok(ApiResponse.success("Not implemented yet", null));
     }
 
     public ResponseEntity<ApiResponse> updateProfile(UpdateProfileRequest request) {
-        // TODO: Implementation
-        return ResponseEntity.ok(ApiResponse.success("Not implemented yet"));
+        return ResponseEntity.ok(ApiResponse.success("Not implemented yet", null));
     }
 
     public ResponseEntity<ApiResponse> getUserById(UUID id) {
@@ -34,11 +32,10 @@ public class UserService {
             User user = userRepository.findById(id)
                     .orElseThrow(() -> new RuntimeException("User not found"));
 
-            // For admin/moderator, return full info
             Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
             boolean isAdmin = authentication.getAuthorities().stream()
-                    .anyMatch(auth -> auth.getAuthority().equals("ROLE_ADMIN") ||
-                            auth.getAuthority().equals("ROLE_MODERATOR"));
+                    .anyMatch(auth -> "ROLE_ADMIN".equals(auth.getAuthority()) ||
+                            "ROLE_MODERATOR".equals(auth.getAuthority()));
 
             AdminUserResponse response;
             if (isAdmin) {
@@ -52,7 +49,6 @@ public class UserService {
                         user.getCreatedAt()
                 );
             } else {
-                // Return PII-safe version for non-admin
                 response = AdminUserResponse.createSafeResponse(
                         new AdminUserResponse(
                                 user.getUserId(),
@@ -74,22 +70,18 @@ public class UserService {
     }
 
     public ResponseEntity<ApiResponse> getUserProfileForService(UUID id) {
-        // TODO: Implementation
-        return ResponseEntity.ok(ApiResponse.success("Not implemented yet"));
+        return ResponseEntity.ok(ApiResponse.success("Not implemented yet", null));
     }
 
     public ResponseEntity<ApiResponse> getUsers(String role, String status, String q, int page, int size) {
-        // TODO: Implementation
-        return ResponseEntity.ok(ApiResponse.success("Not implemented yet"));
+        return ResponseEntity.ok(ApiResponse.success("Not implemented yet", null));
     }
 
     public ResponseEntity<ApiResponse> updateUserRole(UUID id, String role) {
-        // TODO: Implementation
-        return ResponseEntity.ok(ApiResponse.success("Not implemented yet"));
+        return ResponseEntity.ok(ApiResponse.success("Not implemented yet", null));
     }
 
     public ResponseEntity<ApiResponse> updateUserStatus(UUID id, String status) {
-        // TODO: Implementation
-        return ResponseEntity.ok(ApiResponse.success("Not implemented yet"));
+        return ResponseEntity.ok(ApiResponse.success("Not implemented yet", null));
     }
 }

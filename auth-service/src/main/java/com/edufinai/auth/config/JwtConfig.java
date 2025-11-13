@@ -1,4 +1,3 @@
-// src/main/java/com/edufinai/auth/config/JwtConfig.java
 package com.edufinai.auth.config;
 
 import com.nimbusds.jose.jwk.JWKSet;
@@ -10,10 +9,12 @@ import java.security.KeyPair;
 import java.security.KeyPairGenerator;
 import java.security.interfaces.RSAPrivateKey;
 import java.security.interfaces.RSAPublicKey;
-import java.util.UUID;
 
 @Configuration
 public class JwtConfig {
+
+    // KEYID CỐ ĐỊNH – PHẢI KHỚP VỚI JWT ĐÃ TẠO
+    private static final String FIXED_KEY_ID = "efabffab-8df6-4bf9-85f8-a895757b9c5f";
 
     @Bean
     public KeyPair keyPair() {
@@ -32,7 +33,7 @@ public class JwtConfig {
         RSAPrivateKey privateKey = (RSAPrivateKey) keyPair.getPrivate();
         return new RSAKey.Builder(publicKey)
                 .privateKey(privateKey)
-                .keyID(UUID.randomUUID().toString())
+                .keyID(FIXED_KEY_ID)  // CỐ ĐỊNH
                 .build();
     }
 
