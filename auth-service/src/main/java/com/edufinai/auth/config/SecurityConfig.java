@@ -1,8 +1,8 @@
 // src/main/java/com/edufinai/auth/config/SecurityConfig.java
 package com.edufinai.auth.config;
 
-import com.edufinai.auth.util.JwtUtil; // THÊM DÒNG NÀY
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -25,6 +25,7 @@ import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
+import com.nimbusds.jose.jwk.RSAKey;
 import java.security.interfaces.RSAPublicKey;
 import java.util.List;
 
@@ -34,6 +35,9 @@ import java.util.List;
 public class SecurityConfig {
 
     private final UserDetailsService userDetailsService;
+
+    @Autowired
+    private JwtConfig jwtConfig;  // Inject để lấy RSA key từ JwtConfig
 
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
@@ -70,7 +74,8 @@ public class SecurityConfig {
 
     @Bean
     public JwtDecoder jwtDecoder() throws Exception {
-        RSAPublicKey publicKey = JwtUtil.getRsaKey().toRSAPublicKey(); // ĐÃ CÓ
+        // Sửa: Lấy public key từ JwtConfig (method mới tránh dependency param)
+        RSAPublicKey publicKey = jwtConfig.getRsaPublicKey();
         return NimbusJwtDecoder.withPublicKey(publicKey).build();
     }
 

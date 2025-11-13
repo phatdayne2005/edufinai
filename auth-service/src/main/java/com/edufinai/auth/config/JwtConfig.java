@@ -41,4 +41,11 @@ public class JwtConfig {
     public JWKSet jwkSet(RSAKey rsaKey) {
         return new JWKSet(rsaKey);
     }
+
+    // THÊM: Method public để expose public key cho SecurityConfig (gen dynamic nếu cần)
+    public RSAPublicKey getRsaPublicKey() {
+        KeyPair keyPair = keyPair();  // Gen nếu chưa có
+        RSAKey rsaKey = rsaKey(keyPair);
+        return rsaKey.toRSAPublicKey();
+    }
 }
