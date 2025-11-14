@@ -60,15 +60,20 @@ public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
 
 		httpSecurity.csrf()
 				.disable()
-				.authorizeRequests()
+                .authorizeRequests()
+                .expressionHandler(getWebSecurityExpressionHandler())
+// Cho phép auth + swagger ui không cần login
+                .antMatchers(
+                        "/auth/**",
+                        "/v3/api-docs/**",
+                        "/swagger-ui/**",
+                        "/swagger-ui.html"
+                )
+                .permitAll()
+                .anyRequest()
+                .authenticated()
 
-				.expressionHandler(getWebSecurityExpressionHandler())
-				// Permitting all the requests to the endpoint 'auth' as base.
-				.antMatchers("/auth/**")
-				.permitAll()
-				.anyRequest()
-				.authenticated()
-				.and()
+                .and()
 
 				// Providing a Security Authentication Entry Point to handle all authentication exceptions.
 				.exceptionHandling()

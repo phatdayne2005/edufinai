@@ -67,6 +67,13 @@
 			<artifactId>liquibase-core</artifactId>
 			<version>4.4.3</version>
 		</dependency>
+
+        <dependency>
+            <groupId>org.springdoc</groupId>
+            <artifactId>springdoc-openapi-ui</artifactId>
+            <version>1.8.0</version>
+        </dependency>
+
 	</dependencies>
 
 	<build>
