@@ -7,16 +7,20 @@ spring:
   datasource:
     url: ${DBMS_CONNECTION:jdbc:mysql://localhost:3306/identity}
     driverClassName: "com.mysql.cj.jdbc.Driver"
-    password: ${DBMS_PASSWORD:123456}
     username: ${DBMS_USERNAME:root}
+    password: ${DBMS_PASSWORD:123456}
   jpa:
     hibernate:
-      ddl-auto: update
-    show-sql: true
+      ddl-auto: update          # TỰ ĐỘNG TẠO/CẬP NHẬT BẢNG
+    show-sql: true              # In SQL ra console
+    properties:
+      hibernate:
+        format_sql: true        # Format SQL cho dễ đọc
+    database-platform: org.hibernate.dialect.MySQL8Dialect
   application:
     name: auth-service
 
 jwt:
   signerKey: "1TjXchw5FloESb63Kc+DFhTARvpWL4jUGCwfGWxuG5SIf/1y/LgJxHnMqaF6A/ij"
-  valid-duration: 3600 # in second
-  refreshable-duration: 36000 # in seconds
+  valid-duration: 3600          # in seconds
+  refreshable-duration: 36000   # in seconds

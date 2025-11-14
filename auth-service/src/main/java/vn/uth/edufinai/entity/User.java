@@ -27,6 +27,8 @@ public class User {
     String firstName;
     LocalDate dob;
     String lastName;
+    String email;
+    String phone;
 
     @ManyToMany
     Set<Role> roles;

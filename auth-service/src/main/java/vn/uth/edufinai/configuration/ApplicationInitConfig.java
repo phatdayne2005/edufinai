@@ -42,16 +42,21 @@ public class ApplicationInitConfig {
     ApplicationRunner applicationRunner(UserRepository userRepository, RoleRepository roleRepository) {
         log.info("Initializing application.....");
         return args -> {
-            if (userRepository.findByUsername(ADMIN_USER_NAME).isEmpty()) {
-                roleRepository.save(Role.builder()
-                        .name(PredefinedRole.USER_ROLE)
-                        .description("User role")
-                        .build());
 
-                Role adminRole = roleRepository.save(Role.builder()
-                        .name(PredefinedRole.ADMIN_ROLE)
-                        .description("Admin role")
-                        .build());
+            // Đảm bảo luôn có đủ 4 role trong DB
+            createRoleIfNotExists(roleRepository, PredefinedRole.LEARNER_ROLE,
+                    "Learner / Young user role");
+            createRoleIfNotExists(roleRepository, PredefinedRole.CREATOR_ROLE,
+                    "Content creator / Finance educator role");
+            createRoleIfNotExists(roleRepository, PredefinedRole.MOD_ROLE,
+                    "Content moderator role");
+            createRoleIfNotExists(roleRepository, PredefinedRole.ADMIN_ROLE,
+                    "Administrator role");
+
+            // Chỉ tạo user admin mặc định khi chưa tồn tại
+            if (userRepository.findByUsername(ADMIN_USER_NAME).isEmpty()) {
+                Role adminRole = roleRepository.findById(PredefinedRole.ADMIN_ROLE)
+                        .orElseThrow(() -> new RuntimeException("ADMIN role not found"));
 
                 var roles = new HashSet<Role>();
                 roles.add(adminRole);
@@ -59,13 +64,28 @@ public class ApplicationInitConfig {
                 User user = User.builder()
                         .username(ADMIN_USER_NAME)
                         .password(passwordEncoder.encode(ADMIN_PASSWORD))
+                        .email("admin@edufinai.local")
+                        .phone("0000000000")
                         .roles(roles)
                         .build();
 
                 userRepository.save(user);
                 log.warn("admin user has been created with default password: admin, please change it");
             }
+
             log.info("Application initialization completed .....");
         };
+    }
+
+    private void createRoleIfNotExists(RoleRepository roleRepository, String roleName, String description) {
+        roleRepository.findById(roleName).orElseGet(() -> {
+            log.info("Seeding role: {}", roleName);
+            return roleRepository.save(
+                    Role.builder()
+                            .name(roleName)
+                            .description(description)
+                            .build()
+            );
+        });
     }
 }
