@@ -7,7 +7,7 @@
     <list default="true" id="40502acc-35a2-4717-b020-bdbe3585ff5e" name="Changes" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/auth-service/pom.xml" beforeDir="false" afterPath="$PROJECT_DIR$/auth-service/pom.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/auth-service/src/main/java/com/thegeekyasian/security/config/WebSecurityConfig.java" beforeDir="false" afterPath="$PROJECT_DIR$/auth-service/src/main/java/com/thegeekyasian/security/config/WebSecurityConfig.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/auth-service/src/main/resources/application.properties" beforeDir="false" afterPath="$PROJECT_DIR$/auth-service/src/main/resources/application.properties" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -205,7 +205,8 @@
       <workItem from="1763027391470" duration="5737000" />
       <workItem from="1763057420698" duration="2277000" />
       <workItem from="1763082059524" duration="2177000" />
-      <workItem from="1763095939616" duration="3265000" />
+      <workItem from="1763095939616" duration="7161000" />
+      <workItem from="1763106575884" duration="99000" />
     </task>
     <servers />
   </component>
