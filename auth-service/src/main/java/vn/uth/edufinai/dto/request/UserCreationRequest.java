@@ -5,9 +5,11 @@ import java.time.LocalDate;
 import jakarta.validation.constraints.Size;
 
 import vn.uth.edufinai.validator.DobConstraint;
-
+import jakarta.validation.constraints.Email;
+import jakarta.validation.constraints.Size;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
+
 
 @Data
 @NoArgsConstructor
@@ -23,7 +25,11 @@ public class UserCreationRequest {
 
     String firstName;
     String lastName;
+    @jakarta.validation.constraints.Email(message = "INVALID_EMAIL")
+    String email;
 
+    @jakarta.validation.constraints.Size(min = 6, max = 20, message = "INVALID_PHONE")
+    String phone;
     @DobConstraint(min = 10, message = "INVALID_DOB")
     LocalDate dob;
 }
