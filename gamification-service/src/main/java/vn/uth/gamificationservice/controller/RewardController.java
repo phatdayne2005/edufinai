@@ -31,9 +31,9 @@ public class RewardController {
     }
 
     @Operation(summary = "Check user reward")
-    @GetMapping("/reward/{userId}")
-    public ResponseEntity<UserReward> getRewards(@PathVariable("userId") UUID userId) {
-        UserReward resp = rewardService.getUserReward(userId);
+    @GetMapping("/reward")
+    public ResponseEntity<UserReward> getRewards() {
+        UserReward resp = rewardService.getUserReward();
         return ResponseEntity.ok(resp);
     }
 }

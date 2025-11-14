@@ -9,23 +9,23 @@ import vn.uth.gamificationservice.model.Reward;
 import vn.uth.gamificationservice.repository.RewardRepository;
 
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.UUID;
 
 @Service
 public class RewardService {
     private final RewardRepository rewardRepository;
-
     private final UserRewardSummaryService userRewardSummaryService;
-
     private final RedisTemplate<String, String> redisTemplate;
-
     private final LeaderboardService leaderboardService;
+    private final UserService userService;
 
-    public RewardService(RewardRepository rewardRepository,  RedisTemplate<String, String> redisTemplate,  UserRewardSummaryService userRewardSummaryService, LeaderboardService leaderboardService) {
+    public RewardService(RewardRepository rewardRepository,  RedisTemplate<String, String> redisTemplate,  UserRewardSummaryService userRewardSummaryService, LeaderboardService leaderboardService,  UserService userService) {
         this.rewardRepository = rewardRepository;
         this.redisTemplate = redisTemplate;
         this.userRewardSummaryService = userRewardSummaryService;
         this.leaderboardService = leaderboardService;
+        this.userService = userService;
     }
 
     @Transactional
@@ -59,13 +59,19 @@ public class RewardService {
         return new RewardResponse(reward.getRewardId(), "SUCCESS");
     }
 
-    public UserReward getUserReward(UUID userId) {
+    public UserReward getUserReward() {
+        // Lấy thông tin user
+        UserInfo userInfo = this.userService.getMyInfo();
+        UUID userId = userInfo.getId();
+
         // Lấy điểm từ alltime leaderboard
         String alltimeKey = leaderboardService.getLeaderboardKeyForType(LeaderboardType.ALLTIME);
         Double score = redisTemplate.opsForZSet().score(alltimeKey, userId.toString());
         if (score == null) {
             score = 0.0;
         }
-        return new UserReward(userId, score);
+        List<Reward> rewardDetail = this.rewardRepository.findByUserId(userId);
+
+        return new UserReward(userId, score, rewardDetail);
     }
 }

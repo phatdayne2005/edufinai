@@ -1,37 +1,17 @@
 package vn.uth.gamificationservice.dto;
 
+import lombok.*;
+import vn.uth.gamificationservice.model.Reward;
+
+import java.util.List;
 import java.util.UUID;
 
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
 public class UserReward {
     private UUID userId;
-    private Double reward;
-
-    public UserReward(UUID userId, Double reward) {
-        this.userId = userId;
-        this.reward = reward;
-    }
-
-    public UUID getUserId() {
-        return userId;
-    }
-
-    public void setUserId(UUID userId) {
-        this.userId = userId;
-    }
-
-    public Double getReward() {
-        return reward;
-    }
-
-    public void setReward(Double reward) {
-        this.reward = reward;
-    }
-
-    @Override
-    public String toString() {
-        return "UserReward{" +
-                "userId=" + userId +
-                ", reward=" + reward +
-                '}';
-    }
+    private Double totalScore;
+    private List<Reward> rewardDetail;
 }

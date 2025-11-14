@@ -4,6 +4,10 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.boot.autoconfigure.task.TaskExecutionProperties;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
 import org.springframework.web.bind.annotation.*;
 import vn.uth.gamificationservice.dto.ChallengeResponse;
 import vn.uth.gamificationservice.dto.SimpleResponse;
@@ -11,6 +15,7 @@ import vn.uth.gamificationservice.model.Challenge;
 import vn.uth.gamificationservice.service.ChallengeService;
 
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 @RestController
@@ -38,11 +43,27 @@ public class ChallengeController {
         return ResponseEntity.ok(resp);
     }
 
+//    @Operation(summary = "Update a challenge")
+//    @PutMapping("/challenge")
+//    public ResponseEntity<ChallengeResponse> update(@RequestBody Challenge challenge) {
+//        return
+//    }
+
     @Operation(summary = "Delete a challenge")
     @DeleteMapping("/challenge/{challengeId}")
     public ResponseEntity<SimpleResponse> delete(@PathVariable UUID challengeId) {
         this.challengeService.delete(challengeId);
         SimpleResponse resp = new SimpleResponse("SUCCESS");
         return ResponseEntity.ok(resp);
+    }
+
+    @GetMapping("/me")
+    public Object me(JwtAuthenticationToken token) {
+        String sub = token.getToken().getClaim("sub");
+        String scope = token.getToken().getClaim("scope");
+        return Map.of(
+                "sub", sub,
+                "scope", scope
+        );
     }
 }

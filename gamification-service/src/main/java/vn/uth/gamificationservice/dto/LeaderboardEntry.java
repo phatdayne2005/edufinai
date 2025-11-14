@@ -1,27 +1,20 @@
 package vn.uth.gamificationservice.dto;
 
+import lombok.*;
+
+import java.util.UUID;
+
+@Getter
+@Setter
+@ToString
+@NoArgsConstructor
+@AllArgsConstructor
 public class LeaderboardEntry {
-    private String userId;
+    private UUID userId;
     private double score;
+    private int top;
 
-    public LeaderboardEntry(String userId, double score) {
-        this.userId = userId;
-        this.score = score;
-    }
-
-    public String getUserId() {
-        return userId;
-    }
-
-    public double getScore() {
-        return score;
-    }
-
-    @Override
-    public String toString() {
-        return "LeaderboardEntry{" +
-                "userId='" + userId + '\'' +
-                ", score=" + score +
-                '}';
+    public static LeaderboardEntry empty() {
+        return new LeaderboardEntry(null, 0.0, -1);
     }
 }

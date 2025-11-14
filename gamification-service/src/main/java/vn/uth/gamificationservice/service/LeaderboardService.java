@@ -1,31 +1,36 @@
 package vn.uth.gamificationservice.service;
 
+import jakarta.ws.rs.core.MediaType;
+import org.apache.hc.core5.http.HttpEntity;
 import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
 import org.springframework.stereotype.Service;
-import vn.uth.gamificationservice.dto.LeaderboardEntry;
-import vn.uth.gamificationservice.dto.LeaderboardResponse;
-import vn.uth.gamificationservice.dto.LeaderboardType;
+import org.springframework.web.client.RestClientException;
+import org.springframework.web.client.RestTemplate;
+import vn.uth.gamificationservice.dto.*;
 
+import java.net.http.HttpHeaders;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.WeekFields;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.Locale;
-import java.util.Set;
+import java.util.*;
 
 @Service
 public class LeaderboardService {
-    public final RedisTemplate redisTemplate;
+    private final RedisTemplate redisTemplate;
+    private final UserService userService;
 
     private static final String LEADERBOARD_PREFIX = "leaderboard:";
     private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd");
     private static final DateTimeFormatter MONTH_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM");
     private static final WeekFields WEEK_FIELDS = WeekFields.of(Locale.getDefault());
 
-    public LeaderboardService(RedisTemplate redisTemplate) {
+    public LeaderboardService(RedisTemplate redisTemplate, UserService userService) {
         this.redisTemplate = redisTemplate;
+        this.userService = userService;
     }
 
     /**
@@ -33,18 +38,45 @@ public class LeaderboardService {
      */
     public LeaderboardResponse getTop(int topNumber, LeaderboardType type) {
         String key = getLeaderboardKey(type);
-        Set<String> members = redisTemplate.opsForZSet().reverseRange(key, 0, topNumber - 1);
+        Set<UUID> members = redisTemplate.opsForZSet().reverseRange(key, 0, topNumber - 1);
         if (members == null || members.isEmpty())
             return new LeaderboardResponse(Collections.emptyList(), "SUCCESS");
 
         List<LeaderboardEntry> result = new ArrayList<>();
 
-        for (String member : members) {
+        int rank = 1;
+
+        for (UUID member : members) {
             Double score = redisTemplate.opsForZSet().score(key, member);
-            result.add(new LeaderboardEntry(member, score != null ? score : 0.0));
+            result.add(new LeaderboardEntry(member, score != null ? score : 0.0, rank));
+            rank++;
         }
 
         return new LeaderboardResponse(result, "SUCCESS");
+    }
+
+    /**
+     * Lấy top của người dùng hiện tại
+     */
+
+    public ApiResponse<LeaderboardEntry> getCurrentUserTop(LeaderboardType type) {
+        UserInfo userInfo = this.userService.getMyInfo();
+        String key = getLeaderboardKey(type);
+
+
+        Long myRankZeroBased = redisTemplate.opsForZSet().reverseRank(key, userInfo.getId());
+        if (myRankZeroBased == null) {
+            return ApiResponse.empty();
+        }
+
+        int myRank = myRankZeroBased.intValue() + 1;
+        Double myScore = redisTemplate.opsForZSet().score(key, userInfo.getId());
+        double safeScore = myScore != null ? myScore : 0.0;
+
+        LeaderboardEntry myTopInfo = new LeaderboardEntry(userInfo.getId(), safeScore, myRank);
+        ApiResponse<LeaderboardEntry> resp = new ApiResponse(200, myTopInfo, "SUCCESS");
+
+        return resp;
     }
 
     /**

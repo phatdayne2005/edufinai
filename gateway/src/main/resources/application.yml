@@ -18,17 +18,20 @@ spring:
           globalcors:
             cors-configurations:
               '[/**]':
-                allowedOrigins: "*"
+                allowedOrigins: "http://localhost:3000"
                 allowedMethods:
                   - GET
                   - POST
                   - PUT
                   - DELETE
                   - OPTIONS
-                allowedHeaders: "*"
-                allowCredentials: false
+                allowedHeaders:
+                  - "*"  # Cho phép tất cả headers (bao gồm Authorization)
+                allowCredentials: true
+                exposedHeaders:
+                  - "Authorization"  # Cho phép client đọc Authorization từ response (nếu cần)
 
-          # ROUTE GAMIFICATION
+          # ROUTE CONFIG
           routes:
             - id: gamification-service
               uri: lb://GAMIFICATION-SERVICE     # tên đúng như trong Eureka
@@ -40,6 +43,17 @@ spring:
                     regexp: /gamification/?(?<segment>.*)
                     replacement: /api/v1/gamify/${segment}
                     # /gamification/challenge -> /api/v1/gamify/challenge
+
+            - id: auth-service
+              uri:
+                lb://AUTH-SERVICE
+              predicates:
+                - Path=/auth/**
+              filters:
+                - name: RewritePath
+                  args:
+                    regexp: /auth/?(?<segment>.*)
+                    replacement: /identity/auth/${segment}
 
 eureka:
   client:
