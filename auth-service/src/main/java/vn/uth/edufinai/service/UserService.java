@@ -68,18 +68,56 @@ public class UserService {
     public UserResponse updateUser(String userId, UserUpdateRequest request) {
         User user = userRepository.findById(userId).orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTED));
 
-        userMapper.updateUser(user, request);
+        // IMPORTANT: Only update fields that are explicitly provided in the request
+        // If a field is null in the request, it means it was not included, so we don't update it
+        // This prevents data loss when updating only specific fields
         
-        // Only update password if provided
+        // Update firstName only if provided (not null)
+        if (request.getFirstName() != null) {
+            String firstName = request.getFirstName().trim();
+            user.setFirstName(firstName.isEmpty() ? null : firstName);
+        }
+        // If firstName is null in request, keep existing value (don't update)
+        
+        // Update lastName only if provided (not null)
+        if (request.getLastName() != null) {
+            String lastName = request.getLastName().trim();
+            user.setLastName(lastName.isEmpty() ? null : lastName);
+        }
+        // If lastName is null in request, keep existing value (don't update)
+        
+        // Update email only if provided (not null)
+        if (request.getEmail() != null) {
+            String email = request.getEmail().trim();
+            user.setEmail(email.isEmpty() ? null : email);
+        }
+        // If email is null in request, keep existing value (don't update)
+        
+        // Update phone only if provided (not null)
+        if (request.getPhone() != null) {
+            String phone = request.getPhone().trim();
+            user.setPhone(phone.isEmpty() ? null : phone);
+        }
+        // If phone is null in request, keep existing value (don't update)
+        
+        // Update dob only if provided (not null)
+        if (request.getDob() != null) {
+            user.setDob(request.getDob());
+        }
+        // If dob is null in request, keep existing value (don't update)
+        
+        // Only update password if provided and not empty
         if (request.getPassword() != null && !request.getPassword().trim().isEmpty()) {
             user.setPassword(passwordEncoder.encode(request.getPassword()));
         }
+        // If password is null in request, keep existing password (don't update)
 
-        // Only update roles if provided
+        // Only update roles if provided and not empty
         if (request.getRoles() != null && !request.getRoles().isEmpty()) {
             var roles = roleRepository.findAllById(request.getRoles());
             user.setRoles(new HashSet<>(roles));
         }
+        // If roles is null in request, keep existing roles (don't update)
 
         return userMapper.toUserResponse(userRepository.save(user));
     }
