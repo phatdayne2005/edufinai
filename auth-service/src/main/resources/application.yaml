@@ -1,0 +1,33 @@
+server:
+  port: 9000
+  servlet:
+    context-path: /identity
+
+spring:
+  datasource:
+    url: ${DBMS_CONNECTION:jdbc:mysql://localhost:3306/identity}
+    driverClassName: "com.mysql.cj.jdbc.Driver"
+    username: ${DBMS_USERNAME:root}
+    password: ${DBMS_PASSWORD:123456}
+  jpa:
+    hibernate:
+      ddl-auto: update          # TỰ ĐỘNG TẠO/CẬP NHẬT BẢNG
+    show-sql: true              # In SQL ra console
+    properties:
+      hibernate:
+        format_sql: true        # Format SQL cho dễ đọc
+    database-platform: org.hibernate.dialect.MySQL8Dialect
+  application:
+    name: AUTH-SERVICE          # Tên service trong Eureka (phải viết hoa)
+
+eureka:
+  client:
+    service-url:
+      defaultZone: http://localhost:8761/eureka/
+    register-with-eureka: true
+    fetch-registry: true
+
+jwt:
+  signerKey: "1TjXchw5FloESb63Kc+DFhTARvpWL4jUGCwfGWxuG5SIf/1y/LgJxHnMqaF6A/ij"
+  valid-duration: 3600          # in seconds
+  refreshable-duration: 36000   # in seconds

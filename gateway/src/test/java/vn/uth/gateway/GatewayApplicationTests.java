@@ -1,13 +1,13 @@
-package vn.uth.authservice;
+package vn.uth.gateway;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
 
 @SpringBootTest
-class AuthServiceApplicationTests {
+class GatewayApplicationTests {
 
-	@Test
-	void contextLoads() {
-	}
+    @Test
+    void contextLoads() {
+    }
 
 }
