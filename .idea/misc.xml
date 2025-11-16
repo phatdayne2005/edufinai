@@ -14,6 +14,7 @@
         <option value="$PROJECT_DIR$/auth-service/gamification-service/pom.xml" />
         <option value="$PROJECT_DIR$/gamification-service/pom.xml" />
         <option value="$PROJECT_DIR$/ai-service/pom.xml" />
+        <option value="$PROJECT_DIR$/gateway/pom.xml" />
       </list>
     </option>
     <option name="ignoredFiles">
@@ -25,7 +26,7 @@
       </set>
     </option>
   </component>
-  <component name="ProjectRootManager" version="2" project-jdk-name="ms-17" project-jdk-type="JavaSDK">
+  <component name="ProjectRootManager" version="2" project-jdk-name="24" project-jdk-type="JavaSDK">
     <output url="file://$PROJECT_DIR$/out" />
   </component>
 </project>
