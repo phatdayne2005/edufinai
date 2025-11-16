@@ -52,8 +52,10 @@ spring:
               filters:
                 - name: RewritePath
                   args:
-                    regexp: /auth/?(?<segment>.*)
-                    replacement: /identity/auth/${segment}
+                    # Frontend gọi: /auth/auth/token -> Gateway rewrite: /identity/auth/token
+                    # Frontend gọi: /auth/users -> Gateway rewrite: /identity/users
+                    regexp: /auth/(?<segment>.*)
+                    replacement: /identity/${segment}
 
 eureka:
   client:
