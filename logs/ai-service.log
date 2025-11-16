@@ -1,0 +1,118 @@
+2025-11-16 12:32:20.683 [main] INFO  c.x.s.a.AiServiceApplication - Starting AiServiceApplication using Java 21.0.9 with PID 19420 (C:\xdpm\aiservice\ai-service\target\classes started by ASUS in C:\xdpm\aiservice\ai-service)
+2025-11-16 12:32:20.685 [main] INFO  c.x.s.a.AiServiceApplication - No active profile set, falling back to 1 default profile: "default"
+2025-11-16 12:32:21.037 [main] INFO  o.s.d.r.c.RepositoryConfigurationDelegate - Bootstrapping Spring Data JPA repositories in DEFAULT mode.
+2025-11-16 12:32:21.117 [main] INFO  o.s.d.r.c.RepositoryConfigurationDelegate - Finished Spring Data repository scanning in 75 ms. Found 2 JPA repository interfaces.
+2025-11-16 12:32:21.410 [main] INFO  com.zaxxer.hikari.HikariDataSource - HikariPool-1 - Starting...
+2025-11-16 12:32:21.562 [main] INFO  com.zaxxer.hikari.pool.HikariPool - HikariPool-1 - Added connection com.mysql.cj.jdbc.ConnectionImpl@64502326
+2025-11-16 12:32:21.563 [main] INFO  com.zaxxer.hikari.HikariDataSource - HikariPool-1 - Start completed.
+2025-11-16 12:32:21.624 [main] INFO  o.h.jpa.internal.util.LogHelper - HHH000204: Processing PersistenceUnitInfo [name: default]
+2025-11-16 12:32:21.655 [main] INFO  org.hibernate.Version - HHH000412: Hibernate ORM core version 6.6.33.Final
+2025-11-16 12:32:21.673 [main] INFO  o.h.c.i.RegionFactoryInitiator - HHH000026: Second-level cache disabled
+2025-11-16 12:32:21.834 [main] INFO  o.s.o.j.p.SpringPersistenceUnitInfo - No LoadTimeWeaver setup: ignoring JPA class transformer
+2025-11-16 12:32:21.893 [main] INFO  o.hibernate.orm.connections.pooling - HHH10001005: Database info:
+	Database JDBC URL [Connecting through datasource 'HikariDataSource (HikariPool-1)']
+	Database driver: undefined/unknown
+	Database version: 8.0.44
+	Autocommit mode: undefined/unknown
+	Isolation level: undefined/unknown
+	Minimum pool size: undefined/unknown
+	Maximum pool size: undefined/unknown
+2025-11-16 12:32:22.379 [main] INFO  o.h.e.t.j.p.i.JtaPlatformInitiator - HHH000489: No JTA platform available (set 'hibernate.transaction.jta.platform' to enable JTA platform integration)
+2025-11-16 12:32:22.383 [main] INFO  o.s.o.j.LocalContainerEntityManagerFactoryBean - Initialized JPA EntityManagerFactory for persistence unit 'default'
+2025-11-16 12:32:22.704 [main] DEBUG o.s.w.r.r.m.a.RequestMappingHandlerMapping - 2 mappings in 'requestMappingHandlerMapping'
+2025-11-16 12:32:22.716 [main] DEBUG o.s.w.r.h.SimpleUrlHandlerMapping - Patterns [/webjars/**, /**] in 'resourceHandlerMapping'
+2025-11-16 12:32:22.734 [main] DEBUG o.s.w.r.r.m.a.ControllerMethodResolver - ControllerAdvice beans: 0 @ModelAttribute, 0 @InitBinder, 1 @ExceptionHandler
+2025-11-16 12:32:22.761 [main] DEBUG o.s.w.s.a.HttpWebHandlerAdapter - enableLoggingRequestDetails='false': form data and headers will be masked to prevent unsafe logging of potentially sensitive data
+2025-11-16 12:32:22.906 [main] INFO  o.s.b.w.e.netty.NettyWebServer - Netty started on port 8080 (http)
+2025-11-16 12:32:22.910 [main] INFO  c.x.s.a.AiServiceApplication - Started AiServiceApplication in 2.565 seconds (process running for 2.789)
+2025-11-16 12:32:53.840 [reactor-http-nio-2] DEBUG o.s.w.s.a.HttpWebHandlerAdapter - [c4ec408c-1] HTTP POST "/api/chat/ask"
+2025-11-16 12:32:53.850 [reactor-http-nio-2] DEBUG o.s.w.r.r.m.a.RequestMappingHandlerMapping - [c4ec408c-1] Mapped to com.xdpm.service5.ai_service.controller.ChatController#ask(ChatRequest)
+2025-11-16 12:32:53.861 [reactor-http-nio-2] DEBUG o.s.w.r.r.m.a.RequestBodyMethodArgumentResolver - [c4ec408c-1] Content-Type:application/json;charset=utf-8
+2025-11-16 12:32:53.893 [reactor-http-nio-2] DEBUG o.s.w.r.r.m.a.RequestBodyMethodArgumentResolver - [c4ec408c-1] 0..1 [com.xdpm.service5.ai_service.dto.ChatRequest]
+2025-11-16 12:32:53.920 [reactor-http-nio-2] DEBUG org.springframework.web.HttpLogging - [c4ec408c-1] Decoded [ChatRequest(userId=test-user-123, question=TÃ´i nÃªn tiáº¿t kiá»‡m nhÆ° tháº¿ nÃ o?)]
+2025-11-16 12:32:53.967 [reactor-http-nio-2] DEBUG o.s.w.r.r.m.a.ResponseBodyResultHandler - [c4ec408c-1] Using 'application/json' given [*/*] and supported [application/json]
+2025-11-16 12:32:53.967 [reactor-http-nio-2] DEBUG o.s.w.r.r.m.a.ResponseBodyResultHandler - [c4ec408c-1] 0..1 [com.xdpm.service5.ai_service.dto.ChatResponse]
+2025-11-16 12:32:54.467 [reactor-http-nio-2] DEBUG org.springframework.web.HttpLogging - [2393d57f] Encoding [{contents=[Ljava.lang.Object;@6d847f44}]
+2025-11-16 12:32:59.645 [reactor-http-nio-2] DEBUG org.springframework.web.HttpLogging - [2393d57f] [5828929b-1] Decoded "{<EOL>  "candidates": [<EOL>    {<EOL>      "content": {<EOL>        "parts": [<EOL>          {<EOL>            "text": "``` (truncated)..."
+2025-11-16 12:32:59.654 [reactor-http-nio-2] DEBUG org.springframework.web.HttpLogging - [c4ec408c-1] Encoding [ChatResponse(userId=test-user-123, question=TÃ´i nÃªn tiáº¿t kiá»‡m nhÆ° tháº¿ nÃ o?, answerJson=``` (truncated)...]
+2025-11-16 12:32:59.664 [reactor-http-nio-2] DEBUG o.s.w.s.a.HttpWebHandlerAdapter - [c4ec408c-1] Completed 200 OK
+2025-11-16 12:33:06.045 [reactor-http-nio-2] DEBUG o.s.w.s.a.HttpWebHandlerAdapter - [c4ec408c-2] HTTP GET "/api/reports/daily"
+2025-11-16 12:33:06.045 [reactor-http-nio-2] DEBUG o.s.w.r.r.m.a.RequestMappingHandlerMapping - [c4ec408c-2] Mapped to com.xdpm.service5.ai_service.controller.ReportController#getDailyReport(LocalDate)
+2025-11-16 12:33:06.050 [reactor-http-nio-2] DEBUG o.s.w.r.r.m.a.ResponseBodyResultHandler - [c4ec408c-2] Using 'application/json' given [*/*] and supported [application/json]
+2025-11-16 12:33:06.050 [reactor-http-nio-2] DEBUG o.s.w.r.r.m.a.ResponseBodyResultHandler - [c4ec408c-2] 0..1 [com.xdpm.service5.ai_service.dto.ReportResponse]
+2025-11-16 12:33:06.215 [boundedElastic-1] DEBUG o.s.w.r.r.m.a.RequestMappingHandlerAdapter - [c4ec408c-2] Using @ExceptionHandler com.xdpm.service5.ai_service.controller.GlobalExceptionHandler#handleResponseStatus(ResponseStatusException)
+2025-11-16 12:33:06.225 [boundedElastic-1] DEBUG o.s.w.r.r.m.a.ResponseBodyResultHandler - [c4ec408c-2] Using 'application/json' given [*/*] and supported [application/json, application/*+json, application/x-ndjson, text/event-stream]
+2025-11-16 12:33:06.226 [boundedElastic-1] DEBUG o.s.w.r.r.m.a.ResponseBodyResultHandler - [c4ec408c-2] 0..1 [com.xdpm.service5.ai_service.dto.ErrorResponse]
+2025-11-16 12:33:06.226 [boundedElastic-1] DEBUG org.springframework.web.HttpLogging - [c4ec408c-2] Encoding [ErrorResponse(code=404, message=Report not found for date: 2025-11-16, timestamp=2025-11-16T12:33:06 (truncated)...]
+2025-11-16 12:33:06.226 [boundedElastic-1] DEBUG o.s.w.s.a.HttpWebHandlerAdapter - [c4ec408c-2] Completed 200 OK
+2025-11-16 12:33:06.233 [reactor-http-nio-2] DEBUG o.s.w.s.a.HttpWebHandlerAdapter - [c4ec408c-3] HTTP GET "/api/reports/daily?date=2024-01-01"
+2025-11-16 12:33:06.233 [reactor-http-nio-2] DEBUG o.s.w.r.r.m.a.RequestMappingHandlerMapping - [c4ec408c-3] Mapped to com.xdpm.service5.ai_service.controller.ReportController#getDailyReport(LocalDate)
+2025-11-16 12:33:06.237 [reactor-http-nio-2] DEBUG o.s.w.r.r.m.a.ResponseBodyResultHandler - [c4ec408c-3] Using 'application/json' given [*/*] and supported [application/json]
+2025-11-16 12:33:06.237 [reactor-http-nio-2] DEBUG o.s.w.r.r.m.a.ResponseBodyResultHandler - [c4ec408c-3] 0..1 [com.xdpm.service5.ai_service.dto.ReportResponse]
+2025-11-16 12:33:06.244 [boundedElastic-1] DEBUG o.s.w.r.r.m.a.RequestMappingHandlerAdapter - [c4ec408c-3] Using @ExceptionHandler com.xdpm.service5.ai_service.controller.GlobalExceptionHandler#handleResponseStatus(ResponseStatusException)
+2025-11-16 12:33:06.244 [boundedElastic-1] DEBUG o.s.w.r.r.m.a.ResponseBodyResultHandler - [c4ec408c-3] Using 'application/json' given [*/*] and supported [application/json, application/*+json, application/x-ndjson, text/event-stream]
+2025-11-16 12:33:06.245 [boundedElastic-1] DEBUG o.s.w.r.r.m.a.ResponseBodyResultHandler - [c4ec408c-3] 0..1 [com.xdpm.service5.ai_service.dto.ErrorResponse]
+2025-11-16 12:33:06.245 [boundedElastic-1] DEBUG org.springframework.web.HttpLogging - [c4ec408c-3] Encoding [ErrorResponse(code=404, message=Report not found for date: 2024-01-01, timestamp=2025-11-16T12:33:06 (truncated)...]
+2025-11-16 12:33:06.246 [boundedElastic-1] DEBUG o.s.w.s.a.HttpWebHandlerAdapter - [c4ec408c-3] Completed 200 OK
+2025-11-16 12:33:12.766 [reactor-http-nio-2] DEBUG o.s.w.s.a.HttpWebHandlerAdapter - [c4ec408c-4] HTTP GET "/api/reports/daily"
+2025-11-16 12:33:12.766 [reactor-http-nio-2] DEBUG o.s.w.r.r.m.a.RequestMappingHandlerMapping - [c4ec408c-4] Mapped to com.xdpm.service5.ai_service.controller.ReportController#getDailyReport(LocalDate)
+2025-11-16 12:33:12.766 [reactor-http-nio-2] DEBUG o.s.w.r.r.m.a.ResponseBodyResultHandler - [c4ec408c-4] Using 'application/json' given [*/*] and supported [application/json]
+2025-11-16 12:33:12.766 [reactor-http-nio-2] DEBUG o.s.w.r.r.m.a.ResponseBodyResultHandler - [c4ec408c-4] 0..1 [com.xdpm.service5.ai_service.dto.ReportResponse]
+2025-11-16 12:33:12.775 [boundedElastic-1] DEBUG o.s.w.r.r.m.a.RequestMappingHandlerAdapter - [c4ec408c-4] Using @ExceptionHandler com.xdpm.service5.ai_service.controller.GlobalExceptionHandler#handleResponseStatus(ResponseStatusException)
+2025-11-16 12:33:12.775 [boundedElastic-1] DEBUG o.s.w.r.r.m.a.ResponseBodyResultHandler - [c4ec408c-4] Using 'application/json' given [*/*] and supported [application/json, application/*+json, application/x-ndjson, text/event-stream]
+2025-11-16 12:33:12.776 [boundedElastic-1] DEBUG o.s.w.r.r.m.a.ResponseBodyResultHandler - [c4ec408c-4] 0..1 [com.xdpm.service5.ai_service.dto.ErrorResponse]
+2025-11-16 12:33:12.776 [boundedElastic-1] DEBUG org.springframework.web.HttpLogging - [c4ec408c-4] Encoding [ErrorResponse(code=404, message=Report not found for date: 2025-11-16, timestamp=2025-11-16T12:33:12 (truncated)...]
+2025-11-16 12:33:12.776 [boundedElastic-1] DEBUG o.s.w.s.a.HttpWebHandlerAdapter - [c4ec408c-4] Completed 200 OK
+2025-11-16 12:33:12.781 [reactor-http-nio-2] DEBUG o.s.w.s.a.HttpWebHandlerAdapter - [c4ec408c-5] HTTP GET "/api/reports/daily?date=2024-01-01"
+2025-11-16 12:33:12.781 [reactor-http-nio-2] DEBUG o.s.w.r.r.m.a.RequestMappingHandlerMapping - [c4ec408c-5] Mapped to com.xdpm.service5.ai_service.controller.ReportController#getDailyReport(LocalDate)
+2025-11-16 12:33:12.782 [reactor-http-nio-2] DEBUG o.s.w.r.r.m.a.ResponseBodyResultHandler - [c4ec408c-5] Using 'application/json' given [*/*] and supported [application/json]
+2025-11-16 12:33:12.782 [reactor-http-nio-2] DEBUG o.s.w.r.r.m.a.ResponseBodyResultHandler - [c4ec408c-5] 0..1 [com.xdpm.service5.ai_service.dto.ReportResponse]
+2025-11-16 12:33:12.786 [boundedElastic-1] DEBUG o.s.w.r.r.m.a.RequestMappingHandlerAdapter - [c4ec408c-5] Using @ExceptionHandler com.xdpm.service5.ai_service.controller.GlobalExceptionHandler#handleResponseStatus(ResponseStatusException)
+2025-11-16 12:33:12.786 [boundedElastic-1] DEBUG o.s.w.r.r.m.a.ResponseBodyResultHandler - [c4ec408c-5] Using 'application/json' given [*/*] and supported [application/json, application/*+json, application/x-ndjson, text/event-stream]
+2025-11-16 12:33:12.786 [boundedElastic-1] DEBUG o.s.w.r.r.m.a.ResponseBodyResultHandler - [c4ec408c-5] 0..1 [com.xdpm.service5.ai_service.dto.ErrorResponse]
+2025-11-16 12:33:12.786 [boundedElastic-1] DEBUG org.springframework.web.HttpLogging - [c4ec408c-5] Encoding [ErrorResponse(code=404, message=Report not found for date: 2024-01-01, timestamp=2025-11-16T12:33:12 (truncated)...]
+2025-11-16 12:33:12.786 [boundedElastic-1] DEBUG o.s.w.s.a.HttpWebHandlerAdapter - [c4ec408c-5] Completed 200 OK
+2025-11-16 12:33:22.891 [reactor-http-nio-2] DEBUG o.s.w.s.a.HttpWebHandlerAdapter - [c4ec408c-6] HTTP POST "/api/chat/ask"
+2025-11-16 12:33:22.891 [reactor-http-nio-2] DEBUG o.s.w.r.r.m.a.RequestMappingHandlerMapping - [c4ec408c-6] Mapped to com.xdpm.service5.ai_service.controller.ChatController#ask(ChatRequest)
+2025-11-16 12:33:22.891 [reactor-http-nio-2] DEBUG o.s.w.r.r.m.a.RequestBodyMethodArgumentResolver - [c4ec408c-6] Content-Type:application/json;charset=utf-8
+2025-11-16 12:33:22.891 [reactor-http-nio-2] DEBUG o.s.w.r.r.m.a.RequestBodyMethodArgumentResolver - [c4ec408c-6] 0..1 [com.xdpm.service5.ai_service.dto.ChatRequest]
+2025-11-16 12:33:22.891 [reactor-http-nio-2] DEBUG org.springframework.web.HttpLogging - [c4ec408c-6] Decoded [ChatRequest(userId=test-user-123, question=TÃ´i nÃªn tiáº¿t kiá»‡m nhÆ° tháº¿ nÃ o?)]
+2025-11-16 12:33:22.891 [reactor-http-nio-2] DEBUG o.s.w.r.r.m.a.ResponseBodyResultHandler - [c4ec408c-6] Using 'application/json' given [*/*] and supported [application/json]
+2025-11-16 12:33:22.891 [reactor-http-nio-2] DEBUG o.s.w.r.r.m.a.ResponseBodyResultHandler - [c4ec408c-6] 0..1 [com.xdpm.service5.ai_service.dto.ChatResponse]
+2025-11-16 12:33:22.902 [reactor-http-nio-2] DEBUG org.springframework.web.HttpLogging - [7b107133] Encoding [{contents=[Ljava.lang.Object;@13361128}]
+2025-11-16 12:33:27.049 [reactor-http-nio-2] DEBUG org.springframework.web.HttpLogging - [7b107133] [5828929b-2] Decoded "{<EOL>  "candidates": [<EOL>    {<EOL>      "content": {<EOL>        "parts": [<EOL>          {<EOL>            "text": "``` (truncated)..."
+2025-11-16 12:33:27.049 [reactor-http-nio-2] DEBUG org.springframework.web.HttpLogging - [c4ec408c-6] Encoding [ChatResponse(userId=test-user-123, question=TÃ´i nÃªn tiáº¿t kiá»‡m nhÆ° tháº¿ nÃ o?, answerJson=``` (truncated)...]
+2025-11-16 12:33:27.049 [reactor-http-nio-2] DEBUG o.s.w.s.a.HttpWebHandlerAdapter - [c4ec408c-6] Completed 200 OK
+2025-11-16 12:38:09.146 [SpringApplicationShutdownHook] INFO  o.s.b.w.e.netty.GracefulShutdown - Commencing graceful shutdown. Waiting for active requests to complete
+2025-11-16 12:38:09.148 [netty-shutdown] INFO  o.s.b.w.e.netty.GracefulShutdown - Graceful shutdown complete
+2025-11-16 12:38:11.221 [SpringApplicationShutdownHook] INFO  o.s.o.j.LocalContainerEntityManagerFactoryBean - Closing JPA EntityManagerFactory for persistence unit 'default'
+2025-11-16 12:38:11.223 [SpringApplicationShutdownHook] INFO  com.zaxxer.hikari.HikariDataSource - HikariPool-1 - Shutdown initiated...
+2025-11-16 12:38:11.226 [SpringApplicationShutdownHook] INFO  com.zaxxer.hikari.HikariDataSource - HikariPool-1 - Shutdown completed.
+2025-11-16 12:42:01.711 [main] INFO  c.x.s.a.AiServiceApplication - Starting AiServiceApplication using Java 21.0.9 with PID 7680 (C:\xdpm\aiservice\ai-service\target\classes started by ASUS in C:\xdpm\aiservice\ai-service)
+2025-11-16 12:42:01.713 [main] INFO  c.x.s.a.AiServiceApplication - No active profile set, falling back to 1 default profile: "default"
+2025-11-16 12:42:02.081 [main] INFO  o.s.d.r.c.RepositoryConfigurationDelegate - Bootstrapping Spring Data JPA repositories in DEFAULT mode.
+2025-11-16 12:42:02.159 [main] INFO  o.s.d.r.c.RepositoryConfigurationDelegate - Finished Spring Data repository scanning in 72 ms. Found 2 JPA repository interfaces.
+2025-11-16 12:42:02.454 [main] INFO  com.zaxxer.hikari.HikariDataSource - HikariPool-1 - Starting...
+2025-11-16 12:42:02.582 [main] INFO  com.zaxxer.hikari.pool.HikariPool - HikariPool-1 - Added connection com.mysql.cj.jdbc.ConnectionImpl@32227215
+2025-11-16 12:42:02.583 [main] INFO  com.zaxxer.hikari.HikariDataSource - HikariPool-1 - Start completed.
+2025-11-16 12:42:02.639 [main] INFO  o.h.jpa.internal.util.LogHelper - HHH000204: Processing PersistenceUnitInfo [name: default]
+2025-11-16 12:42:02.665 [main] INFO  org.hibernate.Version - HHH000412: Hibernate ORM core version 6.6.33.Final
+2025-11-16 12:42:02.684 [main] INFO  o.h.c.i.RegionFactoryInitiator - HHH000026: Second-level cache disabled
+2025-11-16 12:42:02.860 [main] INFO  o.s.o.j.p.SpringPersistenceUnitInfo - No LoadTimeWeaver setup: ignoring JPA class transformer
+2025-11-16 12:42:02.918 [main] INFO  o.hibernate.orm.connections.pooling - HHH10001005: Database info:
+	Database JDBC URL [Connecting through datasource 'HikariDataSource (HikariPool-1)']
+	Database driver: undefined/unknown
+	Database version: 8.0.44
+	Autocommit mode: undefined/unknown
+	Isolation level: undefined/unknown
+	Minimum pool size: undefined/unknown
+	Maximum pool size: undefined/unknown
+2025-11-16 12:42:03.410 [main] INFO  o.h.e.t.j.p.i.JtaPlatformInitiator - HHH000489: No JTA platform available (set 'hibernate.transaction.jta.platform' to enable JTA platform integration)
+2025-11-16 12:42:03.412 [main] INFO  o.s.o.j.LocalContainerEntityManagerFactoryBean - Initialized JPA EntityManagerFactory for persistence unit 'default'
+2025-11-16 12:42:03.958 [main] INFO  o.s.b.w.e.netty.NettyWebServer - Netty started on port 8080 (http)
+2025-11-16 12:42:03.968 [main] INFO  c.x.s.a.AiServiceApplication - Started AiServiceApplication in 2.569 seconds (process running for 2.786)
+2025-11-16 12:50:03.512 [SpringApplicationShutdownHook] INFO  o.s.b.w.e.netty.GracefulShutdown - Commencing graceful shutdown. Waiting for active requests to complete
+2025-11-16 12:50:03.515 [netty-shutdown] INFO  o.s.b.w.e.netty.GracefulShutdown - Graceful shutdown complete
+2025-11-16 12:50:05.590 [SpringApplicationShutdownHook] INFO  o.s.o.j.LocalContainerEntityManagerFactoryBean - Closing JPA EntityManagerFactory for persistence unit 'default'
+2025-11-16 12:50:05.592 [SpringApplicationShutdownHook] INFO  com.zaxxer.hikari.HikariDataSource - HikariPool-1 - Shutdown initiated...
+2025-11-16 12:50:05.599 [SpringApplicationShutdownHook] INFO  com.zaxxer.hikari.HikariDataSource - HikariPool-1 - Shutdown completed.
