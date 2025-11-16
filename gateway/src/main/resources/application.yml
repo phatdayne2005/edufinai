@@ -1,0 +1,65 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: gateway
+
+  cloud:
+    gateway:
+      server:
+        webflux:
+          # TẮT discovery locator (tự sinh route từ Eureka, tạm thời tắt)
+          discovery:
+            locator:
+              enabled: false
+
+          # CORS GLOBAL
+          globalcors:
+            cors-configurations:
+              '[/**]':
+                allowedOrigins: "http://localhost:3000"
+                allowedMethods:
+                  - GET
+                  - POST
+                  - PUT
+                  - DELETE
+                  - OPTIONS
+                allowedHeaders:
+                  - "*"  # Cho phép tất cả headers (bao gồm Authorization)
+                allowCredentials: true
+                exposedHeaders:
+                  - "Authorization"  # Cho phép client đọc Authorization từ response (nếu cần)
+
+          # ROUTE CONFIG
+          routes:
+            - id: gamification-service
+              uri: lb://GAMIFICATION-SERVICE     # tên đúng như trong Eureka
+              predicates:
+                - Path=/gamification/**
+              filters:
+                - name: RewritePath
+                  args:
+                    regexp: /gamification/?(?<segment>.*)
+                    replacement: /api/v1/gamify/${segment}
+                    # /gamification/challenge -> /api/v1/gamify/challenge
+
+            - id: auth-service
+              uri:
+                lb://AUTH-SERVICE
+              predicates:
+                - Path=/auth/**
+              filters:
+                - name: RewritePath
+                  args:
+                    # Frontend gọi: /auth/auth/token -> Gateway rewrite: /identity/auth/token
+                    # Frontend gọi: /auth/users -> Gateway rewrite: /identity/users
+                    regexp: /auth/(?<segment>.*)
+                    replacement: /identity/${segment}
+
+eureka:
+  client:
+    service-url:
+      defaultZone: http://localhost:8761/eureka/
+    register-with-eureka: true
+    fetch-registry: true
