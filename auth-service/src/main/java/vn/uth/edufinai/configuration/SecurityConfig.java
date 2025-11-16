@@ -22,6 +22,9 @@ import org.springframework.security.web.SecurityFilterChain;
 @EnableWebSecurity
 @EnableMethodSecurity
 public class SecurityConfig {
+    // Public endpoints - match với path sau context path (/identity)
+    // Gateway forward: /auth/users -> /identity/users
+    // SecurityConfig match: /users (sau khi remove context path /identity)
     private final String[] PUBLIC_ENDPOINTS = {
             "/users", "/auth/token", "/auth/introspect", "/auth/logout", "/auth/refresh"
     };
@@ -31,7 +34,12 @@ public class SecurityConfig {
 
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity httpSecurity) throws Exception {
-        httpSecurity.authorizeHttpRequests(request -> request.requestMatchers(HttpMethod.POST, PUBLIC_ENDPOINTS)
+        // Cho phép POST đến các public endpoints (không cần authentication)
+        // Spring Security tự động xử lý context path, nên chỉ cần path sau context path
+        httpSecurity.authorizeHttpRequests(request -> request
+                .requestMatchers(HttpMethod.POST, PUBLIC_ENDPOINTS)
+                .permitAll()
+                .requestMatchers(HttpMethod.OPTIONS, "/**")  // Cho phép OPTIONS cho CORS preflight
                 .permitAll()
                 .anyRequest()
                 .authenticated());

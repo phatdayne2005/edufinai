@@ -18,7 +18,14 @@ spring:
         format_sql: true        # Format SQL cho dễ đọc
     database-platform: org.hibernate.dialect.MySQL8Dialect
   application:
-    name: auth-service
+    name: AUTH-SERVICE          # Tên service trong Eureka (phải viết hoa)
+
+eureka:
+  client:
+    service-url:
+      defaultZone: http://localhost:8761/eureka/
+    register-with-eureka: true
+    fetch-registry: true
 
 jwt:
   signerKey: "1TjXchw5FloESb63Kc+DFhTARvpWL4jUGCwfGWxuG5SIf/1y/LgJxHnMqaF6A/ij"
