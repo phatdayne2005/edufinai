@@ -39,14 +39,182 @@
       "response": []
     },
     {
-      "name": "update User",
+      "name": "Admin - Create User with Role",
       "request": {
         "auth": {
           "type": "bearer",
           "bearer": [
             {
               "key": "token",
-              "value": "eyJhbGciOiJIUzUxMiJ9.eyJpc3MiOiJkZXZ0ZXJpYS5jb20iLCJzdWIiOiJhZG1pbiIsImV4cCI6MTcxMTg4MzcxMSwiaWF0IjoxNzExODgwMTExLCJzY29wZSI6IiJ9.bQ72do9GpuV_5NmW7CJoIisx53cM3mMeu2mov5Kn5flsW8GT5UhYJV_eNz3uq7kxjojM6e9osn8uzYMz8ugjYQ",
+              "value": "{{admin_token}}",
+              "type": "string"
+            }
+          ]
+        },
+        "method": "POST",
+        "header": [],
+        "body": {
+          "mode": "raw",
+          "raw": "{\r\n    \"username\": \"creator_user\",\r\n    \"password\": \"12345678\",\r\n    \"firstName\": \"Creator\",\r\n    \"lastName\": \"User\",\r\n    \"dob\": \"1990-01-15\",\r\n    \"email\": \"creator@example.com\",\r\n    \"phone\": \"0987654321\",\r\n    \"role\": \"CREATOR\"\r\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "http://localhost:9000/identity/users/admin/users",
+          "protocol": "http",
+          "host": [
+            "localhost"
+          ],
+          "port": "9000",
+          "path": [
+            "identity",
+            "users",
+            "admin",
+            "users"
+          ]
+        },
+        "description": "Admin endpoint to create a new user with a specific role. Role can be: LEARNER, CREATOR, MOD, or ADMIN. Requires admin JWT token."
+      },
+      "response": []
+    },
+    {
+      "name": "Admin - Create User with Role (LEARNER)",
+      "request": {
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{admin_token}}",
+              "type": "string"
+            }
+          ]
+        },
+        "method": "POST",
+        "header": [],
+        "body": {
+          "mode": "raw",
+          "raw": "{\r\n    \"username\": \"learner_user\",\r\n    \"password\": \"12345678\",\r\n    \"firstName\": \"Learner\",\r\n    \"lastName\": \"User\",\r\n    \"dob\": \"2005-05-20\",\r\n    \"email\": \"learner@example.com\",\r\n    \"phone\": \"0987654321\",\r\n    \"role\": \"LEARNER\"\r\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "http://localhost:9000/identity/users/admin/users",
+          "protocol": "http",
+          "host": [
+            "localhost"
+          ],
+          "port": "9000",
+          "path": [
+            "identity",
+            "users",
+            "admin",
+            "users"
+          ]
+        },
+        "description": "Create a user with LEARNER role"
+      },
+      "response": []
+    },
+    {
+      "name": "Admin - Create User with Role (MOD)",
+      "request": {
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{admin_token}}",
+              "type": "string"
+            }
+          ]
+        },
+        "method": "POST",
+        "header": [],
+        "body": {
+          "mode": "raw",
+          "raw": "{\r\n    \"username\": \"mod_user\",\r\n    \"password\": \"12345678\",\r\n    \"firstName\": \"Moderator\",\r\n    \"lastName\": \"User\",\r\n    \"dob\": \"1985-03-10\",\r\n    \"email\": \"mod@example.com\",\r\n    \"phone\": \"0987654321\",\r\n    \"role\": \"MOD\"\r\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "http://localhost:9000/identity/users/admin/users",
+          "protocol": "http",
+          "host": [
+            "localhost"
+          ],
+          "port": "9000",
+          "path": [
+            "identity",
+            "users",
+            "admin",
+            "users"
+          ]
+        },
+        "description": "Create a user with MOD (Moderator) role"
+      },
+      "response": []
+    },
+    {
+      "name": "Admin - Create User with Role (ADMIN)",
+      "request": {
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{admin_token}}",
+              "type": "string"
+            }
+          ]
+        },
+        "method": "POST",
+        "header": [],
+        "body": {
+          "mode": "raw",
+          "raw": "{\r\n    \"username\": \"new_admin\",\r\n    \"password\": \"12345678\",\r\n    \"firstName\": \"New\",\r\n    \"lastName\": \"Admin\",\r\n    \"dob\": \"1980-12-25\",\r\n    \"email\": \"newadmin@example.com\",\r\n    \"phone\": \"0987654321\",\r\n    \"role\": \"ADMIN\"\r\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "http://localhost:9000/identity/users/admin/users",
+          "protocol": "http",
+          "host": [
+            "localhost"
+          ],
+          "port": "9000",
+          "path": [
+            "identity",
+            "users",
+            "admin",
+            "users"
+          ]
+        },
+        "description": "Create a user with ADMIN role"
+      },
+      "response": []
+    },
+    {
+      "name": "Admin - Update User",
+      "request": {
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{admin_token}}",
               "type": "string"
             }
           ]
@@ -55,7 +223,7 @@
         "header": [],
         "body": {
           "mode": "raw",
-          "raw": "{\r\n    \"password\": \"admin\",\r\n    \"firstName\": \"Admin\",\r\n    \"lastName\": \"Admin\",\r\n    \"dob\": \"1990-09-02\",\r\n    \"roles\": [\r\n        \"ADMIN\"\r\n    ],\r\n    \"email\": \"admin@edufinai.local\",\r\n    \"phone\": \"0000000000\"\r\n}",
+          "raw": "{\r\n    \"password\": \"newpassword123\",\r\n    \"firstName\": \"Updated\",\r\n    \"lastName\": \"Name\",\r\n    \"dob\": \"1990-09-02\",\r\n    \"roles\": [\r\n        \"CREATOR\"\r\n    ],\r\n    \"email\": \"updated@example.com\",\r\n    \"phone\": \"0987654321\"\r\n}",
           "options": {
             "raw": {
               "language": "json"
@@ -63,7 +231,7 @@
           }
         },
         "url": {
-          "raw": "http://localhost:9000/identity/users/f60c94bf-2caa-4cf0-92d6-fd1cf0e8940e",
+          "raw": "http://localhost:9000/identity/users/:userId",
           "protocol": "http",
           "host": [
             "localhost"
@@ -72,21 +240,29 @@
           "path": [
             "identity",
             "users",
-            "f60c94bf-2caa-4cf0-92d6-fd1cf0e8940e"
+            ":userId"
+          ],
+          "variable": [
+            {
+              "key": "userId",
+              "value": "f60c94bf-2caa-4cf0-92d6-fd1cf0e8940e",
+              "description": "User ID to update"
+            }
           ]
-        }
+        },
+        "description": "Admin endpoint to update user information. Admin can update any user, including changing roles. Regular users can only update their own information. Requires JWT token."
       },
       "response": []
     },
     {
-      "name": "delete User",
+      "name": "Admin - Delete User",
       "request": {
         "auth": {
           "type": "bearer",
           "bearer": [
             {
               "key": "token",
-              "value": "eyJhbGciOiJIUzUxMiJ9.eyJpc3MiOiJkZXZ0ZXJpYS5jb20iLCJzdWIiOiJqYW5lNyIsImV4cCI6MTcxMDU2MDUzMywiaWF0IjoxNzEwNTU2OTMzLCJ1c2VySWQiOiJDdXN0b20ifQ.P5Hgm-lS5KruujlCiMUAWkT8HKuCj6GMSUjPuPGDivC_jotYtpS_dtSwtvK5unGnNu14msZhRL-fOjJ2AqsFgQ",
+              "value": "{{admin_token}}",
               "type": "string"
             }
           ]
@@ -94,7 +270,7 @@
         "method": "DELETE",
         "header": [],
         "url": {
-          "raw": "http://localhost:9000/identity/users/d6543cca-14a1-4805-847a-500de211e99b",
+          "raw": "http://localhost:9000/identity/users/:userId",
           "protocol": "http",
           "host": [
             "localhost"
@@ -103,21 +279,29 @@
           "path": [
             "identity",
             "users",
-            "d6543cca-14a1-4805-847a-500de211e99b"
+            ":userId"
+          ],
+          "variable": [
+            {
+              "key": "userId",
+              "value": "d6543cca-14a1-4805-847a-500de211e99b",
+              "description": "User ID to delete"
+            }
           ]
-        }
+        },
+        "description": "Admin endpoint to delete a user by ID. Requires admin JWT token."
       },
       "response": []
     },
     {
-      "name": "get User by Id",
+      "name": "Admin - Get User by Id",
       "request": {
         "auth": {
           "type": "bearer",
           "bearer": [
             {
               "key": "token",
-              "value": "eyJhbGciOiJIUzUxMiJ9.eyJpc3MiOiJkZXZ0ZXJpYS5jb20iLCJzdWIiOiJqYW5lMTAiLCJleHAiOjE3MTExNzE4ODIsImlhdCI6MTcxMTE2ODI4Miwic2NvcGUiOiJVU0VSIn0.fIZ0-yTfzT_thtww0iBso8rmr3qmLp7RPiwVasROzeX3vjcI82AIhVRmF2HOo02arKN0XbTdXLp6qM7zN2k8Ig",
+              "value": "{{admin_token}}",
               "type": "string"
             }
           ]
@@ -125,7 +309,7 @@
         "method": "GET",
         "header": [],
         "url": {
-          "raw": "http://localhost:9000/identity/users/18bcec35-7021-4b3d-922d-e977f285ac2d",
+          "raw": "http://localhost:9000/identity/users/:userId",
           "protocol": "http",
           "host": [
             "localhost"
@@ -134,9 +318,17 @@
           "path": [
             "identity",
             "users",
-            "18bcec35-7021-4b3d-922d-e977f285ac2d"
+            ":userId"
+          ],
+          "variable": [
+            {
+              "key": "userId",
+              "value": "18bcec35-7021-4b3d-922d-e977f285ac2d",
+              "description": "User ID"
+            }
           ]
-        }
+        },
+        "description": "Admin endpoint to get user information by ID. Requires admin JWT token."
       },
       "response": []
     },
@@ -172,14 +364,14 @@
       "response": []
     },
     {
-      "name": "get Users",
+      "name": "Admin - Get All Users",
       "request": {
         "auth": {
           "type": "bearer",
           "bearer": [
             {
               "key": "token",
-              "value": "eyJhbGciOiJIUzUxMiJ9.eyJpc3MiOiJkZXZ0ZXJpYS5jb20iLCJzdWIiOiJhZG1pbiIsImV4cCI6MTcxNDg3MDEzNSwiaWF0IjoxNzE0ODcwMTE1LCJqdGkiOiI4NjI3YTFmNC1kYjJjLTRhOTQtODk2YS1iNjRmMGI5MmY5NGMiLCJzY29wZSI6IlJPTEVfQURNSU4ifQ.dcUH7Qa67rEmv4r4-HDCOvXyANXlzZpWAch7t6I5ZpnNCJgbeeMqYR5TLQR2DFE8XzyZc37axnGR3L01oDGJ4A",
+              "value": "{{admin_token}}",
               "type": "string"
             }
           ]
@@ -197,7 +389,8 @@
             "identity",
             "users"
           ]
-        }
+        },
+        "description": "Admin endpoint to get list of all users. Requires admin JWT token."
       },
       "response": []
     },

@@ -6,6 +6,9 @@ import jakarta.validation.Valid;
 
 import org.springframework.web.bind.annotation.*;
 
+import org.springframework.security.access.prepost.PreAuthorize;
+
+import vn.uth.edufinai.dto.request.AdminUserCreationRequest;
 import vn.uth.edufinai.dto.request.ApiResponse;
 import vn.uth.edufinai.dto.request.UserCreationRequest;
 import vn.uth.edufinai.dto.request.UserUpdateRequest;
@@ -33,6 +36,7 @@ public class UserController {
     }
 
     @GetMapping
+    @PreAuthorize("hasRole('ADMIN')")
     ApiResponse<List<UserResponse>> getUsers() {
         return ApiResponse.<List<UserResponse>>builder()
                 .result(userService.getUsers())
@@ -40,6 +44,7 @@ public class UserController {
     }
 
     @GetMapping("/{userId}")
+    @PreAuthorize("hasRole('ADMIN')")
     ApiResponse<UserResponse> getUser(@PathVariable("userId") String userId) {
         return ApiResponse.<UserResponse>builder()
                 .result(userService.getUser(userId))
@@ -54,6 +59,7 @@ public class UserController {
     }
 
     @DeleteMapping("/{userId}")
+    @PreAuthorize("hasRole('ADMIN')")
     ApiResponse<String> deleteUser(@PathVariable String userId) {
         userService.deleteUser(userId);
         return ApiResponse.<String>builder().result("User has been deleted").build();
@@ -63,6 +69,14 @@ public class UserController {
     ApiResponse<UserResponse> updateUser(@PathVariable String userId, @RequestBody UserUpdateRequest request) {
         return ApiResponse.<UserResponse>builder()
                 .result(userService.updateUser(userId, request))
+                .build();
+    }
+
+    @PostMapping("/admin/users")
+    @PreAuthorize("hasRole('ADMIN')")
+    ApiResponse<UserResponse> createUserByAdmin(@RequestBody @Valid AdminUserCreationRequest request) {
+        return ApiResponse.<UserResponse>builder()
+                .result(userService.createUserByAdmin(request))
                 .build();
     }
 }
