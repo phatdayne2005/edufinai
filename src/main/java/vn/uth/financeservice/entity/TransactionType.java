@@ -1,5 +1,7 @@
 package vn.uth.financeservice.entity;
 
-public enum ExpenseType {
+public enum TransactionType {
     INCOME, EXPENSE
 }
+
+

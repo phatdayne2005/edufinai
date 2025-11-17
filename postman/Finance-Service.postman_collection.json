@@ -1,0 +1,340 @@
+{
+	"info": {
+		"_postman_id": "finance-service-api",
+		"name": "Finance Service API",
+		"description": "API collection for Finance Service - Quản lý thu chi & mục tiêu tài chính",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "Dashboard",
+			"item": [
+				{
+					"name": "Get Monthly Summary",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "http://localhost:8202/api/summary/month",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8202",
+							"path": [
+								"api",
+								"summary",
+								"month"
+							]
+						},
+						"description": "Lấy tổng hợp tài chính tháng hiện tại: số dư, thu nhập, chi tiêu, tỷ lệ tiết kiệm"
+					}
+				},
+				{
+					"name": "Get Recent Transactions",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "http://localhost:8202/api/v1/transactions/recent?limit=5",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8202",
+							"path": [
+								"api",
+								"v1",
+								"transactions",
+								"recent"
+							],
+							"query": [
+								{
+									"key": "limit",
+									"value": "5",
+									"description": "Số lượng giao dịch gần đây (mặc định: 5)"
+								}
+							]
+						},
+						"description": "Lấy danh sách giao dịch gần đây nhất để hiển thị phần Recent"
+					}
+				}
+			]
+		},
+		{
+			"name": "Categories",
+			"item": [
+				{
+					"name": "Get All Categories",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "http://localhost:8202/api/v1/categories",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8202",
+							"path": [
+								"api",
+								"v1",
+								"categories"
+							]
+						},
+						"description": "Lấy danh sách category của user + default categories"
+					}
+				},
+				{
+					"name": "Create Category",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"name\": \"Du lịch\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://localhost:8202/api/v1/categories",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8202",
+							"path": [
+								"api",
+								"v1",
+								"categories"
+							]
+						},
+						"description": "Thêm category mới cho user (dành cho phần Add Category ngay trong modal)"
+					}
+				}
+			]
+		},
+		{
+			"name": "Goals",
+			"item": [
+				{
+					"name": "Get All Goals (auto status update)",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "http://localhost:8202/api/v1/goals",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8202",
+							"path": [
+								"api",
+								"v1",
+								"goals"
+							]
+						},
+						"description": "Lấy danh sách mục tiêu (service sẽ auto cập nhật status ACTIVE/COMPLETED/FAILED)"
+					}
+				},
+				{
+					"name": "Create Goal",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"title\": \"Mua laptop mới\",\n    \"amount\": 20000000,\n    \"startAt\": \"2024-01-01T00:00:00\",\n    \"endAt\": \"2024-12-31T23:59:59\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://localhost:8202/api/v1/goals",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8202",
+							"path": [
+								"api",
+								"v1",
+								"goals"
+							]
+						},
+						"description": "Tạo mục tiêu tài chính mới"
+					}
+				},
+				{
+					"name": "Update Goal Status",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"status\": \"FAILED\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://localhost:8202/api/v1/goals/:id/status",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8202",
+							"path": [
+								"api",
+								"v1",
+								"goals",
+								":id",
+								"status"
+							],
+							"variable": [
+								{
+									"key": "id",
+									"value": "goal-id-here",
+									"description": "UUID của goal cần cập nhật"
+								}
+							]
+						},
+						"description": "Chuyển trạng thái mục tiêu sang ACTIVE/COMPLETED/FAILED (nếu cần thủ công)"
+					}
+				}
+			]
+		},
+		{
+			"name": "Transactions",
+			"item": [
+				{
+					"name": "Create Transaction (Income/Expense)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"type\": \"INCOME\",\n    \"amount\": 8000000,\n    \"name\": \"Lương tháng 11\",\n    \"categoryId\": \"category-uuid-here\",\n    \"note\": \"Lương chính\",\n    \"goalId\": \"goal-uuid-optional\",\n    \"transactionDate\": \"2024-11-01T09:00:00\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://localhost:8202/api/v1/transactions",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8202",
+							"path": [
+								"api",
+								"v1",
+								"transactions"
+							]
+						},
+						"description": "Tạo giao dịch mới. Nếu type = INCOME và có goalId → savedAmount của goal sẽ tăng & check status"
+					}
+				},
+				{
+					"name": "Delete Transaction (Undo)",
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "http://localhost:8202/api/v1/transactions/:id",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8202",
+							"path": [
+								"api",
+								"v1",
+								"transactions",
+								":id"
+							],
+							"variable": [
+								{
+									"key": "id",
+									"value": "transaction-id-here",
+									"description": "UUID của transaction cần xoá (khi user bấm Undo toast)"
+								}
+							]
+						},
+						"description": "Đánh dấu transaction là DELETED và rollback savedAmount của goal nếu cần"
+					}
+				},
+				{
+					"name": "List Transactions (Paginated + Month filter)",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "http://localhost:8202/api/v1/transactions?page=0&size=15&startDate=2024-11-01T00:00:00&endDate=2024-11-30T23:59:59",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8202",
+							"path": [
+								"api",
+								"v1",
+								"transactions"
+							],
+							"query": [
+								{
+									"key": "page",
+									"value": "0"
+								},
+								{
+									"key": "size",
+									"value": "15"
+								},
+								{
+									"key": "startDate",
+									"value": "2024-11-01T00:00:00"
+								},
+								{
+									"key": "endDate",
+									"value": "2024-11-30T23:59:59"
+								}
+							]
+						},
+						"description": "Lấy danh sách giao dịch phân trang. Nếu không truyền startDate/endDate ⇒ backend tự set tháng hiện tại"
+					}
+				}
+			]
+		}
+	]
+}
+
