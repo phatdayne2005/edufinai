@@ -1,0 +1,345 @@
+{
+  "info": {
+    "_postman_id": "c0835952-61b6-4a1c-98a3-6a9d37b6fdff",
+    "name": "Gamification Service",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "_exporter_id": "cursor-agent"
+  },
+  "item": [
+    {
+      "name": "Reward APIs",
+      "description": "Endpoints for reward creation and summary retrieval",
+      "item": [
+        {
+          "name": "Add Reward - Quiz Attempt",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"userId\": \"{{userId}}\",\n  \"sourceType\": \"QUIZ\",\n  \"lessonId\": \"{{lessonId}}\",\n  \"enrollId\": \"{{enrollId}}\",\n  \"score\": 80,\n  \"reason\": \"Quiz attempt\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/reward",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "reward"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Add Reward - Manual Adjustment",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"userId\": \"{{userId}}\",\n  \"sourceType\": \"MANUAL\",\n  \"score\": 50,\n  \"reason\": \"Manual bonus\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/reward",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "reward"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get My Reward Summary",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/reward",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "reward"
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Challenge APIs",
+      "item": [
+        {
+          "name": "Get All Challenges",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/challenge",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "challenge"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Create Challenge",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Complete 10 quizzes this week\",\n  \"description\": \"Finish any 10 quizzes within the week\",\n  \"type\": \"QUIZ\",\n  \"scope\": \"WEEKLY\",\n  \"targetValue\": 10,\n  \"rewardScore\": 100,\n  \"rewardBadgeCode\": \"WEEKLY_BADGE\",\n  \"maxProgressPerDay\": 3,\n  \"startAt\": \"2025-01-13T00:00:00+07:00[Asia/Ho_Chi_Minh]\",\n  \"endAt\": \"2025-01-19T23:59:59+07:00[Asia/Ho_Chi_Minh]\",\n  \"active\": true,\n  \"rule\": \"{\\\"eventType\\\":\\\"QUIZ\\\",\\\"action\\\":\\\"COMPLETE\\\",\\\"count\\\":10,\\\"maxProgressPerDay\\\":3}\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/challenge",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "challenge"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Delete Challenge",
+          "request": {
+            "method": "DELETE",
+            "url": {
+              "raw": "{{baseUrl}}/challenge/{{challengeId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "challenge",
+                "{{challengeId}}"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Current User Info (/me)",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/me",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "me"
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Challenge Progress APIs",
+      "item": [
+        {
+          "name": "Publish Challenge Event",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"userId\": \"{{userId}}\",\n  \"eventType\": \"QUIZ\",\n  \"action\": \"COMPLETE\",\n  \"lessonId\": \"{{lessonId}}\",\n  \"enrollId\": \"{{enrollId}}\",\n  \"score\": 85,\n  \"amount\": 1\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/challenge/event",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "challenge",
+                "event"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Challenge Progress",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/challenge/{{challengeId}}/progress",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "challenge",
+                "{{challengeId}}",
+                "progress"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get My Active Challenges",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/challenge/me/active",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "challenge",
+                "me",
+                "active"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get My Completed Challenges",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/challenge/me/completed",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "challenge",
+                "me",
+                "completed"
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Leaderboard APIs",
+      "item": [
+        {
+          "name": "Get Leaderboard Top N",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/leaderboard/{{leaderboardType}}/{{topNumber}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "leaderboard",
+                "{{leaderboardType}}",
+                "{{topNumber}}"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get My Rank",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/leaderboard/{{leaderboardType}}/me",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "leaderboard",
+                "{{leaderboardType}}",
+                "me"
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Badge APIs",
+      "item": [
+        {
+          "name": "Get My Badges",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/badge/me",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "badge",
+                "me"
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    }
+  ],
+  "event": [],
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:8203/api/v1/gamify"
+    },
+    {
+      "key": "userId",
+      "value": "550e8400-e29b-41d4-a716-446655440000"
+    },
+    {
+      "key": "lessonId",
+      "value": "660e8400-e29b-41d4-a716-446655440000"
+    },
+    {
+      "key": "enrollId",
+      "value": "ENROLL-123456"
+    },
+    {
+      "key": "challengeId",
+      "value": "770e8400-e29b-41d4-a716-446655440000"
+    },
+    {
+      "key": "leaderboardType",
+      "value": "DAILY"
+    },
+    {
+      "key": "topNumber",
+      "value": "10"
+    }
+  ]
+}
+

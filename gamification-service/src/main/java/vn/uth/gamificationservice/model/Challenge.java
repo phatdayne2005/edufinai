@@ -40,9 +40,8 @@ public class Challenge {
     @Enumerated(EnumType.STRING)
     private ChallengeScope scope;
 
-    @Column(name = "target")
-    @NotNull
-    private String target;
+    @Column(name = "target_value")
+    private Integer targetValue;
 
     @Column(name = "start_at")
     @NotNull
@@ -59,6 +58,15 @@ public class Challenge {
     @Column(name = "rule")
     @NotNull
     private String rule;
+
+    @Column(name = "reward_score")
+    private Integer rewardScore;
+
+    @Column(name = "reward_badge_code")
+    private String rewardBadgeCode;
+
+    @Column(name = "max_progress_per_day")
+    private Integer maxProgressPerDay;
 
     @Column(name = "created_at", updatable = false)
     private ZonedDateTime createdAt;

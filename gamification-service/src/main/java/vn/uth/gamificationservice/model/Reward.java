@@ -2,8 +2,8 @@ package vn.uth.gamificationservice.model;
 
 import jakarta.persistence.*;
 
-import java.util.UUID;
 import java.time.LocalDateTime;
+import java.util.UUID;
 
 @Entity
 @Table(name = "rewards")
@@ -24,6 +24,19 @@ public class Reward {
 
     @Column(name = "reason")
     private String reason;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "source_type")
+    private RewardSourceType sourceType;
+
+    @Column(name = "lesson_id", columnDefinition = "BINARY(16)")
+    private UUID lessonId;
+
+    @Column(name = "enroll_id", length = 64)
+    private String enrollId;
+
+    @Column(name = "challenge_id", columnDefinition = "BINARY(16)")
+    private UUID challengeId;
 
     @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt;
@@ -71,6 +84,38 @@ public class Reward {
         this.reason = reason;
     }
 
+    public RewardSourceType getSourceType() {
+        return sourceType;
+    }
+
+    public void setSourceType(RewardSourceType sourceType) {
+        this.sourceType = sourceType;
+    }
+
+    public UUID getLessonId() {
+        return lessonId;
+    }
+
+    public void setLessonId(UUID lessonId) {
+        this.lessonId = lessonId;
+    }
+
+    public String getEnrollId() {
+        return enrollId;
+    }
+
+    public void setEnrollId(String enrollId) {
+        this.enrollId = enrollId;
+    }
+
+    public UUID getChallengeId() {
+        return challengeId;
+    }
+
+    public void setChallengeId(UUID challengeId) {
+        this.challengeId = challengeId;
+    }
+
     public LocalDateTime getCreatedAt() {
         return createdAt;
     }
@@ -87,6 +132,10 @@ public class Reward {
                 ", badge='" + badge + '\'' +
                 ", score=" + score +
                 ", reason='" + reason + '\'' +
+                ", sourceType=" + sourceType +
+                ", lessonId=" + lessonId +
+                ", enrollId='" + enrollId + '\'' +
+                ", challengeId=" + challengeId +
                 ", createdAt=" + createdAt +
                 '}';
     }

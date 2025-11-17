@@ -28,11 +28,15 @@ public class ChallengeService {
     }
 
     @Transactional
-    public Challenge delete(UUID challengeId) {
-        return challengeRepository.deleteById(challengeId);
+    public void delete(UUID challengeId) {
+        challengeRepository.deleteById(challengeId);
     }
 
     public Challenge findById(UUID id) {
-        return this.challengeRepository.findById(id);
+        return this.challengeRepository.findById(id).orElse(null);
+    }
+
+    public boolean existsById(UUID id) {
+        return this.challengeRepository.existsById(id);
     }
 }

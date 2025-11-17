@@ -1,12 +1,14 @@
 package vn.uth.gamificationservice.repository;
 
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.stereotype.Repository;
 import vn.uth.gamificationservice.model.Challenge;
 
+import java.time.ZonedDateTime;
+import java.util.List;
 import java.util.UUID;
 
-public interface ChallengeRepository extends JpaRepository<Challenge, Integer> {
-    Challenge save(Challenge newChallenge);
-    Challenge findById(UUID id);
-    Challenge deleteById(UUID id);
+@Repository
+public interface ChallengeRepository extends JpaRepository<Challenge, UUID> {
+    List<Challenge> findByActiveTrueAndStartAtLessThanEqualAndEndAtGreaterThanEqual(ZonedDateTime from, ZonedDateTime to);
 }
