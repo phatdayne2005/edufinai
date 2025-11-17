@@ -83,3 +83,7 @@ gemini:
   apiUrl: https://generativelanguage.googleapis.com/v1beta
   apiKey: ${GEMINI_API_KEY:}
   model: gemini-2.5-flash  # Changed from gemini-2.5-pro (was returning 503)
+
+
+jwt:
+  secret: '1TjXchw5FloESb63Kc+DFhTARvpWL4jUGCwfGWxuG5SIf/1y/LgJxHnMqaF6A/ij'
