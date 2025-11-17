@@ -57,6 +57,17 @@ spring:
                     regexp: /auth/(?<segment>.*)
                     replacement: /identity/${segment}
 
+            - id: ai-service
+              uri:
+                lb://AI-SERVICE
+              predicates:
+                - Path=/ai/**
+              filters:
+                - name: RewritePath
+                  args:
+                    regexp: /ai/(?<segment>.*)
+                    replacement: /api/chat/${segment}
+
 eureka:
   client:
     service-url:

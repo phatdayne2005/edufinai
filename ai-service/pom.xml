@@ -4,10 +4,10 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
-    <groupId>com.xdpm.service5.ai_service</groupId>
-    <artifactId>edufinai-service</artifactId>
+    <groupId>vn.uth.edufinai</groupId>
+    <artifactId>ai-service</artifactId>
     <version>0.0.1-SNAPSHOT</version>
-    <name>EduFinAI Service</name>
+    <name>ai-service</name>
     <description>EduFinAI microservice (WebFlux + JPA + Gemini)</description>
 
     <parent>

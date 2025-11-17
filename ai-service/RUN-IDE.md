@@ -77,7 +77,7 @@ Trong **Run → Edit Configurations → VM options**, thêm:
 1. **Run → Run Configurations...**
 2. **Right-click Java Application → New**
 3. Đặt tên: `AiServiceApplication`
-4. **Main class**: `com.xdpm.service5.ai_service.AiServiceApplication`
+4. **Main class**: `vn.uth.edufinai.AiServiceApplication`
 5. Tab **Environment**:
    - Click **New**
    - **Name**: `GEMINI_API_KEY`
@@ -126,7 +126,7 @@ Tạo file `.vscode/launch.json`:
       "type": "java",
       "name": "Run AiServiceApplication",
       "request": "launch",
-      "mainClass": "com.xdpm.service5.ai_service.AiServiceApplication",
+      "mainClass": "vn.uth.edufinai.AiServiceApplication",
       "projectName": "edufinai-service",
       "env": {
         "GEMINI_API_KEY": "your-api-key-here"
