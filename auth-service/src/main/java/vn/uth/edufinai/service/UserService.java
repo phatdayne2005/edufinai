@@ -4,13 +4,15 @@ import java.util.HashSet;
 import java.util.List;
 
 import org.springframework.dao.DataIntegrityViolationException;
-import org.springframework.security.access.prepost.PostAuthorize;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import vn.uth.edufinai.constant.PredefinedRole;
+import vn.uth.edufinai.dto.request.AdminUserCreationRequest;
 import vn.uth.edufinai.dto.request.UserCreationRequest;
 import vn.uth.edufinai.dto.request.UserUpdateRequest;
 import vn.uth.edufinai.dto.response.UserResponse;
@@ -55,6 +57,44 @@ public class UserService {
         return userMapper.toUserResponse(user);
     }
 
+    @PreAuthorize("hasRole('ADMIN')")
+    public UserResponse createUserByAdmin(AdminUserCreationRequest request) {
+        // Validate role
+        String roleName = request.getRole();
+        if (!roleName.equals(PredefinedRole.LEARNER_ROLE) 
+                && !roleName.equals(PredefinedRole.CREATOR_ROLE)
+                && !roleName.equals(PredefinedRole.MOD_ROLE)
+                && !roleName.equals(PredefinedRole.ADMIN_ROLE)) {
+            throw new AppException(ErrorCode.INVALID_KEY); // Using INVALID_KEY for invalid role
+        }
+
+        // Manually create User from AdminUserCreationRequest
+        User user = User.builder()
+                .username(request.getUsername())
+                .password(passwordEncoder.encode(request.getPassword()))
+                .firstName(request.getFirstName())
+                .lastName(request.getLastName())
+                .email(request.getEmail())
+                .phone(request.getPhone())
+                .dob(request.getDob())
+                .build();
+
+        // Set the role specified by admin
+        HashSet<Role> roles = new HashSet<>();
+        Role role = roleRepository.findById(roleName)
+                .orElseThrow(() -> new AppException(ErrorCode.INVALID_KEY));
+        roles.add(role);
+        user.setRoles(roles);
+
+        try {
+            user = userRepository.save(user);
+        } catch (DataIntegrityViolationException exception) {
+            throw new AppException(ErrorCode.USER_EXISTED);
+        }
+
+        return userMapper.toUserResponse(user);
+    }
+
     public UserResponse getMyInfo() {
         var context = SecurityContextHolder.getContext();
         String name = context.getAuthentication().getName();
@@ -64,9 +104,19 @@ public class UserService {
         return userMapper.toUserResponse(user);
     }
 
-    @PostAuthorize("returnObject.username == authentication.name")
     public UserResponse updateUser(String userId, UserUpdateRequest request) {
         User user = userRepository.findById(userId).orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTED));
+        
+        // Check if current user is admin or updating their own account
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        boolean isAdmin = authentication.getAuthorities().stream()
+                .map(GrantedAuthority::getAuthority)
+                .anyMatch(auth -> auth.equals("ROLE_ADMIN"));
+        boolean isOwnAccount = authentication.getName().equals(user.getUsername());
+        
+        if (!isAdmin && !isOwnAccount) {
+            throw new AppException(ErrorCode.UNAUTHORIZED);
+        }
 
         // IMPORTANT: Only update fields that are explicitly provided in the request
         // If a field is null in the request, it means it was not included, so we don't update it
