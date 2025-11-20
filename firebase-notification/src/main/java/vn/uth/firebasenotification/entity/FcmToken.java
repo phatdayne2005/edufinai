@@ -3,7 +3,7 @@ package vn.uth.firebasenotification.entity;
 import jakarta.persistence.*;
 import lombok.*;
 
-import java.security.Timestamp;
+import java.sql.Timestamp;
 
 @Entity
 @Getter

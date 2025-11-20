@@ -1,7 +1,17 @@
 package vn.uth.firebasenotification.controller;
 
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.server.ResponseStatusException;
+import vn.uth.firebasenotification.dto.NotifyDto;
+import vn.uth.firebasenotification.dto.RegisterTokenDto;
+import vn.uth.firebasenotification.dto.TokenDto;
 import vn.uth.firebasenotification.service.FcmService;
 
 import java.security.Principal;
@@ -47,5 +57,15 @@ public class NotificationController {
         fcmService.broadcastToAll(dto.getTitle(), dto.getBody(), dto.getData());
         return ResponseEntity.accepted().build();
     }
-}
 
+    private Long getUserIdFromPrincipal(Principal principal) {
+        if (principal == null || principal.getName() == null) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Missing authenticated user");
+        }
+        try {
+            return Long.valueOf(principal.getName());
+        } catch (NumberFormatException ex) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid user id in principal");
+        }
+    }
+}
