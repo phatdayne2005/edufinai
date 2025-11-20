@@ -1,6 +1,5 @@
 package vn.uth.firebasenotification.controller;
 
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -8,40 +7,42 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
-import org.springframework.web.server.ResponseStatusException;
 import vn.uth.firebasenotification.dto.NotifyDto;
 import vn.uth.firebasenotification.dto.RegisterTokenDto;
 import vn.uth.firebasenotification.dto.TokenDto;
 import vn.uth.firebasenotification.service.FcmService;
+import vn.uth.firebasenotification.service.UserService;
 
-import java.security.Principal;
+import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/notifications")
 public class NotificationController {
 
     private final FcmService fcmService;
+    private final UserService userService;
 
-    public NotificationController(FcmService fcmService) {
+    public NotificationController(FcmService fcmService, UserService userService) {
         this.fcmService = fcmService;
+        this.userService = userService;
     }
 
     @PostMapping("/register-token")
-    public ResponseEntity<?> registerToken(@RequestBody RegisterTokenDto dto, Principal p) {
-        Long userId = getUserIdFromPrincipal(p); // or accept userId in DTO if called by other services with auth
+    public ResponseEntity<?> registerToken(@RequestBody RegisterTokenDto dto) {
+        UUID userId = userService.getMyInfo().getId();
         fcmService.registerToken(userId, dto.getToken(), dto.getPlatform(), dto.getDeviceInfo());
         return ResponseEntity.ok().build();
     }
 
     @DeleteMapping("/token")
-    public ResponseEntity<?> removeToken(@RequestBody TokenDto dto, Principal p) {
-        Long userId = getUserIdFromPrincipal(p);
+    public ResponseEntity<?> removeToken(@RequestBody TokenDto dto) {
+        UUID userId = userService.getMyInfo().getId();
         fcmService.removeToken(userId, dto.getToken());
         return ResponseEntity.ok().build();
     }
 
     @PostMapping("/user/{userId}")
-    public ResponseEntity<?> notifyUser(@PathVariable Long userId, @RequestBody NotifyDto dto) {
+    public ResponseEntity<?> notifyUser(@PathVariable UUID userId, @RequestBody NotifyDto dto) {
         fcmService.sendToUser(userId, dto.getTitle(), dto.getBody(), dto.getData());
         return ResponseEntity.accepted().build();
     }
@@ -58,14 +59,4 @@ public class NotificationController {
         return ResponseEntity.accepted().build();
     }
 
-    private Long getUserIdFromPrincipal(Principal principal) {
-        if (principal == null || principal.getName() == null) {
-            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Missing authenticated user");
-        }
-        try {
-            return Long.valueOf(principal.getName());
-        } catch (NumberFormatException ex) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid user id in principal");
-        }
-    }
 }

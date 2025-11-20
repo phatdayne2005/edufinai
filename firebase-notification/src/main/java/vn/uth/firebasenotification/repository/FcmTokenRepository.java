@@ -8,12 +8,14 @@ import vn.uth.firebasenotification.entity.FcmToken;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 
 public interface FcmTokenRepository extends JpaRepository<FcmToken, Long> {
-    List<FcmToken> findByUserIdAndIsActiveTrue(Long userId);
+    List<FcmToken> findByUserIdAndIsActiveTrue(UUID userId);
+
     Optional<FcmToken> findByToken(String token);
+
     @Modifying
     @Query("UPDATE FcmToken t SET t.isActive = false WHERE t.token = :token")
     void deactivateByToken(@Param("token") String token);
 }
-

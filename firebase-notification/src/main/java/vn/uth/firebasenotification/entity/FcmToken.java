@@ -4,6 +4,7 @@ import jakarta.persistence.*;
 import lombok.*;
 
 import java.sql.Timestamp;
+import java.util.UUID;
 
 @Entity
 @Getter
@@ -11,20 +12,19 @@ import java.sql.Timestamp;
 @ToString
 @NoArgsConstructor
 @AllArgsConstructor
-@Table(name = "user_fcm_tokens", indexes = {@Index(name="idx_user", columnList = "user_id")})
+@Table(name = "user_fcm_tokens", indexes = { @Index(name = "idx_user", columnList = "user_id") })
 public class FcmToken {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
-    private Long userId;
+    private UUID userId;
     @Column(length = 512, unique = true)
     private String token;
     private String platform;
-    @Column(columnDefinition = "json")
+    @Column(columnDefinition = "TEXT")
     private String deviceInfo;
     private Boolean isActive = true;
     private Timestamp createdAt;
     private Timestamp lastSeen;
     // getters/setters (or @Data lombok)
 }
-

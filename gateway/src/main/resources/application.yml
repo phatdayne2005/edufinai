@@ -68,6 +68,16 @@ spring:
                     regexp: /ai/(?<segment>.*)
                     replacement: /api/chat/${segment}
 
+            - id: notification-service
+              uri: lb://NOTIFICATION-SERVICE     # tên đúng như trong Eureka
+              predicates:
+                - Path=/notification/**
+              filters:
+                - name: RewritePath
+                  args:
+                    regexp: /notification/?(?<segment>.*)
+                    replacement: /api/notifications/${segment}
+
 eureka:
   client:
     service-url:

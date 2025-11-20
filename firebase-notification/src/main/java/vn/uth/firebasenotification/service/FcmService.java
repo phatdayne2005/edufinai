@@ -20,6 +20,7 @@ import java.sql.Timestamp;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 @Service
@@ -37,7 +38,7 @@ public class FcmService {
 
     // Save token (register)
     @Transactional
-    public void registerToken(Long userId, String token, String platform, String deviceInfo) {
+    public void registerToken(UUID userId, String token, String platform, String deviceInfo) {
         FcmToken existing = tokenRepo.findByToken(token).orElse(null);
         if (existing != null) {
             existing.setIsActive(true);
@@ -60,7 +61,7 @@ public class FcmService {
         }
     }
 
-    public void removeToken(Long userId, String token) {
+    public void removeToken(UUID userId, String token) {
         tokenRepo.findByToken(token).ifPresent(t -> {
             if (t.getUserId().equals(userId)) {
                 tokenRepo.deactivateByToken(token);
@@ -173,7 +174,7 @@ public class FcmService {
     }
 
     // Helper: send notification to a userId (all his active tokens)
-    public void sendToUser(Long userId, String title, String body, Map<String, String> data) {
+    public void sendToUser(UUID userId, String title, String body, Map<String, String> data) {
         List<FcmToken> tokens = tokenRepo.findByUserIdAndIsActiveTrue(userId);
         List<String> tks = tokens.stream().map(FcmToken::getToken).collect(Collectors.toList());
         if (!tks.isEmpty())
