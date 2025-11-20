@@ -1,6 +1,5 @@
 package vn.uth.edufinai.dto;
 
-import jakarta.validation.constraints.NotBlank;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -16,8 +15,13 @@ public class ChatRequest {
     /** Conversation ID để tiếp tục cuộc hội thoại cũ. Nếu không có, sẽ tạo conversation mới */
     private String conversationId;
 
-    @NotBlank(message = "Question cannot be blank")
     private String question;
+
+    /**
+     * Ngữ cảnh/preset để backend quyết định prompt (ví dụ: SPENDING_WIDGET, SAVING_WIDGET, GOAL_WIDGET).
+     * Nếu context được cung cấp thì question có thể để trống.
+     */
+    private String context;
 }
 
 

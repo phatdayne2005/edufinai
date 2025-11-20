@@ -17,9 +17,7 @@ public class RequestLoggingFilter implements WebFilter {
     public Mono<Void> filter(ServerWebExchange exchange, WebFilterChain chain) {
         String path = exchange.getRequest().getPath().value();
         String method = exchange.getRequest().getMethod().name();
-        String remoteAddress = exchange.getRequest().getRemoteAddress() != null 
-            ? exchange.getRequest().getRemoteAddress().getAddress().getHostAddress() 
-            : "unknown";
+        String remoteAddress = getRemoteAddress(exchange);
         
         if (log.isDebugEnabled()) {
             log.debug(">>> REQUEST: {} {} from {}", method, path, remoteAddress);
@@ -28,15 +26,25 @@ public class RequestLoggingFilter implements WebFilter {
         return chain.filter(exchange)
                 .doOnSuccess(aVoid -> {
                     if (log.isDebugEnabled()) {
-                        int statusCode = exchange.getResponse().getStatusCode() != null 
-                            ? exchange.getResponse().getStatusCode().value() 
-                            : 0;
+                        int statusCode = getStatusCode(exchange);
                         log.debug("<<< RESPONSE: {} {} - Status: {}", method, path, statusCode);
                     }
                 })
                 .doOnError(throwable -> {
                     log.error("<<< ERROR: {} {} - {}", method, path, throwable.getMessage());
                 });
+    }
+    
+    private String getRemoteAddress(ServerWebExchange exchange) {
+        var remoteAddress = exchange.getRequest().getRemoteAddress();
+        return remoteAddress != null && remoteAddress.getAddress() != null
+                ? remoteAddress.getAddress().getHostAddress()
+                : "unknown";
+    }
+    
+    private int getStatusCode(ServerWebExchange exchange) {
+        var statusCode = exchange.getResponse().getStatusCode();
+        return statusCode != null ? statusCode.value() : 0;
     }
 }
 

@@ -62,9 +62,10 @@ public class ChatResponseFormatter {
                     
         } catch (Exception e) {
             log.warn("Failed to parse JSON response from Gemini: {}", e.getMessage());
-            // Nếu không parse được JSON, coi như toàn bộ text là answer
-            // Loại bỏ markdown code block nếu có
-            String cleanAnswer = cleanedJson.replaceAll("```json\\s*", "").replaceAll("```\\s*", "").trim();
+            String cleanAnswer = cleanedJson
+                    .replaceAll("```json\\s*", "")
+                    .replaceAll("```\\s*", "")
+                    .trim();
             ChatResponse response = ChatResponse.builder()
                     .answer(cleanAnswer) // Fallback: dùng text đã clean làm answer
                     .tips(new ArrayList<>())
@@ -75,6 +76,11 @@ public class ChatResponseFormatter {
         }
     }
 
+    private static final String MARKDOWN_JSON_START = "```json";
+    private static final String MARKDOWN_CODE_START = "```";
+    private static final int MARKDOWN_JSON_START_LEN = MARKDOWN_JSON_START.length();
+    private static final int MARKDOWN_CODE_START_LEN = MARKDOWN_CODE_START.length();
+
     /**
      * Extract JSON từ markdown code block nếu có
      * Hỗ trợ các format:
@@ -83,31 +89,26 @@ public class ChatResponseFormatter {
      * - {...} (plain JSON)
      */
     private String extractJsonFromMarkdown(String text) {
-        if (text == null || text.trim().isEmpty()) {
+        if (text == null || text.isBlank()) {
             return text;
         }
         
         String trimmed = text.trim();
         
-        // Kiểm tra nếu có markdown code block với ```json
-        if (trimmed.startsWith("```json")) {
-            int start = trimmed.indexOf("```json") + 7; // Bỏ qua ```json
-            int end = trimmed.lastIndexOf("```");
-            if (end > start) {
-                return trimmed.substring(start, end).trim();
+        if (trimmed.startsWith(MARKDOWN_JSON_START)) {
+            int end = trimmed.lastIndexOf(MARKDOWN_CODE_START);
+            if (end > MARKDOWN_JSON_START_LEN) {
+                return trimmed.substring(MARKDOWN_JSON_START_LEN, end).trim();
             }
         }
         
-        // Kiểm tra nếu có markdown code block với ```
-        if (trimmed.startsWith("```")) {
-            int start = trimmed.indexOf("```") + 3; // Bỏ qua ```
-            int end = trimmed.lastIndexOf("```");
-            if (end > start) {
-                return trimmed.substring(start, end).trim();
+        if (trimmed.startsWith(MARKDOWN_CODE_START)) {
+            int end = trimmed.lastIndexOf(MARKDOWN_CODE_START);
+            if (end > MARKDOWN_CODE_START_LEN) {
+                return trimmed.substring(MARKDOWN_CODE_START_LEN, end).trim();
             }
         }
         
-        // Nếu không có markdown, trả về nguyên bản
         return trimmed;
     }
 

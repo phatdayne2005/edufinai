@@ -8,7 +8,7 @@ spring:
     url: ${DBMS_CONNECTION:jdbc:mysql://localhost:3306/identity}
     driverClassName: "com.mysql.cj.jdbc.Driver"
     username: ${DBMS_USERNAME:root}
-    password: ${DBMS_PASSWORD:123456}
+    password: ${DBMS_PASSWORD:root}
   jpa:
     hibernate:
       ddl-auto: update          # TỰ ĐỘNG TẠO/CẬP NHẬT BẢNG
@@ -19,6 +19,16 @@ spring:
     database-platform: org.hibernate.dialect.MySQL8Dialect
   application:
     name: AUTH-SERVICE          # Tên service trong Eureka (phải viết hoa)
+  cloud:
+    inetutils:
+      preferred-networks:
+        - 127.0.0.1
+        - localhost
+      ignored-interfaces:
+        - .*VMware.*
+        - .*VirtualBox.*
+        - .*vEthernet.*
+        - .*WSL.*
 
 eureka:
   client:
@@ -26,6 +36,14 @@ eureka:
       defaultZone: http://localhost:8761/eureka/
     register-with-eureka: true
     fetch-registry: true
+  instance:
+    prefer-ip-address: true
+    # Linh hoạt: Mặc định 127.0.0.1 (local), có thể override bằng env var EUREKA_INSTANCE_IP
+    ip-address: ${EUREKA_INSTANCE_IP:127.0.0.1}
+    hostname: ${EUREKA_INSTANCE_HOSTNAME:localhost}
+    non-secure-port-enabled: true
+    secure-port-enabled: false
+    instance-id: ${EUREKA_INSTANCE_IP:127.0.0.1}:${server.port}
 
 jwt:
   signerKey: "1TjXchw5FloESb63Kc+DFhTARvpWL4jUGCwfGWxuG5SIf/1y/LgJxHnMqaF6A/ij"

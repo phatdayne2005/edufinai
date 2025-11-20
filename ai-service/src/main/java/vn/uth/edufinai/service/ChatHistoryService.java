@@ -15,13 +15,17 @@ import reactor.core.scheduler.Schedulers;
 
 import java.time.Duration;
 import java.time.LocalDate;
-import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+
+import vn.uth.edufinai.util.Constants;
+import vn.uth.edufinai.util.DateTimeUtils;
+
+import static vn.uth.edufinai.util.DateTimeUtils.UTC;
 
 /**
  * Service để quản lý lịch sử chat và conversations
@@ -68,8 +72,7 @@ public class ChatHistoryService {
             entity.setUsagePromptTokens(chatResponse.getPromptTokens());
             entity.setUsageCompletionTokens(chatResponse.getCompletionTokens());
             entity.setUsageTotalTokens(chatResponse.getTotalTokens());
-            // Sử dụng UTC để nhất quán
-            entity.setCreatedAt(ZonedDateTime.now(java.time.ZoneId.of("UTC")));
+            entity.setCreatedAt(DateTimeUtils.nowUtc());
             
             return aiLogRepository.save(entity);
         }).subscribeOn(Schedulers.boundedElastic());
@@ -78,10 +81,10 @@ public class ChatHistoryService {
     /**
      * Lấy lịch sử conversation
      */
-    public Mono<ConversationHistory> getConversationHistory(String conversationId) {
+    public Mono<ConversationHistory> getConversationHistory(String conversationId, String userId) {
         return Mono.fromCallable(() -> {
-            List<AiLogEntity> entities = aiLogRepository.findByConversationIdOrderByCreatedAtAsc(conversationId);
-            
+            List<AiLogEntity> entities = aiLogRepository.findByConversationIdAndUserIdOrderByCreatedAtAsc(conversationId, userId);
+
             if (entities.isEmpty()) {
                 return null;
             }
@@ -94,7 +97,7 @@ public class ChatHistoryService {
             
             return ConversationHistory.builder()
                     .conversationId(conversationId)
-                    .userId(entities.get(0).getUserId())
+                    .userId(userId)
                     .messages(messages)
                     .build();
         }).subscribeOn(Schedulers.boundedElastic());
@@ -114,11 +117,10 @@ public class ChatHistoryService {
             for (var conv : conversations) {
                 String conversationId = conv.getConversationId();
                 
-                // Convert Timestamp sang ZonedDateTime (sử dụng UTC để nhất quán)
                 ZonedDateTime lastUpdated = null;
                 if (conv.getLastUpdated() != null) {
                     try {
-                        lastUpdated = conv.getLastUpdated().toInstant().atZone(java.time.ZoneId.of("UTC"));
+                        lastUpdated = conv.getLastUpdated().toInstant().atZone(UTC);
                         // Validate: đảm bảo timestamp không phải epoch (1970-01-01)
                         if (lastUpdated.toEpochSecond() <= 0) {
                             log.warn("Invalid lastUpdated timestamp (epoch) for conversationId={}, raw={}", 
@@ -132,39 +134,28 @@ public class ChatHistoryService {
                     }
                 }
                 
-                Optional<AiLogEntity> firstMessage = aiLogRepository.findFirstByConversationIdOrderByCreatedAtAsc(conversationId);
-                long messageCount = aiLogRepository.countByConversationId(conversationId);
+                Optional<AiLogEntity> firstMessage = aiLogRepository.findFirstByConversationIdAndUserIdOrderByCreatedAtAsc(conversationId, userId);
+                long messageCount = aiLogRepository.countByConversationIdAndUserId(conversationId, userId);
                 
                 if (firstMessage.isPresent()) {
                     String title = firstMessage.get().getQuestion();
-                    if (title != null && title.length() > 100) {
-                        title = title.substring(0, 100) + "...";
+                    if (title != null && title.length() > Constants.MAX_CONVERSATION_TITLE_LENGTH) {
+                        title = title.substring(0, Constants.MAX_CONVERSATION_TITLE_LENGTH) + "...";
                     }
                     
-                    // Đảm bảo createdAt cũng dùng UTC và không null
-                    ZonedDateTime createdAt = firstMessage.get().getCreatedAt();
-                    if (createdAt == null) {
-                        log.warn("createdAt is null for conversationId={}, using current time as fallback", conversationId);
-                        createdAt = ZonedDateTime.now(java.time.ZoneId.of("UTC"));
-                    } else {
-                        // Validate: đảm bảo timestamp không phải epoch (1970-01-01)
-                        if (createdAt.toEpochSecond() <= 0) {
-                            log.warn("Invalid createdAt timestamp (epoch) for conversationId={}, using current time as fallback", conversationId);
-                            createdAt = ZonedDateTime.now(java.time.ZoneId.of("UTC"));
-                        } else if (!createdAt.getZone().equals(java.time.ZoneId.of("UTC"))) {
-                            createdAt = createdAt.withZoneSameInstant(java.time.ZoneId.of("UTC"));
-                        }
-                    }
+                    ZonedDateTime createdAt = normalizeZonedDateTime(
+                            firstMessage.get().getCreatedAt(), 
+                            conversationId, 
+                            "createdAt"
+                    );
                     
                     // Nếu lastUpdated null hoặc invalid, dùng createdAt
                     if (lastUpdated == null) {
                         lastUpdated = createdAt;
                     }
                     
-                    // Tính relative time từ updatedAt (hoặc createdAt nếu updatedAt null)
                     String relativeTimeStr = formatRelativeTime(lastUpdated != null ? lastUpdated : createdAt);
                     
-                    // Log để debug (có thể remove sau)
                     log.debug("Conversation summary: conversationId={}, createdAt={}, updatedAt={}, relativeTime={}", 
                             conversationId, createdAt, lastUpdated, relativeTimeStr);
                     
@@ -186,19 +177,18 @@ public class ChatHistoryService {
 
     /**
      * Lấy context từ conversation history (để đưa vào prompt)
+     * Note: Method này không filter theo userId vì dùng cho context trong prompt
      */
     public Mono<List<ChatMessage>> getConversationContext(String conversationId, int limit) {
         return Mono.fromCallable(() -> {
             List<AiLogEntity> entities = aiLogRepository.findByConversationIdOrderByCreatedAtAsc(conversationId);
             
-            // Lấy N messages gần nhất
             int start = Math.max(0, entities.size() - limit);
             List<AiLogEntity> recentEntities = entities.subList(start, entities.size());
             
-            List<ChatMessage> messages = new ArrayList<>();
+            List<ChatMessage> messages = new ArrayList<>(recentEntities.size());
             for (AiLogEntity entity : recentEntities) {
-                ChatMessage message = toChatMessage(entity);
-                messages.add(message);
+                messages.add(toChatMessage(entity));
             }
             
             return messages;
@@ -209,24 +199,22 @@ public class ChatHistoryService {
      * Xóa conversation (xóa tất cả messages trong conversation)
      * Sử dụng TransactionTemplate để đảm bảo delete operation chạy trong transaction
      */
-    public Mono<Boolean> deleteConversation(String conversationId) {
+    public Mono<Boolean> deleteConversation(String conversationId, String userId) {
         return Mono.fromCallable(() -> {
             try {
                 return transactionTemplate.execute(status -> {
-                    // Kiểm tra conversation có tồn tại không
-                    long count = aiLogRepository.countByConversationId(conversationId);
-                    if (count == 0) {
-                        log.warn("Conversation not found: conversationId={}", conversationId);
+                    boolean exists = aiLogRepository.existsByConversationIdAndUserId(conversationId, userId);
+                    if (!exists) {
+                        log.warn("Conversation not found or not owned by user: conversationId={}, userId={}", conversationId, userId);
                         return false;
                     }
                     
-                    // Xóa tất cả messages trong conversation
-                    aiLogRepository.deleteByConversationId(conversationId);
-                    log.info("Deleted conversation: conversationId={}, messageCount={}", conversationId, count);
-                    return true;
+                    long deleted = aiLogRepository.deleteByConversationIdAndUserId(conversationId, userId);
+                    log.info("Deleted conversation: conversationId={}, userId={}, deletedMessages={}", conversationId, userId, deleted);
+                    return deleted > 0;
                 });
             } catch (Exception e) {
-                log.error("Error deleting conversation: conversationId={}, error={}", conversationId, e.getMessage(), e);
+                log.error("Error deleting conversation: conversationId={}, userId={}, error={}", conversationId, userId, e.getMessage(), e);
                 throw new RuntimeException("Failed to delete conversation: " + e.getMessage(), e);
             }
         }).subscribeOn(Schedulers.boundedElastic());
@@ -262,20 +250,11 @@ public class ChatHistoryService {
             }
         }
         
-        // Đảm bảo createdAt không null và đúng format
-        ZonedDateTime createdAt = entity.getCreatedAt();
-        if (createdAt == null) {
-            log.warn("createdAt is null for messageId={}, using current time as fallback", entity.getId());
-            createdAt = ZonedDateTime.now(java.time.ZoneId.of("UTC"));
-        } else {
-            // Validate: đảm bảo timestamp không phải epoch (1970-01-01)
-            if (createdAt.toEpochSecond() <= 0) {
-                log.warn("Invalid createdAt timestamp (epoch) for messageId={}, using current time as fallback", entity.getId());
-                createdAt = ZonedDateTime.now(java.time.ZoneId.of("UTC"));
-            } else if (!createdAt.getZone().equals(java.time.ZoneId.of("UTC"))) {
-                createdAt = createdAt.withZoneSameInstant(java.time.ZoneId.of("UTC"));
-            }
-        }
+        ZonedDateTime createdAt = normalizeZonedDateTime(
+                entity.getCreatedAt(), 
+                String.valueOf(entity.getId()), 
+                "messageId"
+        );
         
         return ChatMessage.builder()
                 .id(entity.getId())
@@ -294,6 +273,17 @@ public class ChatHistoryService {
     }
 
     /**
+     * Normalize ZonedDateTime về UTC và validate
+     */
+    private ZonedDateTime normalizeZonedDateTime(ZonedDateTime dateTime, String identifier, String fieldName) {
+        ZonedDateTime normalized = DateTimeUtils.normalizeToUtc(dateTime, true);
+        if (normalized != dateTime && dateTime != null) {
+            log.warn("{} normalized for {}: {} -> {}", fieldName, identifier, dateTime, normalized);
+        }
+        return normalized;
+    }
+
+    /**
      * Format thời gian tương đối từ ZonedDateTime (tiếng Việt)
      * Ví dụ: "Vừa xong", "2 phút trước", "1 giờ trước", "Hôm qua", "3 ngày trước", v.v.
      */
@@ -302,65 +292,48 @@ public class ChatHistoryService {
             return "";
         }
         
-        // Chuyển về UTC để tính toán
-        ZonedDateTime now = ZonedDateTime.now(ZoneId.of("UTC"));
-        ZonedDateTime target = dateTime.withZoneSameInstant(ZoneId.of("UTC"));
+        ZonedDateTime now = DateTimeUtils.nowUtc();
+        ZonedDateTime target = dateTime.withZoneSameInstant(UTC);
         
         Duration duration = Duration.between(target, now);
         long seconds = duration.getSeconds();
         
-        // Nếu thời gian trong tương lai (có thể do lệch thời gian server)
-        if (seconds < 0) {
+        if (seconds < 0 || seconds < Constants.Time.SECONDS_PER_MINUTE) {
             return "Vừa xong";
         }
         
-        // Dưới 1 phút
-        if (seconds < 60) {
-            return "Vừa xong";
-        }
-        
-        // Dưới 1 giờ
-        long minutes = seconds / 60;
-        if (minutes < 60) {
+        long minutes = seconds / Constants.Time.SECONDS_PER_MINUTE;
+        if (minutes < Constants.Time.MINUTES_PER_HOUR) {
             return minutes + " phút trước";
         }
         
-        // Dưới 24 giờ
-        long hours = minutes / 60;
-        if (hours < 24) {
+        long hours = minutes / Constants.Time.MINUTES_PER_HOUR;
+        if (hours < Constants.Time.HOURS_PER_DAY) {
             return hours + " giờ trước";
         }
         
-        // Kiểm tra hôm qua
         LocalDate today = now.toLocalDate();
         LocalDate targetDate = target.toLocalDate();
-        LocalDate yesterday = today.minusDays(1);
-        
-        if (targetDate.equals(yesterday)) {
+        if (targetDate.equals(today.minusDays(1))) {
             return "Hôm qua";
         }
         
-        // Dưới 7 ngày
-        long days = hours / 24;
-        if (days < 7) {
+        long days = hours / Constants.Time.HOURS_PER_DAY;
+        if (days < Constants.Time.DAYS_PER_WEEK) {
             return days + " ngày trước";
         }
         
-        // Dưới 4 tuần
-        long weeks = days / 7;
+        long weeks = days / Constants.Time.DAYS_PER_WEEK;
         if (weeks < 4) {
             return weeks + " tuần trước";
         }
         
-        // Dưới 12 tháng
-        long months = days / 30;
-        if (months < 12) {
+        long months = days / Constants.Time.DAYS_PER_MONTH;
+        if (months < Constants.Time.MONTHS_PER_YEAR) {
             return months + " tháng trước";
         }
         
-        // Quá 1 năm - hiển thị ngày tháng đầy đủ
-        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd/MM/yyyy");
-        return targetDate.format(formatter);
+        return targetDate.format(DateTimeFormatter.ofPattern("dd/MM/yyyy"));
     }
 }
 

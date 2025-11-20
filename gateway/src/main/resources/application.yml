@@ -6,6 +6,15 @@ spring:
     name: gateway
 
   cloud:
+    inetutils:
+      preferred-networks:
+        - 127.0.0.1
+        - localhost
+      ignored-interfaces:
+        - .*VMware.*
+        - .*VirtualBox.*
+        - .*vEthernet.*
+        - .*WSL.*
     gateway:
       server:
         webflux:
@@ -66,7 +75,7 @@ spring:
                 - name: RewritePath
                   args:
                     regexp: /ai/(?<segment>.*)
-                    replacement: /api/chat/${segment}
+                    replacement: /api/${segment}
 
             - id: notification-service
               uri: lb://NOTIFICATION-SERVICE     # tên đúng như trong Eureka
@@ -84,3 +93,11 @@ eureka:
       defaultZone: http://localhost:8761/eureka/
     register-with-eureka: true
     fetch-registry: true
+  instance:
+    prefer-ip-address: true
+    # Linh hoạt: Mặc định 127.0.0.1 (local), có thể override bằng env var EUREKA_INSTANCE_IP
+    ip-address: ${EUREKA_INSTANCE_IP:127.0.0.1}
+    hostname: ${EUREKA_INSTANCE_HOSTNAME:localhost}
+    non-secure-port-enabled: true
+    secure-port-enabled: false
+    instance-id: ${EUREKA_INSTANCE_IP:127.0.0.1}:${server.port}

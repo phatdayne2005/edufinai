@@ -16,6 +16,9 @@ public class ReportResponse {
     private String model;
     private String rawSummary;
     private String sanitizedSummary;
+    private String insight;
+    private String rootCause;
+    private String priorityAction;
 
     private Integer usagePromptTokens;
     private Integer usageCompletionTokens;

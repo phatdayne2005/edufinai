@@ -1,7 +1,9 @@
 spring:
   application:
     name: ai-service
-
+  main:
+    web-application-type: reactive
+    
   codec:
     charset: UTF-8
   
@@ -9,11 +11,21 @@ spring:
     serialization:
       write-dates-as-timestamps: false
     time-zone: UTC
+  cloud:
+    inetutils:
+      preferred-networks:
+        - 127.0.0.1
+        - localhost
+      ignored-interfaces:
+        - .*VMware.*
+        - .*VirtualBox.*
+        - .*vEthernet.*
+        - .*WSL.*
 
   datasource:
     url: jdbc:mysql://localhost:3306/ai_service
     username: root
-    password: 123456
+    password: root
     driver-class-name: com.mysql.cj.jdbc.Driver
 
   jpa:
@@ -54,9 +66,6 @@ edufinai:
     responseTimeoutMs: 10000
   gemini:
     timeoutSeconds: 60
-  scheduler:
-    daily:
-      cron: "0 0 0 * * *" # 02:15 hàng ngày
   cors:
     allowedOrigins: http://localhost:3000,http://localhost:3001,http://127.0.0.1:3000
 
@@ -67,18 +76,36 @@ eureka:
   client:
     service-url:
       default-zone: http://localhost:8761/eureka
+    register-with-eureka: true
+    fetch-registry: true
+  instance:
+    prefer-ip-address: true
+    # Linh hoạt: Mặc định 127.0.0.1 (local), có thể override bằng env var EUREKA_INSTANCE_IP
+    ip-address: ${EUREKA_INSTANCE_IP:127.0.0.1}
+    hostname: ${EUREKA_INSTANCE_HOSTNAME:localhost}
+    non-secure-port-enabled: true
+    secure-port-enabled: false
+    instance-id: ${EUREKA_INSTANCE_IP:127.0.0.1}:${server.port}
 
 # Khai báo downstream services (đặt URL HTTP đầy đủ tới endpoint summary phù hợp của từng service)
-services:
-  transaction:
-    url: http://localhost:8081/api/summary/daily
-  userprofile:
-    url: http://localhost:8082/api/summary/daily
-  goals:
-    url: http://localhost:8083/api/summary/daily
-  learning:
-    url: http://localhost:8084/api/summary/daily
-
+#services:
+#  transaction:
+#    url: http://finance-service/api/summary/daily
+#  userprofile:
+#    url: http://auth-service/api/summary/daily
+#  goals:
+#    url: http://gamification-service/api/summary/daily
+#  learning:
+#    url: http://learning-service/api/summary/daily
+  services:
+    transaction:
+      url: http://localhost:9100/api/summary/daily
+    userprofile:
+      url: http://localhost:9100/api/userprofile/summary
+    goals:
+      url: http://localhost:9100/api/goals/summary
+    learning:
+      url: http://localhost:9100/api/learning/summary
 gemini:
   apiUrl: https://generativelanguage.googleapis.com/v1beta
   apiKey: ${GEMINI_API_KEY:}

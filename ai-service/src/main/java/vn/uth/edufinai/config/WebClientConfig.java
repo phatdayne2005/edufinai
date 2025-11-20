@@ -7,6 +7,8 @@ import io.netty.handler.timeout.ReadTimeoutHandler;
 import io.netty.handler.timeout.WriteTimeoutHandler;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.cloud.client.loadbalancer.LoadBalanced;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Primary;
@@ -60,8 +62,7 @@ public class WebClientConfig {
         return builder;
     }
 
-    @Bean
-    public WebClient.Builder webClientBuilder() {
+    private WebClient.Builder createBaseBuilder() {
         ConnectionProvider provider = ConnectionProvider.builder("edufinai-pool")
                 .maxConnections(200)
                 .pendingAcquireTimeout(Duration.ofSeconds(30))
@@ -82,6 +83,19 @@ public class WebClientConfig {
         return WebClient.builder()
                 .clientConnector(new ReactorClientHttpConnector(httpClient))
                 .exchangeStrategies(strategies);
+    }
+
+    @Bean
+    @Primary
+    @LoadBalanced
+    public WebClient.Builder webClientBuilder() {
+        return createBaseBuilder();
+    }
+
+    @Bean
+    @Qualifier("plainWebClientBuilder")
+    public WebClient.Builder plainWebClientBuilder() {
+        return createBaseBuilder();
     }
 
     @Bean

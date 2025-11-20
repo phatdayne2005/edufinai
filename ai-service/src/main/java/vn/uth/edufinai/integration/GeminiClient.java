@@ -3,6 +3,7 @@ package vn.uth.edufinai.integration;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Component;
@@ -30,7 +31,7 @@ public class GeminiClient {
     private final String model;
     private final int timeoutSeconds;
 
-    public GeminiClient(WebClient.Builder builder,
+    public GeminiClient(@Qualifier("plainWebClientBuilder") WebClient.Builder builder,
                         ObjectMapper objectMapper,
                         @Value("${gemini.apiUrl:https://generativelanguage.googleapis.com/v1beta}") String apiUrl,
                         @Value("${gemini.apiKey:}") String apiKey,

@@ -16,6 +16,11 @@ public interface AiLogRepository extends JpaRepository<AiLogEntity, Long> {
     List<AiLogEntity> findByConversationIdOrderByCreatedAtAsc(String conversationId);
     
     /**
+     * Lấy tất cả messages trong một conversation của user cụ thể, sắp xếp theo thời gian
+     */
+    List<AiLogEntity> findByConversationIdAndUserIdOrderByCreatedAtAsc(String conversationId, String userId);
+    
+    /**
      * Projection interface để lấy conversationId và lastUpdated
      */
     interface ConversationIdWithLastUpdated {
@@ -42,6 +47,11 @@ public interface AiLogRepository extends JpaRepository<AiLogEntity, Long> {
     Optional<AiLogEntity> findFirstByConversationIdOrderByCreatedAtAsc(String conversationId);
     
     /**
+     * Lấy message đầu tiên của một conversation của user cụ thể
+     */
+    Optional<AiLogEntity> findFirstByConversationIdAndUserIdOrderByCreatedAtAsc(String conversationId, String userId);
+    
+    /**
      * Lấy message mới nhất của một conversation
      */
     Optional<AiLogEntity> findFirstByConversationIdOrderByCreatedAtDesc(String conversationId);
@@ -52,8 +62,23 @@ public interface AiLogRepository extends JpaRepository<AiLogEntity, Long> {
     long countByConversationId(String conversationId);
     
     /**
+     * Đếm số messages trong một conversation của user cụ thể
+     */
+    long countByConversationIdAndUserId(String conversationId, String userId);
+    
+    /**
      * Xóa tất cả messages trong một conversation
      */
     void deleteByConversationId(String conversationId);
+
+    /**
+     * Kiểm tra conversation có thuộc về user không
+     */
+    boolean existsByConversationIdAndUserId(String conversationId, String userId);
+
+    /**
+     * Xóa conversation theo conversationId và userId (bảo vệ sở hữu)
+     */
+    long deleteByConversationIdAndUserId(String conversationId, String userId);
 }
 
