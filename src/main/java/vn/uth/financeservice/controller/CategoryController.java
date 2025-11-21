@@ -2,6 +2,7 @@ package vn.uth.financeservice.controller;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import vn.uth.financeservice.dto.CategoryRequestDto;
@@ -20,22 +21,37 @@ public class CategoryController {
     private final CategoryService categoryService;
 
     @GetMapping
-    public ResponseEntity<List<Category>> getUserCategories() {
-        UUID userId = UUID.nameUUIDFromBytes("demo-user".getBytes()); // sau này sẽ thay bằng JWT
+    public ResponseEntity<List<Category>> getUserCategories(Authentication authentication) {
+        UUID userId = extractUserId(authentication);
         return ResponseEntity.ok(categoryService.getUserCategories(userId));
     }
 
     @PostMapping
-    public ResponseEntity<?> create(@RequestBody @Validated CategoryRequestDto dto) {
-        UUID userId = UUID.nameUUIDFromBytes("demo-user".getBytes()); // sau này sẽ thay bằng JWT
+    public ResponseEntity<?> create(@RequestBody @Validated CategoryRequestDto dto,
+                                    Authentication authentication) {
+        UUID userId = extractUserId(authentication);
         return ResponseEntity.ok(categoryService.createCategory(userId, dto));
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<?> delete(@PathVariable UUID id) {
-        UUID userId = UUID.nameUUIDFromBytes("demo-user".getBytes()); // sau này sẽ thay bằng JWT
+    public ResponseEntity<?> delete(@PathVariable UUID id, Authentication authentication) {
+        UUID userId = extractUserId(authentication);
         categoryService.deleteCategory(id, userId);
         return ResponseEntity.ok().build();
+    }
+
+    private UUID extractUserId(Authentication authentication) {
+        if (authentication == null || authentication.getPrincipal() == null) {
+            throw new RuntimeException("Unauthenticated request");
+        }
+        Object principal = authentication.getPrincipal();
+        if (principal instanceof UUID uuid) {
+            return uuid;
+        }
+        if (principal instanceof String value) {
+            return UUID.fromString(value);
+        }
+        throw new RuntimeException("Invalid authentication principal");
     }
 }
 

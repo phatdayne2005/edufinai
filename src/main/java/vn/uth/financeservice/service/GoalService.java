@@ -37,9 +37,13 @@ public class GoalService {
     }
 
     @Transactional
-    public Goal updateStatus(UUID goalId, GoalStatusUpDate dto) {
+    public Goal updateStatus(UUID goalId, GoalStatusUpDate dto, UUID userId) {
         Goal g = goalRepository.findById(goalId)
                 .orElseThrow(() -> new RuntimeException("Goal not found"));
+
+        if (!g.getUserId().equals(userId)) {
+            throw new RuntimeException("Forbidden");
+        }
 
         // Convert String -> Enum
         GoalStatus newStatus = GoalStatus.valueOf(dto.getStatus().toUpperCase());
