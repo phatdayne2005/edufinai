@@ -1,0 +1,116 @@
+spring:
+  application:
+    name: ai-service
+  main:
+    web-application-type: reactive
+    
+  codec:
+    charset: UTF-8
+  
+  jackson:
+    serialization:
+      write-dates-as-timestamps: false
+    time-zone: UTC
+  cloud:
+    inetutils:
+      preferred-networks:
+        - 127.0.0.1
+        - localhost
+      ignored-interfaces:
+        - .*VMware.*
+        - .*VirtualBox.*
+        - .*vEthernet.*
+        - .*WSL.*
+
+  datasource:
+    url: jdbc:mysql://localhost:3306/ai_service
+    username: root
+    password: root
+    driver-class-name: com.mysql.cj.jdbc.Driver
+
+  jpa:
+    hibernate:
+      ddl-auto: none
+    properties:
+      hibernate:
+        format_sql: false
+        jdbc.time_zone: UTC
+    open-in-view: false
+
+  sql:
+    init:
+      mode: always
+      platform: mysql
+
+logging:
+  level:
+    root: INFO
+    org.springframework.web.reactive.function.client: WARN
+    reactor.netty.http.client: WARN
+    com.xdpm.service5.ai_service: INFO
+    org.springframework.web: INFO
+    org.springframework.web.reactive: INFO
+    org.springframework.web.HttpLogging: WARN
+  file:
+    name: logs/ai-service.log
+    max-size: 10MB
+    max-history: 30
+  pattern:
+    file: "%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n"
+    console: "%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n"
+
+edufinai:
+  http:
+    maxInMemorySizeBytes: 16777216
+    connectTimeoutMs: 3000
+    responseTimeoutMs: 10000
+  gemini:
+    timeoutSeconds: 60
+  cors:
+    allowedOrigins: http://localhost:3000,http://localhost:3001,http://127.0.0.1:3000
+
+server:
+  port: 9001
+
+eureka:
+  client:
+    service-url:
+      default-zone: http://localhost:8761/eureka
+    register-with-eureka: true
+    fetch-registry: true
+  instance:
+    prefer-ip-address: true
+    # Linh hoạt: Mặc định 127.0.0.1 (local), có thể override bằng env var EUREKA_INSTANCE_IP
+    ip-address: ${EUREKA_INSTANCE_IP:127.0.0.1}
+    hostname: ${EUREKA_INSTANCE_HOSTNAME:localhost}
+    non-secure-port-enabled: true
+    secure-port-enabled: false
+    instance-id: ${EUREKA_INSTANCE_IP:127.0.0.1}:${server.port}
+
+# Khai báo downstream services (đặt URL HTTP đầy đủ tới endpoint summary phù hợp của từng service)
+#services:
+#  transaction:
+#    url: http://finance-service/api/summary/daily
+#  userprofile:
+#    url: http://auth-service/api/summary/daily
+#  goals:
+#    url: http://gamification-service/api/summary/daily
+#  learning:
+#    url: http://learning-service/api/summary/daily
+  services:
+    transaction:
+      url: http://localhost:9100/api/summary/daily
+    userprofile:
+      url: http://localhost:9100/api/userprofile/summary
+    goals:
+      url: http://localhost:9100/api/goals/summary
+    learning:
+      url: http://localhost:9100/api/learning/summary
+gemini:
+  apiUrl: https://generativelanguage.googleapis.com/v1beta
+  apiKey: ${GEMINI_API_KEY:}
+  model: gemini-2.5-flash  # Changed from gemini-2.5-pro (was returning 503)
+
+
+jwt:
+  secret: '1TjXchw5FloESb63Kc+DFhTARvpWL4jUGCwfGWxuG5SIf/1y/LgJxHnMqaF6A/ij'
