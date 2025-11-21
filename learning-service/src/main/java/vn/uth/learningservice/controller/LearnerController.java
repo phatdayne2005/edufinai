@@ -1,185 +1,52 @@
 package vn.uth.learningservice.controller;
 
-import jakarta.validation.Valid;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Controller;
-import org.springframework.ui.Model;
-import org.springframework.validation.BindingResult;
+import lombok.RequiredArgsConstructor;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.multipart.MultipartFile;
-import vn.uth.learningservice.dto.LearnerDto;
+import vn.uth.learningservice.dto.response.LearnerRes;
+import vn.uth.learningservice.dto.shared.LearnerLevel;
+import vn.uth.learningservice.mapper.LearnerMapper;
 import vn.uth.learningservice.model.Learner;
 import vn.uth.learningservice.service.LearnerService;
 
-import java.io.InputStream;
-import java.nio.file.*;
-import java.util.*;
+import java.util.List;
+import java.util.UUID;
+import java.util.stream.Collectors;
 
-@Controller
-@RequestMapping("/api/learner")
+@RestController
+@RequestMapping("/api/learners")
+@RequiredArgsConstructor
 public class LearnerController {
 
-    @Autowired
-    private LearnerService service;
+    private final LearnerService learnerService;
+    private final LearnerMapper mapper;
 
-    @GetMapping("/home")
-    public String displayLearnerList(Model model) {
-        List<Learner> learnerList = service.getAllLearners();
-        model.addAttribute("learnerList", learnerList);
-        return "learner/home";
+    // GET /api/learners/{id} -Lấy thông tin chi tiết của một learner theo ID
+    @GetMapping("/{id}")
+    public ResponseEntity<LearnerRes> getById(@PathVariable("id") UUID id) {
+        Learner learner = learnerService.getById(id);
+        return ResponseEntity.ok(mapper.toDto(learner));
     }
 
-    @GetMapping("/create")
-    public String displayCreatePage(Model model) {
-        LearnerDto learnerDto = new LearnerDto();
-        model.addAttribute("learnerDto", learnerDto);
-        return "learner/createLearner";
+    // GET /api/learners - Lấy danh sách tất cả learners
+    @GetMapping
+    public ResponseEntity<List<LearnerRes>> listAll() {
+        List<Learner> learners = learnerService.listAll();
+        List<LearnerRes> dtoList = learners.stream()
+                .map(mapper::toDto)
+                .collect(Collectors.toList());
+        return ResponseEntity.ok(dtoList);
     }
 
-    @PostMapping("/create")
-    public String createLearner(@Valid @ModelAttribute LearnerDto learnerDto,
-                              BindingResult result) {
-        if (result.hasErrors()) {
-            return "learner/createLearner";
-        }
-
-        //Save image file
-        MultipartFile image = learnerDto.getAvatar();
-        String fileName = image.getOriginalFilename();
-
-        try {
-            String uploadDir = "public/images";
-            Path uploadPath = Paths.get(uploadDir);
-
-            if (!Files.exists(uploadPath)) {
-                Files.createDirectories(uploadPath);
-            }
-
-            try (InputStream inputStream = image.getInputStream()) {
-                Files.copy(inputStream, Paths.get(uploadDir + fileName),
-                        StandardCopyOption.REPLACE_EXISTING);
-            }
-        } catch (Exception ex) {
-            System.out.println("Exception " + ex.getMessage());
-        }
-
-        Learner learner = new Learner();
-        learner.setDisplayName(learnerDto.getDisplayName());
-        learner.setDob(learnerDto.getDob());
-        learner.setLevel(learnerDto.getLevel());
-        learner.setAvatar(fileName);
-        learner.setBio(learnerDto.getBio());
-        learner.setTotalPoints();
-        learner.setCreatedAt();
-        learner.setUpdatedAt();
-
-        service.addLearner(learner);
-
-        return "redirect:/learner/home";
-    }
-
-    @GetMapping("/view")
-    public String displayViewPage(Model model, @RequestParam UUID learnerId) {
-        try {
-            Learner learner = service.getLearnerById(learnerId);
-            model.addAttribute("learner", learner);
-
-        } catch (Exception ex) {
-            System.out.println("Exception " + ex.getMessage());
-            return  "redirect:/learner/home";
-        }
-
-        return "learner/viewLearner";
-    }
-
-    @GetMapping("/update")
-    public String displayUpdatePage(Model model, @RequestParam UUID learnerId) {
-        try {
-            Learner learner = service.getLearnerById(learnerId);
-            model.addAttribute("learner", learner);
-
-            LearnerDto learnerDto = new LearnerDto();
-            learnerDto.setDisplayName(learner.getDisplayName());
-            learnerDto.setDob(learner.getDob());
-            learnerDto.setLevel(learner.getLevel());
-            learnerDto.setBio(learner.getBio());
-
-            model.addAttribute("learnerDto", learnerDto);
-        } catch (Exception ex) {
-            System.out.println("Exception " + ex.getMessage());
-            return  "redirect:/learner/home";
-        }
-
-        return "learner/updateLearner";
-    }
-
-    @PostMapping("/update")
-    public String updateLearner(Model model, @RequestParam UUID learnerId,
-                              @Valid @ModelAttribute LearnerDto learnerDto,
-                              BindingResult result) {
-        try {
-            Learner learner = service.getLearnerById(learnerId);
-            model.addAttribute("learner", learner);
-
-            if (result.hasErrors()) {
-                return "learner/updateLearner";
-            }
-
-            if (!learnerDto.getAvatar().isEmpty()) {
-                // Delete old image
-                String uploadDir = "public/images/";
-                Path oldUploadPath = Paths.get(uploadDir + learner.getAvatar());
-
-                try {
-                    Files.delete(oldUploadPath);
-                } catch (Exception ex) {
-                    System.out.println("Exception " + ex.getMessage());
-                }
-
-                // Save new image file
-                MultipartFile image = learnerDto.getAvatar();
-                String fileName = image.getOriginalFilename();
-
-                try (InputStream inputStream = image.getInputStream()) {
-                    Files.copy(inputStream, Paths.get(uploadDir + fileName),
-                            StandardCopyOption.REPLACE_EXISTING);
-                }
-                learner.setAvatar(fileName);
-            }
-
-            learnerDto.setDisplayName(learner.getDisplayName());
-            learnerDto.setDob(learner.getDob());
-            learnerDto.setLevel(learner.getLevel());
-            learnerDto.setBio(learner.getBio());
-
-            service.updateLearner(learner);
-        } catch (Exception ex) {
-            System.out.println("Exception " + ex.getMessage());
-        }
-
-        return "redirect:/learner/home";
-    }
-
-    @GetMapping("/delete")
-    public String deleteLearner(@RequestParam UUID learnerId) {
-        try {
-            Learner learner = service.getLearnerById(learnerId);
-
-            // Delete learner avatar
-            Path imagePath = Paths.get("public/images/" + learner.getAvatar());
-
-            try {
-                Files.delete(imagePath);
-            } catch (Exception ex) {
-                System.out.println("Exception " + ex.getMessage());
-            }
-
-            // Delete the learner
-            service.deleteLearner(learnerId);
-        } catch (Exception ex) {
-            System.out.println("Exception " + ex.getMessage());
-        }
-
-        return "redirect:/learner/home";
+    // GET /api/learners/level/{level} - Lấy danh sách learners theo level
+    // @param level Level của learner (BEGINNER, INTERMEDIATE, ADVANCED)
+    @GetMapping("/level/{level}")
+    public ResponseEntity<List<LearnerRes>> listByLevel(@PathVariable("level") LearnerLevel level) {
+        Learner.Level modelLevel = mapper.toModelLevel(level);
+        List<Learner> learners = learnerService.listByLevel(modelLevel);
+        List<LearnerRes> dtoList = learners.stream()
+                .map(mapper::toDto)
+                .collect(Collectors.toList());
+        return ResponseEntity.ok(dtoList);
     }
 }

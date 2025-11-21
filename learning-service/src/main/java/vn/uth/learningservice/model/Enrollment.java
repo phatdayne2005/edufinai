@@ -7,14 +7,16 @@ import lombok.*;
 import java.time.*;
 import java.util.*;
 
-@Data
-//@Entity
-//@Table(name = "enrollment",
-//        uniqueConstraints = @UniqueConstraint(name="uq_learner_lesson", columnNames={"learner_id","lesson_id"}))
+@Entity
+@Table(name = "enrollment", uniqueConstraints = @UniqueConstraint(name = "uq_learner_lesson", columnNames = {
+        "learner_id", "lesson_id" }))
+@Getter
+@Setter
+@NoArgsConstructor
 public class Enrollment {
 
     @Id
-    @GeneratedValue(strategy =  GenerationType.UUID)
+    @GeneratedValue(strategy = GenerationType.UUID)
     @Column(name = "enrollment_id", updatable = false)
     private UUID id;
 
@@ -28,16 +30,14 @@ public class Enrollment {
 
     @Enumerated(EnumType.STRING)
     @Column(name = "status", length = 20, nullable = false)
-    private Status status = Status.NOT_STARTED; // NOT_STARTED, IN_PROGRESS, COMPLETED
+    private Status status = Status.IN_PROGRESS; // IN_PROGRESS, COMPLETED
 
-    @Min(0) @Max(100)
+    @Min(0)
+    @Max(100)
     @Column(name = "progress_percent", nullable = false)
     private Integer progressPercent = 0;
 
-    @Column(name = "user_Answer")
-    private String userAnswers;
-
-    @Min(0) @Max(100)
+    @Min(0)
     @Column(name = "score")
     private Integer score;
 
@@ -54,6 +54,7 @@ public class Enrollment {
     @Column(name = "last_activity_at")
     private LocalDateTime lastActivityAt;
 
-    public enum Status { NOT_STARTED, IN_PROGRESS, COMPLETED }
-
+    public enum Status {
+        IN_PROGRESS, COMPLETED
+    }
 }

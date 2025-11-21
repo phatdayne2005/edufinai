@@ -3,19 +3,27 @@ package vn.uth.learningservice.model;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.*;
 import lombok.*;
+import org.hibernate.annotations.OnDelete;
+import org.hibernate.annotations.OnDeleteAction;
+
 import java.time.*;
 import java.util.*;
 
-@Data
+@Entity
+@Table(
+        name = "lesson",
+        uniqueConstraints = @UniqueConstraint(columnNames = "slug")
+)
+@Getter
+@Setter
+@NoArgsConstructor
 public class Lesson {
-
     @Id
     @Column(name = "lesson_id")
     @GeneratedValue(strategy =  GenerationType.UUID)
     private UUID id;
 
     @OneToMany(mappedBy = "lesson")
-    @ToString.Exclude @EqualsAndHashCode.Exclude
     private List<Enrollment> enrollments = new ArrayList<>();
 
     @ManyToOne
@@ -33,7 +41,7 @@ public class Lesson {
 
     @NotBlank
     @Size(max = 180)
-    @Column(name = "slug", nullable = false, length = 180, unique = true)
+    @Column(name = "slug", nullable = false, length = 180)
     private String slug;
 
     @Size(max = 1000)
@@ -44,14 +52,14 @@ public class Lesson {
     @NotBlank
     @Lob
     @Basic(fetch = FetchType.LAZY)
-    @Column(name = "content", nullable = false)
+    @Column(name = "content", nullable = false, columnDefinition = "LONGTEXT")
     private String content;
 
     // minutes
     @NotNull
-    @Min(1)
+    @Min(0)
     @Column(name = "duration_minutes", nullable = false)
-    private Integer durationMinutes = 5;
+    private Integer durationMinutes = 0;
 
     @NotNull
     @Enumerated(EnumType.STRING)
@@ -75,19 +83,28 @@ public class Lesson {
 
     // Simple tagging without extra file (ElementCollection → join table)
     @ElementCollection
-    @CollectionTable(name = "lesson_tags", joinColumns = @JoinColumn(name = "lesson_id"))
-    @Column(name = "tag", length = 50)
-    private Set<String> tags = new HashSet<>();
+    @CollectionTable(name = "lesson_tags",
+            joinColumns = @JoinColumn(name = "lesson_id"),
+            uniqueConstraints = @UniqueConstraint(columnNames = {"lesson_id","tag"}))
+    @Column(name = "tag", length = 50, nullable = false)
+    @Enumerated(EnumType.STRING)
+    @OnDelete(action = OnDeleteAction.CASCADE)
+    private Set<Tag> tags = new HashSet<>();
 
     // Quiz payload (JSON-as-text); keep flexible for now
     @Lob
     @Basic(fetch = FetchType.LAZY)
-    @Column(name = "quiz_json")
+    @Column(name = "quiz_json", columnDefinition = "LONGTEXT")
     private String quizJson;
 
+    @Lob
+    @Basic(fetch = FetchType.LAZY)
+    @Column(name = "comment_by_mod", columnDefinition = "LONGTEXT")
+    private String commentByMod;
+
     // Versioning & auditing
-    @Version
-    private Long version;
+    // @Version
+    // private Long version;
 
     @Column(name = "approved_at")
     private LocalDateTime approvedAt;
@@ -105,11 +122,17 @@ public class Lesson {
 
     public enum Difficulty { BASIC, INTERMEDIATE, ADVANCED }
     public enum Status { DRAFT, PENDING, APPROVED, REJECTED }
+    public enum Tag { BUDGETING, INVESTING, SAVING, DEBT, TAX }
 
-    /*private String slugify(String input) {
-        String s = input == null ? "" : input.trim().toLowerCase(Locale.ROOT);
+    public static String slugify(String input) {
+        if (input == null || input.isBlank()) {
+            return "lesson";
+        }
+        String s = input.trim().toLowerCase(Locale.ROOT);
         s = s.replaceAll("[^a-z0-9\\s-]", "");
         s = s.replaceAll("\\s+", "-");
-        return s.length() > 180 ? s.substring(0, 180) : s;
-    }*/
+        s = s.replaceAll("-+", "-");
+        s = s.replaceAll("^-|-$", "");
+        return s.length() > 180 ? s.substring(0, 180) : (s.isEmpty() ? "lesson" : s);
+    }
 }

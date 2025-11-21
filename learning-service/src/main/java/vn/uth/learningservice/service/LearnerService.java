@@ -1,35 +1,37 @@
 package vn.uth.learningservice.service;
 
-import org.springframework.beans.factory.annotation.Autowired;
+import jakarta.persistence.EntityNotFoundException;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import vn.uth.learningservice.model.Learner;
 import vn.uth.learningservice.repository.LearnerRepository;
 
-import java.util.*;
+import java.util.List;
+import java.util.UUID;
 
 @Service
+@RequiredArgsConstructor
 public class LearnerService {
 
-    @Autowired
-    private LearnerRepository learnerRepo;
+    private final LearnerRepository learnerRepo;
 
-    public List<Learner> getAllLearners() {
+    public Learner getById(UUID id) {
+        return learnerRepo.findById(id).orElseThrow(() -> new IllegalArgumentException("Learner not found: " + id));
+    }
+
+    public List<Learner> listAll() {
         return learnerRepo.findAll();
     }
 
-    public Learner getLearnerById(UUID learnerId) {
-        return learnerRepo.findById(learnerId).orElse(null);
+    public List<Learner> listByLevel(Learner.Level level) {
+        return learnerRepo.findByLevel(level);
     }
 
-    public void addLearner(Learner learner) {
-        learnerRepo.save(learner);
-    }
-
-    public void updateLearner(Learner learner) {
-        learnerRepo.save(learner);
-    }
-
-    public void deleteLearner(UUID learnerId) {
-        learnerRepo.deleteById(learnerId);
+    @Transactional
+    public void addPoints(UUID learnerId, int delta) {
+        if (delta <= 0) return; // chỉ cộng điểm nếu delta > 0
+        int updated = learnerRepo.addLearningPoints(learnerId, delta);
+        if (updated == 0) throw new EntityNotFoundException("Learner not found: " + learnerId);
     }
 }

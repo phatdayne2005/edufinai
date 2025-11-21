@@ -1,6 +1,6 @@
 package vn.uth.learningservice.service;
 
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import vn.uth.learningservice.model.Creator;
 import vn.uth.learningservice.repository.CreatorRepository;
@@ -8,28 +8,20 @@ import vn.uth.learningservice.repository.CreatorRepository;
 import java.util.*;
 
 @Service
+@RequiredArgsConstructor
 public class CreatorService {
 
-    @Autowired
-    private CreatorRepository creatorRepo;
+    private final CreatorRepository creatorRepo;
 
-    public List<Creator> getAllCreators() {
+    public Creator getById(UUID id) {
+        return creatorRepo.findById(id).orElseThrow(() -> new IllegalArgumentException("Creator not found: " + id));
+    }
+
+    public List<Creator> listAll() {
         return creatorRepo.findAll();
     }
 
-    public Creator getCreatorById(UUID creatorId) {
-        return creatorRepo.findById(creatorId).orElse(null);
-    }
-
-    public void addCreator(Creator creator) {
-        creatorRepo.save(creator);
-    }
-
-    public void updateCreator(Creator creator) {
-        creatorRepo.save(creator);
-    }
-
-    public void deleteCreator(UUID creatorId) {
-        creatorRepo.deleteById(creatorId);
+    public long countLessons(UUID creatorId) {
+        return creatorRepo.countLessons(creatorId);
     }
 }
