@@ -1,0 +1,247 @@
+{
+  "info": {
+    "name": "Expense & Goal API",
+    "_postman_id": "ea599e9d-d8ac-4b68-9dd8-1bf3a3228255",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Expense",
+      "item": [
+        {
+          "name": "Create Expense",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{JWT_TOKEN}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"type\": \"EXPENSE\",\n  \"amount\": 250000,\n  \"category\": \"Ăn uống\",\n  \"note\": \"Ăn trưa với bạn\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/expenses",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "expenses"
+              ]
+            },
+            "description": "Tạo khoản thu/chi mới"
+          },
+          "response": []
+        },
+        {
+          "name": "Update Expense",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{JWT_TOKEN}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"type\": \"EXPENSE\",\n  \"amount\": 300000,\n  \"category\": \"Mua sắm\",\n  \"note\": \"Mua giày mới\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/expenses/<<EXPENSE_ID>>",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "expenses",
+                "<<EXPENSE_ID>>"
+              ]
+            },
+            "description": "Cập nhật khoản thu/chi (thay <<EXPENSE_ID>> bằng ID thực tế)"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Expense History",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{JWT_TOKEN}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/expenses/history",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "expenses",
+                "history"
+              ]
+            },
+            "description": "Lấy lịch sử chi tiêu của người dùng"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Goal",
+      "item": [
+        {
+          "name": "Get Financial Goals",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{JWT_TOKEN}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/goals",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "goals"
+              ]
+            },
+            "description": "Lấy danh sách mục tiêu tài chính"
+          },
+          "response": []
+        },
+        {
+          "name": "Create New Goal",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{JWT_TOKEN}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Mua laptop mới\",\n  \"amount\": 15000000,\n  \"endAt\": \"2025-12-31T23:59:59\",\n  \"startAt\": \"2024-01-01T00:00:00\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/goals",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "goals"
+              ]
+            },
+            "description": "Tạo mục tiêu tài chính mới"
+          },
+          "response": []
+        },
+        {
+          "name": "Update Goal Status",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{JWT_TOKEN}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"COMPLETED\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/goals/<<GOAL_ID>>/status",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "goals",
+                "<<GOAL_ID>>",
+                "status"
+              ]
+            },
+            "description": "Cập nhật trạng thái mục tiêu (thay <<GOAL_ID>> bằng ID thực tế)"
+          },
+          "response": []
+        }
+      ]
+    }
+  ],
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://localhost:8202",
+      "type": "string"
+    },
+    {
+      "key": "JWT_TOKEN",
+      "value": "<paste_jwt_here>",
+      "type": "string"
+    }
+  ]
+}
