@@ -15,5 +15,7 @@ public class NotifyDto {
     private String title;
     private String body;
     private Map<String, String> data;
+    private String topic;
+    private String token;
 }
 

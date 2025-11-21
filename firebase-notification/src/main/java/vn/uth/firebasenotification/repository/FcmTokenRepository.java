@@ -15,6 +15,8 @@ public interface FcmTokenRepository extends JpaRepository<FcmToken, Long> {
 
     Optional<FcmToken> findByToken(String token);
 
+    List<FcmToken> findByUserId(UUID userId);
+
     @Modifying
     @Query("UPDATE FcmToken t SET t.isActive = false WHERE t.token = :token")
     void deactivateByToken(@Param("token") String token);

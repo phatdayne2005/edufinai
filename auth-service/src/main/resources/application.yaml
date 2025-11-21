@@ -8,7 +8,7 @@ spring:
     url: ${DBMS_CONNECTION:jdbc:mysql://localhost:3306/identity}
     driverClassName: "com.mysql.cj.jdbc.Driver"
     username: ${DBMS_USERNAME:root}
-    password: ${DBMS_PASSWORD:root}
+    password: ${DBMS_PASSWORD:123456}
   jpa:
     hibernate:
       ddl-auto: update          # TỰ ĐỘNG TẠO/CẬP NHẬT BẢNG

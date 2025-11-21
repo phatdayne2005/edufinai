@@ -11,6 +11,8 @@ import com.google.firebase.messaging.Notification;
 import com.google.firebase.messaging.SendResponse;
 import com.google.firebase.messaging.TopicManagementResponse;
 import jakarta.transaction.Transactional;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import vn.uth.firebasenotification.entity.FcmToken;
@@ -26,14 +28,17 @@ import java.util.stream.Collectors;
 @Service
 public class FcmService {
 
+    private static final Logger log = LoggerFactory.getLogger(FcmService.class);
     private final FcmTokenRepository tokenRepo;
     private final String defaultTopic;
     private static final int MULTICAST_BATCH_SIZE = 500;
+    private final UserService userService;
 
     public FcmService(FcmTokenRepository tokenRepo,
-            @Value("${fcm.default-topic:all}") String defaultTopic) {
+                      @Value("${fcm.default-topic:all}") String defaultTopic, UserService userService) {
         this.tokenRepo = tokenRepo;
         this.defaultTopic = defaultTopic;
+        this.userService = userService;
     }
 
     // Save token (register)
@@ -75,15 +80,18 @@ public class FcmService {
 
     // Send single notification to a token
     public void sendToToken(String token, String title, String body, Map<String, String> data) {
-        Notification notification = Notification.builder()
-                .setTitle(title)
-                .setBody(body)
-                .build();
-        Message msg = Message.builder()
+        Message.Builder builder = Message.builder()
                 .setToken(token)
-                .setNotification(notification)
-                .putAllData(data != null ? data : Collections.emptyMap())
-                .build();
+                .putAllData(data != null ? data : Collections.emptyMap());
+
+        if (hasNotificationPayload(title, body)) {
+            builder.setNotification(Notification.builder()
+                    .setTitle(title)
+                    .setBody(body)
+                    .build());
+        }
+
+        Message msg = builder.build();
         try {
             FirebaseMessaging.getInstance().send(msg);
             // success: update last_seen maybe
@@ -92,61 +100,38 @@ public class FcmService {
                 tokenRepo.save(t);
             });
         } catch (FirebaseMessagingException e) {
+            log.warn("FCM send to token failed: token={}, errorCode={}, message={}",
+                    token, e.getMessagingErrorCode(), e.getMessage());
             handleFcmExceptionForToken(e, token);
         }
     }
 
-    // Multicast to list of tokens (batching)
+    // Gửi tuần tự từng token để tránh lỗi mạng / batch
     public void sendToTokens(List<String> tokens, String title, String body, Map<String, String> data) {
-        List<List<String>> batches = Lists.partition(tokens, MULTICAST_BATCH_SIZE);
-        for (List<String> batch : batches) {
-            Notification notification = Notification.builder()
-                    .setTitle(title)
-                    .setBody(body)
-                    .build();
-            MulticastMessage mm = MulticastMessage.builder()
-                    .addAllTokens(batch)
-                    .setNotification(notification)
-                    .putAllData(data != null ? data : Collections.emptyMap())
-                    .build();
-            try {
-                BatchResponse response = FirebaseMessaging.getInstance().sendMulticast(mm);
-                // handle responses: remove invalid tokens
-                for (int i = 0; i < response.getResponses().size(); i++) {
-                    SendResponse r = response.getResponses().get(i);
-                    String tkn = batch.get(i);
-                    if (!r.isSuccessful()) {
-                        FirebaseMessagingException ex = (FirebaseMessagingException) r.getException();
-                        handleFcmExceptionForToken(ex, tkn);
-                    } else {
-                        tokenRepo.findByToken(tkn).ifPresent(tok -> {
-                            tok.setLastSeen(new Timestamp(System.currentTimeMillis()));
-                            tokenRepo.save(tok);
-                        });
-                    }
-                }
-            } catch (FirebaseMessagingException ex) {
-                // transient or top-level error - consider retry later
-                // log and optionally requeue job
-            }
+        for (String token : tokens) {
+            sendToToken(token, title, body, data);
         }
     }
 
     // Send to topic
     public void sendToTopic(String topic, String title, String body, Map<String, String> data) {
-        Notification notification = Notification.builder()
-                .setTitle(title)
-                .setBody(body)
-                .build();
-        Message msg = Message.builder()
+        Message.Builder builder = Message.builder()
                 .setTopic(topic)
-                .setNotification(notification)
-                .putAllData(data != null ? data : Collections.emptyMap())
-                .build();
+                .putAllData(data != null ? data : Collections.emptyMap());
+
+        if (hasNotificationPayload(title, body)) {
+            builder.setNotification(Notification.builder()
+                    .setTitle(title)
+                    .setBody(body)
+                    .build());
+        }
+
+        Message msg = builder.build();
         try {
             FirebaseMessaging.getInstance().send(msg);
         } catch (FirebaseMessagingException e) {
-            // handle top-level errors
+            log.error("FCM topic send failed: topic={}, errorCode={}, message={}",
+                    topic, e.getMessagingErrorCode(), e.getMessage());
         }
     }
 
@@ -168,8 +153,10 @@ public class FcmService {
         if (MessagingErrorCode.UNREGISTERED.equals(code)) {
             // delete token from DB
             tokenRepo.findByToken(token).ifPresent(t -> tokenRepo.delete(t));
+            log.info("Removed unregistered FCM token {}", token);
         } else {
             // log other errors; maybe retry if transient
+            log.warn("FCM send failed for token {} with error {}", token, code);
         }
     }
 
@@ -177,8 +164,12 @@ public class FcmService {
     public void sendToUser(UUID userId, String title, String body, Map<String, String> data) {
         List<FcmToken> tokens = tokenRepo.findByUserIdAndIsActiveTrue(userId);
         List<String> tks = tokens.stream().map(FcmToken::getToken).collect(Collectors.toList());
-        if (!tks.isEmpty())
-            sendToTokens(tks, title, body, data);
+        if (tks.isEmpty()) {
+            log.warn("No active FCM tokens found for user {}", userId);
+            return;
+        }
+        log.info("Sending notification to user {} with {} tokens", userId, tks.size());
+        sendToTokens(tks, title, body, data);
     }
 
     // Broadcast: either publish to topic or batch send to all tokens
@@ -191,5 +182,9 @@ public class FcmService {
         // List<String> allTokens = tokenRepo.findAllActiveTokens(); // implement repo
         // method
         // sendToTokens(allTokens, title, body, data);
+    }
+
+    private boolean hasNotificationPayload(String title, String body) {
+        return (title != null && !title.isBlank()) || (body != null && !body.isBlank());
     }
 }
