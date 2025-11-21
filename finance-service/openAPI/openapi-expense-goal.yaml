@@ -1,0 +1,220 @@
+openapi: 3.1.0
+info:
+  title: "Expense Tracking & Financial Goal API"
+  description: "API quản lý các khoản thu/chi và mục tiêu tài chính cá nhân (EduFinAI - Service 3)"
+  version: "1.0.0"
+servers:
+  - url: "/"
+    description: "Server gốc (ví dụ: http://localhost:8080)"
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  schemas:
+    ExpenseRequest:
+      type: object
+      required: [type, amount, category]
+      properties:
+        type:
+          type: string
+          enum: [INCOME, EXPENSE]
+          description: "Loại giao dịch"
+        amount:
+          type: number
+          format: double
+          description: "Số tiền giao dịch"
+        category:
+          type: string
+          description: "Danh mục (vd: Shopping, Food, ...)"
+        note:
+          type: string
+          description: "Ghi chú (tuỳ chọn)"
+        linked_account:
+          type: string
+          description: "Nguồn tiền/ví liên kết (vd: Momo)"
+        goal_id:
+          type: string
+          format: uuid
+          nullable: true
+          description: "ID mục tiêu liên kết (tuỳ chọn)"
+    Expense:
+      type: object
+      properties:
+        expense_id: { type: string, format: uuid }
+        type: { type: string }
+        amount: { type: number, format: double }
+        category: { type: string }
+        note: { type: string }
+        linked_account: { type: string }
+        goal_id: { type: string, format: uuid, nullable: true }
+        status: { type: string }
+        created_at: { type: string, format: date-time }
+        updated_at: { type: string, format: date-time }
+    ExpenseResponse:
+      type: object
+      properties:
+        expense_id: { type: string, format: uuid }
+        status: { type: string, example: "SUCCESS" }
+    GoalRequest:
+      type: object
+      required: [title, amount, end_at]
+      properties:
+        title: { type: string, description: "Tên mục tiêu" }
+        amount: { type: number, format: double, description: "Số tiền mục tiêu" }
+        end_at: { type: string, format: date-time, description: "Hạn hoàn thành" }
+        start_at: { type: string, format: date-time, nullable: true, description: "Ngày bắt đầu (optional)" }
+    Goal:
+      type: object
+      properties:
+        goal_id: { type: string, format: uuid }
+        title: { type: string }
+        amount: { type: number, format: double }
+        start_at: { type: string, format: date-time }
+        end_at: { type: string, format: date-time }
+        status: { type: string, enum: [ACTIVE, COMPLETED, FAILED] }
+    GoalStatusUpdate:
+      type: object
+      required: [status]
+      properties:
+        status:
+          type: string
+          enum: [ACTIVE, COMPLETED, FAILED]
+paths:
+  /api/v1/expense:
+    post:
+      summary: "Tạo khoản thu/chi"
+      security: [ { bearerAuth: [] } ]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/ExpenseRequest" }
+            example:
+              type: "EXPENSE"
+              amount: 250000
+              category: "Shopping"
+              note: "Mua áo thun"
+              linked_account: "Momo"
+      responses:
+        '201':
+          description: "Tạo thành công"
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ExpenseResponse" }
+              example: { expense_id: "e1f1d8a3-0000-0000-0000-000000000000", status: "SUCCESS" }
+        '400': { description: "Yêu cầu không hợp lệ" }
+        '401': { description: "Unauthorized" }
+  /api/v1/expense/{id}:
+    put:
+      summary: "Sửa khoản thu/chi"
+      security: [ { bearerAuth: [] } ]
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: string, format: uuid }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/ExpenseRequest" }
+            example:
+              type: "EXPENSE"
+              amount: 300000
+              category: "Shopping"
+              note: "Mua giày mới"
+              linked_account: "Momo"
+      responses:
+        '200':
+          description: "Cập nhật thành công"
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ExpenseResponse" }
+              example: { expense_id: "e1f1d8a3-0000-0000-0000-000000000000", status: "SUCCESS" }
+        '400': { description: "Yêu cầu không hợp lệ" }
+        '401': { description: "Unauthorized" }
+        '404': { description: "Không tìm thấy" }
+  /api/v1/expense/history:
+    get:
+      summary: "Lịch sử chi tiêu"
+      security: [ { bearerAuth: [] } ]
+      responses:
+        '200':
+          description: "Danh sách các khoản thu/chi"
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/Expense" }
+        '401': { description: "Unauthorized" }
+  /api/v1/goal:
+    get:
+      summary: "Lấy mục tiêu tài chính"
+      security: [ { bearerAuth: [] } ]
+      responses:
+        '200':
+          description: "Danh sách mục tiêu"
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/Goal" }
+        '401': { description: "Unauthorized" }
+    post:
+      summary: "Tạo mục tiêu mới"
+      security: [ { bearerAuth: [] } ]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/GoalRequest" }
+            example:
+              title: "Mua laptop mới"
+              amount: 15000000
+              end_at: "2025-12-31T00:00:00Z"
+      responses:
+        '201':
+          description: "Tạo thành công"
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  goal_id: { type: string, format: uuid }
+                  status: { type: string }
+                example: { goal_id: "a12b34c5-0000-0000-0000-000000000000", status: "SUCCESS" }
+        '400': { description: "Yêu cầu không hợp lệ" }
+        '401': { description: "Unauthorized" }
+  /api/v1/goal/{id}:
+    put:
+      summary: "Cập nhật trạng thái mục tiêu"
+      security: [ { bearerAuth: [] } ]
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: string, format: uuid }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/GoalStatusUpdate" }
+            example: { status: "COMPLETED" }
+      responses:
+        '200':
+          description: "Cập nhật thành công"
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  goal_id: { type: string, format: uuid }
+                  status: { type: string }
+                example: { goal_id: "a12b34c5-0000-0000-0000-000000000000", status: "SUCCESS" }
+        '400': { description: "Yêu cầu không hợp lệ" }
+        '401': { description: "Unauthorized" }
+        '404': { description: "Không tìm thấy" }
+
+  
