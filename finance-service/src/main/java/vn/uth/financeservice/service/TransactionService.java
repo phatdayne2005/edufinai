@@ -72,9 +72,13 @@ public class TransactionService {
     }
 
     @Transactional
-    public void deleteTransaction(UUID transactionId) {
+    public void deleteTransaction(UUID transactionId, UUID userId) {
         Transaction t = transactionRepository.findById(transactionId)
                 .orElseThrow(() -> new RuntimeException("Transaction not found"));
+        
+        if (!t.getUserId().equals(userId)) {
+            throw new RuntimeException("Forbidden");
+        }
         
         // Nếu transaction đã được gắn vào goal và là INCOME, trừ lại saved_amount
         if (t.getGoal() != null && t.getType() == TransactionType.INCOME && "ACTIVE".equals(t.getStatus())) {
