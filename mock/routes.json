@@ -1,7 +1,0 @@
-{
-  "/api/summary/daily": "/transaction-summary/daily",
-  "/api/userprofile/summary": "/userprofile-summary",
-  "/api/goals/summary": "/goals-summary",
-  "/api/learning/summary": "/learning-summary"
-}
-
