@@ -44,7 +44,10 @@ public class UserController {
     }
 
     @GetMapping("/{userId}")
-    ApiResponse<UserResponse> getUser(@PathVariable("userId") String userId) {
+    ApiResponse<UserResponse> getUser(
+            @PathVariable("userId") String userId,
+            @RequestHeader(value = "X-Internal-Client", required = false) String internalClientHeader) {
+
         var authentication = org.springframework.security.core.context.SecurityContextHolder.getContext()
                 .getAuthentication();
         boolean isAdmin = authentication.getAuthorities().stream()
@@ -52,18 +55,32 @@ public class UserController {
 
         if (!isAdmin) {
             // Nếu không phải Admin, kiểm tra Header "X-Internal-Client"
-            var requestAttributes = (org.springframework.web.context.request.ServletRequestAttributes) org.springframework.web.context.request.RequestContextHolder
-                    .getRequestAttributes();
-            String internalHeader = requestAttributes.getRequest().getHeader("X-Internal-Client");
+            log.info("Non-admin user accessing /users/{}, checking X-Internal-Client header", userId);
+            log.info("X-Internal-Client header value: {}", internalClientHeader);
 
-            if (!"EduFinAI-Internal-Secret".equals(internalHeader)) {
-                throw new org.springframework.security.access.AccessDeniedException("Access Denied");
+            if (!"EduFinAI-Internal-Secret".equals(internalClientHeader)) {
+                log.warn("Access denied: Invalid or missing X-Internal-Client header");
+                throw new org.springframework.security.access.AccessDeniedException(
+                        "Access Denied: This endpoint requires admin role or valid internal client header");
             }
+            log.info("Access granted via X-Internal-Client header");
         }
 
-        return ApiResponse.<UserResponse>builder()
-                .result(userService.getUser(userId))
-                .build();
+        try {
+            log.info("Calling userService.getUser for userId: {}", userId);
+            UserResponse userResponse = userService.getUser(userId);
+            log.info("Successfully retrieved user data for userId: {}", userId);
+
+            var response = ApiResponse.<UserResponse>builder()
+                    .result(userResponse)
+                    .build();
+
+            log.info("Successfully built response, returning to client");
+            return response;
+        } catch (Exception e) {
+            log.error("Exception occurred while processing getUser request for userId: {}", userId, e);
+            throw e;
+        }
     }
 
     @GetMapping("/my-info")

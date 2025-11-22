@@ -61,7 +61,7 @@ public class UserService {
     public UserResponse createUserByAdmin(AdminUserCreationRequest request) {
         // Validate role
         String roleName = request.getRole();
-        if (!roleName.equals(PredefinedRole.LEARNER_ROLE) 
+        if (!roleName.equals(PredefinedRole.LEARNER_ROLE)
                 && !roleName.equals(PredefinedRole.CREATOR_ROLE)
                 && !roleName.equals(PredefinedRole.MOD_ROLE)
                 && !roleName.equals(PredefinedRole.ADMIN_ROLE)) {
@@ -106,56 +106,57 @@ public class UserService {
 
     public UserResponse updateUser(String userId, UserUpdateRequest request) {
         User user = userRepository.findById(userId).orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTED));
-        
+
         // Check if current user is admin or updating their own account
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         boolean isAdmin = authentication.getAuthorities().stream()
                 .map(GrantedAuthority::getAuthority)
                 .anyMatch(auth -> auth.equals("ROLE_ADMIN"));
         boolean isOwnAccount = authentication.getName().equals(user.getUsername());
-        
+
         if (!isAdmin && !isOwnAccount) {
             throw new AppException(ErrorCode.UNAUTHORIZED);
         }
 
         // IMPORTANT: Only update fields that are explicitly provided in the request
-        // If a field is null in the request, it means it was not included, so we don't update it
+        // If a field is null in the request, it means it was not included, so we don't
+        // update it
         // This prevents data loss when updating only specific fields
-        
+
         // Update firstName only if provided (not null)
         if (request.getFirstName() != null) {
             String firstName = request.getFirstName().trim();
             user.setFirstName(firstName.isEmpty() ? null : firstName);
         }
         // If firstName is null in request, keep existing value (don't update)
-        
+
         // Update lastName only if provided (not null)
         if (request.getLastName() != null) {
             String lastName = request.getLastName().trim();
             user.setLastName(lastName.isEmpty() ? null : lastName);
         }
         // If lastName is null in request, keep existing value (don't update)
-        
+
         // Update email only if provided (not null)
         if (request.getEmail() != null) {
             String email = request.getEmail().trim();
             user.setEmail(email.isEmpty() ? null : email);
         }
         // If email is null in request, keep existing value (don't update)
-        
+
         // Update phone only if provided (not null)
         if (request.getPhone() != null) {
             String phone = request.getPhone().trim();
             user.setPhone(phone.isEmpty() ? null : phone);
         }
         // If phone is null in request, keep existing value (don't update)
-        
+
         // Update dob only if provided (not null)
         if (request.getDob() != null) {
             user.setDob(request.getDob());
         }
         // If dob is null in request, keep existing value (don't update)
-        
+
         // Only update password if provided and not empty
         if (request.getPassword() != null && !request.getPassword().trim().isEmpty()) {
             user.setPassword(passwordEncoder.encode(request.getPassword()));
@@ -183,7 +184,8 @@ public class UserService {
         return userRepository.findAll().stream().map(userMapper::toUserResponse).toList();
     }
 
-    @PreAuthorize("hasRole('ADMIN')")
+    // Authorization is handled at controller level with custom logic
+    // that checks for ADMIN role OR X-Internal-Client header
     public UserResponse getUser(String id) {
         return userMapper.toUserResponse(
                 userRepository.findById(id).orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTED)));
