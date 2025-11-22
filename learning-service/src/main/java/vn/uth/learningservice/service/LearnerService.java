@@ -20,6 +20,15 @@ public class LearnerService {
         return learnerRepo.findById(id).orElseThrow(() -> new IllegalArgumentException("Learner not found: " + id));
     }
 
+    @Transactional
+    public Learner getOrCreate(UUID id) {
+        return learnerRepo.findById(id).orElseGet(() -> {
+            Learner newLearner = new Learner();
+            newLearner.setId(id);
+            return learnerRepo.save(newLearner);
+        });
+    }
+
     public List<Learner> listAll() {
         return learnerRepo.findAll();
     }
@@ -30,8 +39,10 @@ public class LearnerService {
 
     @Transactional
     public void addPoints(UUID learnerId, int delta) {
-        if (delta <= 0) return; // chỉ cộng điểm nếu delta > 0
+        if (delta <= 0)
+            return; // chỉ cộng điểm nếu delta > 0
         int updated = learnerRepo.addLearningPoints(learnerId, delta);
-        if (updated == 0) throw new EntityNotFoundException("Learner not found: " + learnerId);
+        if (updated == 0)
+            throw new EntityNotFoundException("Learner not found: " + learnerId);
     }
 }

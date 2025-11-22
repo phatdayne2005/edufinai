@@ -1,0 +1,639 @@
+{
+	"info": {
+		"_postman_id": "learning-service-collection",
+		"name": "Learning Service API",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "Auth",
+			"item": [
+				{
+					"name": "Get Token",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"var jsonData = pm.response.json();",
+									"// Tự động lấy token từ response và lưu vào biến jwt_token",
+									"// Cấu trúc response giả định: { \"result\": { \"token\": \"...\" } }",
+									"if (jsonData.result && jsonData.result.token) {",
+									"    pm.collectionVariables.set(\"jwt_token\", jsonData.result.token);",
+									"} else if (jsonData.token) {",
+									"    pm.collectionVariables.set(\"jwt_token\", jsonData.token);",
+									"}",
+									"console.log(\"Token set: \" + pm.collectionVariables.get(\"jwt_token\"));"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"username\": \"admin\",\n    \"password\": \"admin\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://localhost:9000/identity/auth/token",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "9000",
+							"path": [
+								"identity",
+								"auth",
+								"token"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "LessonController",
+			"item": [
+				{
+					"name": "findAll",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/lessons",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"lessons"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "findByTag",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/lessons/tags/JAVA",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"lessons",
+								"tags",
+								"JAVA"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "findByDifficulty",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/lessons/difficulty/BEGINNER",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"lessons",
+								"difficulty",
+								"BEGINNER"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "findByStatus",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/lessons/status/PUBLISHED",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"lessons",
+								"status",
+								"PUBLISHED"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "createLesson",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"title\": \"Introduction to Java\",\n  \"content\": \"Basic Java concepts...\",\n  \"difficulty\": \"BEGINNER\",\n  \"tags\": [\"JAVA\", \"BACKEND\"],\n  \"estimatedDuration\": 60,\n  \"quizJson\": \"{\\\"questions\\\": []}\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/lessons",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"lessons"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "updateLesson",
+					"request": {
+						"method": "PUT",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"title\": \"Introduction to Java (Updated)\",\n  \"content\": \"Updated content...\",\n  \"difficulty\": \"INTERMEDIATE\",\n  \"tags\": [\"JAVA\"],\n  \"estimatedDuration\": 90,\n  \"quizJson\": \"{}\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/lessons/{{lesson_id}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"lessons",
+								"{{lesson_id}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "submitLesson",
+					"request": {
+						"method": "PUT",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/lessons/{{lesson_id}}/submit",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"lessons",
+								"{{lesson_id}}",
+								"submit"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "deleteLesson",
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/lessons/{{lesson_id}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"lessons",
+								"{{lesson_id}}"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "EnrollmentController",
+			"item": [
+				{
+					"name": "enroll",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"lessonId\": \"{{lesson_id}}\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/enrollments",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"enrollments"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "listMyEnrollments",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/enrollments",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"enrollments"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "getEnrollment",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/enrollments/{{enrollment_id}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"enrollments",
+								"{{enrollment_id}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "updateProgress",
+					"request": {
+						"method": "PUT",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"status\": \"COMPLETED\",\n  \"progressPercent\": 100,\n  \"score\": 100,\n  \"addAttempt\": 1\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/enrollments/{{enrollment_id}}/progress",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"enrollments",
+								"{{enrollment_id}}",
+								"progress"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "ModeratorController",
+			"item": [
+				{
+					"name": "listAll",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/moderators",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"moderators"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "listByStatus (Default Pending)",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/moderators/lessons",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"moderators",
+								"lessons"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "listByStatus (Approved)",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/moderators/lessons?status=APPROVED",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"moderators",
+								"lessons"
+							],
+							"query": [
+								{
+									"key": "status",
+									"value": "APPROVED"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "listByStatus (Rejected)",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/moderators/lessons?status=REJECTED",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"moderators",
+								"lessons"
+							],
+							"query": [
+								{
+									"key": "status",
+									"value": "REJECTED"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "viewLessonById",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/moderators/lessons/{{lesson_id}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"moderators",
+								"lessons",
+								"{{lesson_id}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "moderateLesson",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"status\": \"APPROVED\",\n  \"commentByMod\": \"Good job!\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/moderators/lessons/{{lesson_id}}/decision",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"moderators",
+								"lessons",
+								"{{lesson_id}}",
+								"decision"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "CreatorController",
+			"item": [
+				{
+					"name": "getMe",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/creators/me",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"creators",
+								"me"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "getById",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/creators/{{creator_id}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"creators",
+								"{{creator_id}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "listAll",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/creators",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"creators"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "LearnerController",
+			"item": [
+				{
+					"name": "getMe",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/learners/me",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"learners",
+								"me"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "getById",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/learners/{{learner_id}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"learners",
+								"{{learner_id}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "listAll",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/learners",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"learners"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "listByLevel",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/learners/level/BEGINNER",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"learners",
+								"level",
+								"BEGINNER"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		}
+	],
+	"auth": {
+		"type": "bearer",
+		"bearer": [
+			{
+				"key": "token",
+				"value": "{{jwt_token}}",
+				"type": "string"
+			}
+		]
+	},
+	"variable": [
+		{
+			"key": "base_url",
+			"value": "http://localhost:8080/learning",
+			"type": "string"
+		},
+		{
+			"key": "jwt_token",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "lesson_id",
+			"value": "REPLACE_WITH_UUID",
+			"type": "string"
+		},
+		{
+			"key": "enrollment_id",
+			"value": "REPLACE_WITH_UUID",
+			"type": "string"
+		},
+		{
+			"key": "creator_id",
+			"value": "REPLACE_WITH_UUID",
+			"type": "string"
+		},
+		{
+			"key": "learner_id",
+			"value": "REPLACE_WITH_UUID",
+			"type": "string"
+		}
+	]
+}

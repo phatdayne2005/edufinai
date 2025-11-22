@@ -75,29 +75,9 @@ public class LessonService {
     }
 
     @Transactional
-    public Lesson update(UUID lessonId, Lesson updatedDetails) {
-        Lesson existing = getById(lessonId);
-        // Copy properties from updatedDetails to existing
-        // (Thực tế việc copy này đang được Mapper làm ở Controller)
-
-        // Logic yêu cầu: Khi sửa nội dung -> Status quay về DRAFT
-        existing.setStatus(Lesson.Status.DRAFT);
-        existing.setUpdatedAt(LocalDateTime.now());
-
-        return lessonRepo.save(existing);
-    }
-
-    @Transactional
     public void delete(UUID lessonId) {
         Lesson existing = getById(lessonId);
         lessonRepo.delete(existing);
-    }
-
-    @Transactional
-    public void moderateAndPublish(UUID lessonId, Lesson.Status status, boolean publishNow) {
-        int count = lessonRepo.moderateAndPublish(lessonId, status, publishNow);
-        if (count == 0)
-            throw new IllegalArgumentException("Lesson not found or not updated: " + lessonId);
     }
 
     @Transactional

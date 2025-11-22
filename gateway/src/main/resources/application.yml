@@ -77,6 +77,18 @@ spring:
                     regexp: /ai/(?<segment>.*)
                     replacement: /api/${segment}
 
+            # Learning-service
+            - id: learning-service
+              uri:
+                lb://LEARNING-SERVICE
+              predicates:
+                - Path=/learning/**
+              filters:
+                - name: RewritePath
+                  args:
+                    regexp: /learning/(?<segment>.*)
+                    replacement: /api/${segment}
+
             - id: notification-service
               uri: lb://NOTIFICATION-SERVICE     # tên đúng như trong Eureka
               predicates:

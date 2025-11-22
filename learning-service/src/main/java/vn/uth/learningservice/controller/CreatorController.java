@@ -32,6 +32,18 @@ public class CreatorController {
     private final LessonMapper lessonMapper;
     private final ObjectMapper objectMapper;
 
+    // GET /api/creators/me - Lấy thông tin của chính creator đang đăng nhập
+    @GetMapping("/me")
+    public ResponseEntity<CreatorRes> getMe(
+            org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken auth) {
+        UUID id = UUID.fromString(auth.getToken().getSubject());
+        Creator creator = creatorService.getOrCreate(id);
+        CreatorRes dto = mapper.toDto(creator);
+        long totalLessons = creatorService.countLessons(id);
+        dto.setTotalLessons(totalLessons);
+        return ResponseEntity.ok(dto);
+    }
+
     // GET /api/creators/{id} - Lấy thông tin chi tiết của một creator theo ID
     @GetMapping("/{id}")
     public ResponseEntity<CreatorRes> getById(@PathVariable("id") UUID id) {

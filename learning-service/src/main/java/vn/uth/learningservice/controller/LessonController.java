@@ -6,6 +6,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.security.access.prepost.PreAuthorize;
 import vn.uth.learningservice.dto.request.LessonCreateReq;
 import vn.uth.learningservice.dto.request.LessonUpdateReq;
 import vn.uth.learningservice.dto.response.LessonRes;
@@ -54,11 +55,15 @@ public class LessonController {
         return ResponseEntity.ok(mapToResList(lessons));
     }
 
-    @PostMapping("/creator/{creatorId}")
+    @PostMapping
+    @PreAuthorize("hasAuthority('SCOPE_ROLE_CREATOR')")
     public ResponseEntity<LessonRes> createLesson(
-            @PathVariable("creatorId") UUID creatorId,
-            @Valid @RequestBody LessonCreateReq request) {
-        Creator creator = creatorService.getById(creatorId);
+            @Valid @RequestBody LessonCreateReq request,
+            org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken auth) {
+
+        UUID creatorId = UUID.fromString(auth.getToken().getSubject());
+        Creator creator = creatorService.getOrCreate(creatorId);
+
         Lesson lesson = lessonMapper.toEntity(request, objectMapper);
         lesson.setCreator(creator);
 
@@ -82,10 +87,19 @@ public class LessonController {
     }
 
     @PutMapping("/{lessonId}")
+    @PreAuthorize("hasAuthority('SCOPE_ROLE_CREATOR')")
     public ResponseEntity<LessonRes> updateLesson(
             @PathVariable("lessonId") UUID lessonId,
-            @Valid @RequestBody LessonUpdateReq request) {
+            @Valid @RequestBody LessonUpdateReq request,
+            org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken auth) {
+
         Lesson existing = lessonService.getById(lessonId);
+        UUID userId = UUID.fromString(auth.getToken().getSubject());
+
+        // Kiểm tra xem người đang gọi API (userId) có phải là chủ sở hữu bài học không
+        if (!existing.getCreator().getId().equals(userId)) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        }
 
         // Map changes from req to existing entity
         lessonMapper.patch(existing, request, objectMapper);
@@ -101,13 +115,35 @@ public class LessonController {
     }
 
     @PutMapping("/{lessonId}/submit")
-    public ResponseEntity<LessonRes> submitLesson(@PathVariable("lessonId") UUID lessonId) {
+    @PreAuthorize("hasAuthority('SCOPE_ROLE_CREATOR')")
+    public ResponseEntity<LessonRes> submitLesson(
+            @PathVariable("lessonId") UUID lessonId,
+            org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken auth) {
+
+        Lesson lesson = lessonService.getById(lessonId);
+        UUID userId = UUID.fromString(auth.getToken().getSubject());
+
+        if (!lesson.getCreator().getId().equals(userId)) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        }
+
         Lesson submitted = lessonService.submitLesson(lessonId);
         return ResponseEntity.ok(lessonMapper.toRes(submitted, objectMapper));
     }
 
     @DeleteMapping("/{lessonId}")
-    public ResponseEntity<Void> deleteLesson(@PathVariable("lessonId") UUID lessonId) {
+    @PreAuthorize("hasAuthority('SCOPE_ROLE_CREATOR')")
+    public ResponseEntity<Void> deleteLesson(
+            @PathVariable("lessonId") UUID lessonId,
+            org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken auth) {
+
+        Lesson lesson = lessonService.getById(lessonId);
+        UUID userId = UUID.fromString(auth.getToken().getSubject());
+
+        if (!lesson.getCreator().getId().equals(userId)) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        }
+
         lessonService.delete(lessonId);
         return ResponseEntity.noContent().build();
     }
