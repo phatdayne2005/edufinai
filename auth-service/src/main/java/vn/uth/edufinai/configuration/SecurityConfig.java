@@ -26,7 +26,8 @@ public class SecurityConfig {
     // Gateway forward: /auth/users -> /identity/users
     // SecurityConfig match: /users (sau khi remove context path /identity)
     private final String[] PUBLIC_ENDPOINTS = {
-            "/users", "/auth/token", "/auth/introspect", "/auth/logout", "/auth/refresh"
+            "/users", "/auth/token", "/auth/introspect", "/auth/logout", "/auth/refresh",
+            "/auth/forgot-password", "/auth/verify-otp", "/auth/reset-password"
     };
 
     @Autowired

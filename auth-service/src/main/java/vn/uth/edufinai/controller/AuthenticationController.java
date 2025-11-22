@@ -50,4 +50,22 @@ public class AuthenticationController {
         authenticationService.logout(request);
         return ApiResponse.<Void>builder().build();
     }
+
+    @PostMapping("/forgot-password")
+    ApiResponse<Void> forgotPassword(@RequestBody ForgotPasswordRequest request) {
+        authenticationService.forgotPassword(request);
+        return ApiResponse.<Void>builder().message("OTP đã được gửi đến email của bạn").build();
+    }
+
+    @PostMapping("/verify-otp")
+    ApiResponse<Boolean> verifyOtp(@RequestBody VerifyOtpRequest request) {
+        boolean isValid = authenticationService.verifyOtp(request);
+        return ApiResponse.<Boolean>builder().result(isValid).build();
+    }
+
+    @PostMapping("/reset-password")
+    ApiResponse<Void> resetPassword(@RequestBody ResetPasswordRequest request) {
+        authenticationService.resetPassword(request);
+        return ApiResponse.<Void>builder().message("Đặt lại mật khẩu thành công").build();
+    }
 }

@@ -44,8 +44,23 @@ public class UserController {
     }
 
     @GetMapping("/{userId}")
-    @PreAuthorize("hasRole('ADMIN')")
     ApiResponse<UserResponse> getUser(@PathVariable("userId") String userId) {
+        var authentication = org.springframework.security.core.context.SecurityContextHolder.getContext()
+                .getAuthentication();
+        boolean isAdmin = authentication.getAuthorities().stream()
+                .anyMatch(a -> a.getAuthority().equals("ROLE_ADMIN"));
+
+        if (!isAdmin) {
+            // Nếu không phải Admin, kiểm tra Header "X-Internal-Client"
+            var requestAttributes = (org.springframework.web.context.request.ServletRequestAttributes) org.springframework.web.context.request.RequestContextHolder
+                    .getRequestAttributes();
+            String internalHeader = requestAttributes.getRequest().getHeader("X-Internal-Client");
+
+            if (!"EduFinAI-Internal-Secret".equals(internalHeader)) {
+                throw new org.springframework.security.access.AccessDeniedException("Access Denied");
+            }
+        }
+
         return ApiResponse.<UserResponse>builder()
                 .result(userService.getUser(userId))
                 .build();
