@@ -6,11 +6,11 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.Authentication;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import vn.uth.financeservice.dto.TransactionRequestDto;
 import vn.uth.financeservice.dto.TransactionResponseDto;
+import vn.uth.financeservice.client.AuthServiceClient;
 import vn.uth.financeservice.service.TransactionService;
 
 import java.time.LocalDateTime;
@@ -24,26 +24,25 @@ import java.util.UUID;
 public class TransactionController {
 
     private final TransactionService transactionService;
+    private final AuthServiceClient authServiceClient;
 
     @PostMapping
-    public ResponseEntity<?> create(@RequestBody @Validated TransactionRequestDto dto,
-                                    Authentication authentication) {
-        UUID userId = extractUserId(authentication);
+    public ResponseEntity<?> create(@RequestBody @Validated TransactionRequestDto dto) {
+        UUID userId = authServiceClient.getCurrentUserId();
         return ResponseEntity.ok(transactionService.createTransaction(userId, dto));
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<?> delete(@PathVariable UUID id, Authentication authentication) {
-        UUID userId = extractUserId(authentication);
+    public ResponseEntity<?> delete(@PathVariable UUID id) {
+        UUID userId = authServiceClient.getCurrentUserId();
         transactionService.deleteTransaction(id, userId);
         return ResponseEntity.ok().build();
     }
 
     @GetMapping("/recent")
     public ResponseEntity<List<TransactionResponseDto>> getRecentTransactions(
-            @RequestParam(defaultValue = "5") int limit,
-            Authentication authentication) {
-        UUID userId = extractUserId(authentication);
+            @RequestParam(defaultValue = "5") int limit) {
+        UUID userId = authServiceClient.getCurrentUserId();
         List<TransactionResponseDto> transactions = transactionService.getRecentTransactions(userId, limit);
         return ResponseEntity.ok(transactions);
     }
@@ -53,9 +52,8 @@ public class TransactionController {
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "15") int size,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime startDate,
-            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime endDate,
-            Authentication authentication) {
-        UUID userId = extractUserId(authentication);
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime endDate) {
+        UUID userId = authServiceClient.getCurrentUserId();
         Pageable pageable = PageRequest.of(page, size);
         
         // Nếu không có startDate/endDate, mặc định lấy tháng hiện tại
@@ -68,20 +66,6 @@ public class TransactionController {
         
         Page<TransactionResponseDto> transactions = transactionService.getTransactions(userId, pageable, startDate, endDate);
         return ResponseEntity.ok(transactions);
-    }
-
-    private UUID extractUserId(Authentication authentication) {
-        if (authentication == null || authentication.getPrincipal() == null) {
-            throw new RuntimeException("Unauthenticated request");
-        }
-        Object principal = authentication.getPrincipal();
-        if (principal instanceof UUID uuid) {
-            return uuid;
-        }
-        if (principal instanceof String value) {
-            return UUID.fromString(value);
-        }
-        throw new RuntimeException("Invalid authentication principal");
     }
 }
 

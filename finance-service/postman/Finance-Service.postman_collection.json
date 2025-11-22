@@ -5,6 +5,14 @@
 		"description": "API collection for Finance Service - Quản lý thu chi & mục tiêu tài chính",
 		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
 	},
+	"variable": [
+		{
+			"key": "jwt_token",
+			"value": "",
+			"type": "string",
+			"description": "JWT token từ auth-service. Lấy từ POST /identity/auth/token"
+		}
+	],
 	"item": [
 		{
 			"name": "Dashboard",
@@ -12,15 +20,24 @@
 				{
 					"name": "Get Monthly Summary",
 					"request": {
+						"auth": {
+							"type": "noauth"
+						},
 						"method": "GET",
-						"header": [],
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{jwt_token}}",
+								"type": "text"
+							}
+						],
 						"url": {
-							"raw": "http://localhost:8202/api/summary/month",
+							"raw": "http://localhost:8203/api/summary/month",
 							"protocol": "http",
 							"host": [
 								"localhost"
 							],
-							"port": "8202",
+							"port": "8203",
 							"path": [
 								"api",
 								"summary",
@@ -33,15 +50,24 @@
 				{
 					"name": "Get Recent Transactions",
 					"request": {
+						"auth": {
+							"type": "noauth"
+						},
 						"method": "GET",
-						"header": [],
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{jwt_token}}",
+								"type": "text"
+							}
+						],
 						"url": {
-							"raw": "http://localhost:8202/api/v1/transactions/recent?limit=5",
+							"raw": "http://localhost:8203/api/v1/transactions/recent?limit=5",
 							"protocol": "http",
 							"host": [
 								"localhost"
 							],
-							"port": "8202",
+							"port": "8203",
 							"path": [
 								"api",
 								"v1",
@@ -67,15 +93,24 @@
 				{
 					"name": "Get All Categories",
 					"request": {
+						"auth": {
+							"type": "noauth"
+						},
 						"method": "GET",
-						"header": [],
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{jwt_token}}",
+								"type": "text"
+							}
+						],
 						"url": {
-							"raw": "http://localhost:8202/api/v1/categories",
+							"raw": "http://localhost:8203/api/v1/categories",
 							"protocol": "http",
 							"host": [
 								"localhost"
 							],
-							"port": "8202",
+							"port": "8203",
 							"path": [
 								"api",
 								"v1",
@@ -88,11 +123,19 @@
 				{
 					"name": "Create Category",
 					"request": {
+						"auth": {
+							"type": "noauth"
+						},
 						"method": "POST",
 						"header": [
 							{
 								"key": "Content-Type",
 								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{jwt_token}}",
+								"type": "text"
 							}
 						],
 						"body": {
@@ -105,12 +148,12 @@
 							}
 						},
 						"url": {
-							"raw": "http://localhost:8202/api/v1/categories",
+							"raw": "http://localhost:8203/api/v1/categories",
 							"protocol": "http",
 							"host": [
 								"localhost"
 							],
-							"port": "8202",
+							"port": "8203",
 							"path": [
 								"api",
 								"v1",
@@ -128,15 +171,24 @@
 				{
 					"name": "Get All Goals (auto status update)",
 					"request": {
+						"auth": {
+							"type": "noauth"
+						},
 						"method": "GET",
-						"header": [],
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{jwt_token}}",
+								"type": "text"
+							}
+						],
 						"url": {
-							"raw": "http://localhost:8202/api/v1/goals",
+							"raw": "http://localhost:8203/api/v1/goals",
 							"protocol": "http",
 							"host": [
 								"localhost"
 							],
-							"port": "8202",
+							"port": "8203",
 							"path": [
 								"api",
 								"v1",
@@ -149,11 +201,19 @@
 				{
 					"name": "Create Goal",
 					"request": {
+						"auth": {
+							"type": "noauth"
+						},
 						"method": "POST",
 						"header": [
 							{
 								"key": "Content-Type",
 								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{jwt_token}}",
+								"type": "text"
 							}
 						],
 						"body": {
@@ -166,12 +226,12 @@
 							}
 						},
 						"url": {
-							"raw": "http://localhost:8202/api/v1/goals",
+							"raw": "http://localhost:8203/api/v1/goals",
 							"protocol": "http",
 							"host": [
 								"localhost"
 							],
-							"port": "8202",
+							"port": "8203",
 							"path": [
 								"api",
 								"v1",
@@ -184,11 +244,19 @@
 				{
 					"name": "Update Goal Status",
 					"request": {
+						"auth": {
+							"type": "noauth"
+						},
 						"method": "PUT",
 						"header": [
 							{
 								"key": "Content-Type",
 								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{jwt_token}}",
+								"type": "text"
 							}
 						],
 						"body": {
@@ -201,12 +269,12 @@
 							}
 						},
 						"url": {
-							"raw": "http://localhost:8202/api/v1/goals/:id/status",
+							"raw": "http://localhost:8203/api/v1/goals/:id/status",
 							"protocol": "http",
 							"host": [
 								"localhost"
 							],
-							"port": "8202",
+							"port": "8203",
 							"path": [
 								"api",
 								"v1",
@@ -233,11 +301,19 @@
 				{
 					"name": "Create Transaction (Income/Expense)",
 					"request": {
+						"auth": {
+							"type": "noauth"
+						},
 						"method": "POST",
 						"header": [
 							{
 								"key": "Content-Type",
 								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{jwt_token}}",
+								"type": "text"
 							}
 						],
 						"body": {
@@ -250,12 +326,12 @@
 							}
 						},
 						"url": {
-							"raw": "http://localhost:8202/api/v1/transactions",
+							"raw": "http://localhost:8203/api/v1/transactions",
 							"protocol": "http",
 							"host": [
 								"localhost"
 							],
-							"port": "8202",
+							"port": "8203",
 							"path": [
 								"api",
 								"v1",
@@ -268,15 +344,24 @@
 				{
 					"name": "Delete Transaction (Undo)",
 					"request": {
+						"auth": {
+							"type": "noauth"
+						},
 						"method": "DELETE",
-						"header": [],
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{jwt_token}}",
+								"type": "text"
+							}
+						],
 						"url": {
-							"raw": "http://localhost:8202/api/v1/transactions/:id",
+							"raw": "http://localhost:8203/api/v1/transactions/:id",
 							"protocol": "http",
 							"host": [
 								"localhost"
 							],
-							"port": "8202",
+							"port": "8203",
 							"path": [
 								"api",
 								"v1",
@@ -297,15 +382,24 @@
 				{
 					"name": "List Transactions (Paginated + Month filter)",
 					"request": {
+						"auth": {
+							"type": "noauth"
+						},
 						"method": "GET",
-						"header": [],
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{jwt_token}}",
+								"type": "text"
+							}
+						],
 						"url": {
-							"raw": "http://localhost:8202/api/v1/transactions?page=0&size=15&startDate=2024-11-01T00:00:00&endDate=2024-11-30T23:59:59",
+							"raw": "http://localhost:8203/api/v1/transactions?page=0&size=15&startDate=2024-11-01T00:00:00&endDate=2024-11-30T23:59:59",
 							"protocol": "http",
 							"host": [
 								"localhost"
 							],
-							"port": "8202",
+							"port": "8203",
 							"path": [
 								"api",
 								"v1",
@@ -337,4 +431,3 @@
 		}
 	]
 }
-
