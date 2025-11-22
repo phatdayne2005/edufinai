@@ -4,6 +4,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.security.access.prepost.PreAuthorize;
 import vn.uth.learningservice.dto.request.EnrollmentCreateReq;
 import vn.uth.learningservice.dto.request.EnrollmentProgressReq;
 import vn.uth.learningservice.dto.response.EnrollmentRes;
@@ -30,11 +31,13 @@ public class EnrollmentController {
     private final EnrollmentMapper enrollmentMapper;
 
     @PostMapping
+    @PreAuthorize("hasAuthority('SCOPE_ROLE_LEARNER')")
     public ResponseEntity<EnrollmentRes> enroll(
-            @RequestParam("learnerId") UUID learnerId,
-            @Valid @RequestBody EnrollmentCreateReq req) {
+            @Valid @RequestBody EnrollmentCreateReq req,
+            org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken auth) {
 
-        Learner learner = learnerService.getById(learnerId);
+        UUID learnerId = UUID.fromString(auth.getToken().getSubject());
+        Learner learner = learnerService.getOrCreate(learnerId);
         Lesson lesson = lessonService.getById(req.getLessonId());
 
         Enrollment newEnroll = new Enrollment();
@@ -49,7 +52,11 @@ public class EnrollmentController {
     }
 
     @GetMapping
-    public ResponseEntity<List<EnrollmentRes>> listMyEnrollments(@RequestParam("learnerId") UUID learnerId) {
+    @PreAuthorize("hasAuthority('SCOPE_ROLE_LEARNER')")
+    public ResponseEntity<List<EnrollmentRes>> listMyEnrollments(
+            org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken auth) {
+
+        UUID learnerId = UUID.fromString(auth.getToken().getSubject());
         // Ensure learner exists
         learnerService.getById(learnerId);
 
@@ -60,15 +67,36 @@ public class EnrollmentController {
     }
 
     @GetMapping("/{enrollmentId}")
-    public ResponseEntity<EnrollmentRes> getEnrollment(@PathVariable UUID enrollmentId) {
+    @PreAuthorize("hasAuthority('SCOPE_ROLE_LEARNER')")
+    public ResponseEntity<EnrollmentRes> getEnrollment(
+            @PathVariable UUID enrollmentId,
+            org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken auth) {
+
         Enrollment enrollment = enrollmentService.getById(enrollmentId);
+        UUID userId = UUID.fromString(auth.getToken().getSubject());
+
+        // Check if user is the owner
+        if (!enrollment.getLearner().getId().equals(userId)) {
+            return ResponseEntity.status(org.springframework.http.HttpStatus.FORBIDDEN).build();
+        }
+
         return ResponseEntity.ok(enrollmentMapper.toRes(enrollment));
     }
 
     @PutMapping("/{enrollmentId}/progress")
+    @PreAuthorize("hasAuthority('SCOPE_ROLE_LEARNER')")
     public ResponseEntity<Void> updateProgress(
             @PathVariable UUID enrollmentId,
-            @Valid @RequestBody EnrollmentProgressReq req) {
+            @Valid @RequestBody EnrollmentProgressReq req,
+            org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken auth) {
+
+        Enrollment enrollment = enrollmentService.getById(enrollmentId);
+        UUID userId = UUID.fromString(auth.getToken().getSubject());
+
+        // Check if user is the owner
+        if (!enrollment.getLearner().getId().equals(userId)) {
+            return ResponseEntity.status(org.springframework.http.HttpStatus.FORBIDDEN).build();
+        }
 
         // Map DTO status to Entity status
         Enrollment.Status status = Enrollment.Status.valueOf(req.getStatus().name());

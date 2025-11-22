@@ -21,6 +21,15 @@ public class LearnerController {
     private final LearnerService learnerService;
     private final LearnerMapper mapper;
 
+    // GET /api/learners/me - Lấy thông tin của chính learner đang đăng nhập
+    @GetMapping("/me")
+    public ResponseEntity<LearnerRes> getMe(
+            org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken auth) {
+        UUID id = UUID.fromString(auth.getToken().getSubject());
+        Learner learner = learnerService.getOrCreate(id);
+        return ResponseEntity.ok(mapper.toDto(learner));
+    }
+
     // GET /api/learners/{id} -Lấy thông tin chi tiết của một learner theo ID
     @GetMapping("/{id}")
     public ResponseEntity<LearnerRes> getById(@PathVariable("id") UUID id) {

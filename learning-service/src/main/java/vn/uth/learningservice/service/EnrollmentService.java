@@ -15,10 +15,6 @@ public class EnrollmentService {
     private final EnrollmentRepository enrollmentRepo;
     private final LearnerService learnerService;
 
-    public Optional<Enrollment> findByPair(UUID learnerId, UUID lessonId) {
-        return enrollmentRepo.findByLearner_IdAndLesson_Id(learnerId, lessonId);
-    }
-
     public Enrollment getById(UUID id) {
         return enrollmentRepo.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("Enrollment not found: " + id));
@@ -26,10 +22,6 @@ public class EnrollmentService {
 
     public List<Enrollment> listByLearner(UUID learnerId) {
         return enrollmentRepo.findByLearner_Id(learnerId);
-    }
-
-    public List<Enrollment> listByLesson(UUID lessonId) {
-        return enrollmentRepo.findByLesson_Id(lessonId);
     }
 
     @Transactional
@@ -80,12 +72,6 @@ public class EnrollmentService {
             learnerService.addPoints(learnerId, pointsToAdd);
         }
     }
-
-    /*
-     * public double averageScoreByLesson(UUID lessonId) {
-     * return enrollmentRepo.averageScoreByLesson(lessonId).orElse(0d);
-     * }
-     */
 
     public long countCompletedByLearner(UUID learnerId) {
         return enrollmentRepo.countCompletedByLearner(learnerId);

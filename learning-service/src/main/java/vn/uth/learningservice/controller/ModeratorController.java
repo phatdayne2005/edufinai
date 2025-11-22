@@ -4,12 +4,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
+import org.springframework.security.access.prepost.PreAuthorize;
 import vn.uth.learningservice.dto.request.LessonModerationReq;
 import vn.uth.learningservice.dto.response.LessonRes;
 import vn.uth.learningservice.mapper.LessonMapper;
@@ -25,6 +21,7 @@ import java.util.stream.Collectors;
 @RestController
 @RequestMapping("/api/moderators")
 @RequiredArgsConstructor
+@PreAuthorize("hasAuthority('SCOPE_ROLE_MODERATOR')")
 public class ModeratorController {
 
     private final ModeratorService moderatorService;
@@ -37,29 +34,55 @@ public class ModeratorController {
         return ResponseEntity.ok(moderatorService.listAll());
     }
 
-    @GetMapping("/{moderatorId}/lessons/pending")
-    public ResponseEntity<List<LessonRes>> listPending(@PathVariable("moderatorId") UUID moderatorId) {
-        moderatorService.getById(moderatorId);
-        List<Lesson> pending = moderatorService.listPending(moderatorId);
-        return ResponseEntity.ok(mapToResList(pending));
+    @GetMapping("/lessons")
+    public ResponseEntity<List<LessonRes>> listByStatus(
+            @RequestParam(value = "status", required = false) Lesson.Status status,
+            org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken auth) {
+
+        UUID moderatorId = UUID.fromString(auth.getToken().getSubject());
+        moderatorService.getOrCreate(moderatorId); // Ensure moderator exists
+
+        List<Lesson> lessons;
+        if (status != null) {
+            // Nếu có status thì lọc theo status (trừ DRAFT nếu user cố tình truyền vào)
+            if (status == Lesson.Status.DRAFT) {
+                return ResponseEntity.status(403).build(); // Mod không được xem DRAFT
+            }
+            lessons = lessonService.listByStatus(status);
+        } else {
+            // Nếu không truyền status, mặc định lấy PENDING
+            lessons = lessonService.listByStatus(Lesson.Status.PENDING);
+        }
+        return ResponseEntity.ok(mapToResList(lessons));
     }
 
-    @GetMapping("/{moderatorId}/lessons/{lessonId}")
+    @GetMapping("/lessons/{lessonId}")
     public ResponseEntity<LessonRes> viewLessonById(
-            @PathVariable("moderatorId") UUID moderatorId,
-            @PathVariable("lessonId") UUID lessonId) {
-        moderatorService.getById(moderatorId);
+            @PathVariable("lessonId") UUID lessonId,
+            org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken auth) {
+
+        UUID moderatorId = UUID.fromString(auth.getToken().getSubject());
+        moderatorService.getOrCreate(moderatorId); // Verify moderator exists
+
         Lesson lesson = lessonService.getById(lessonId);
-        // Bỏ check assignment, moderator có thể xem bất kỳ bài nào
+
+        // Mod không được xem bài DRAFT
+        if (lesson.getStatus() == Lesson.Status.DRAFT) {
+            return ResponseEntity.status(403).build();
+        }
+
         return ResponseEntity.ok(lessonMapper.toRes(lesson, objectMapper));
     }
 
-    @PostMapping("/{moderatorId}/lessons/{lessonId}/decision")
+    @PostMapping("/lessons/{lessonId}/decision")
     public ResponseEntity<LessonRes> moderateLesson(
-            @PathVariable("moderatorId") UUID moderatorId,
             @PathVariable("lessonId") UUID lessonId,
-            @Valid @RequestBody LessonModerationReq request) {
+            @Valid @RequestBody LessonModerationReq request,
+            org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken auth) {
+
+        UUID moderatorId = UUID.fromString(auth.getToken().getSubject());
         moderatorService.getById(moderatorId); // Ensure moderator exists
+
         Lesson updated = lessonService.moderateLesson(moderatorId, lessonId, request.getStatus(),
                 request.getCommentByMod());
         return ResponseEntity.ok(lessonMapper.toRes(updated, objectMapper));
