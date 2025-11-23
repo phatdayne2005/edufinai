@@ -830,6 +830,51 @@
         }
       },
       "response": []
+    },
+    {
+      "name": "Internal - Get User by Id (with Secret)",
+      "request": {
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{learner_token}}",
+              "type": "string"
+            }
+          ]
+        },
+        "method": "GET",
+        "header": [
+          {
+            "key": "X-Internal-Client",
+            "value": "EduFinAI-Internal-Secret",
+            "type": "text"
+          }
+        ],
+        "url": {
+          "raw": "http://localhost:9000/identity/users/:userId",
+          "protocol": "http",
+          "host": [
+            "localhost"
+          ],
+          "port": "9000",
+          "path": [
+            "identity",
+            "users",
+            ":userId"
+          ],
+          "variable": [
+            {
+              "key": "userId",
+              "value": "YOUR_USER_ID_HERE",
+              "description": "User ID"
+            }
+          ]
+        },
+        "description": "Internal endpoint for services to get user info on behalf of a learner. Requires 'X-Internal-Client' header."
+      },
+      "response": []
     }
   ]
 }
