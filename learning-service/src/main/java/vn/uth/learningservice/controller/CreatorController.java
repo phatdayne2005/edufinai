@@ -44,6 +44,21 @@ public class CreatorController {
         return ResponseEntity.ok(dto);
     }
 
+    // GET /api/creators/me/lessons - Lấy danh sách bài học của chính creator đang đăng nhập
+    @GetMapping("/me/lessons")
+    public ResponseEntity<List<LessonRes>> getMyLessons(
+            org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken auth) {
+        UUID id = UUID.fromString(auth.getToken().getSubject());
+        // Ensure creator exists
+        creatorService.getOrCreate(id);
+        
+        List<Lesson> lessons = lessonService.listByCreator(id);
+        List<LessonRes> lessonResList = lessons.stream()
+                .map(lesson -> lessonMapper.toRes(lesson, objectMapper))
+                .collect(Collectors.toList());
+        return ResponseEntity.ok(lessonResList);
+    }
+
     // GET /api/creators/{id} - Lấy thông tin chi tiết của một creator theo ID
     @GetMapping("/{id}")
     public ResponseEntity<CreatorRes> getById(@PathVariable("id") UUID id) {
