@@ -1,13 +1,21 @@
 package vn.uth.financeservice.service;
 
+import jakarta.persistence.EntityManager;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import vn.uth.financeservice.dto.GoalRequestDto;
 import vn.uth.financeservice.dto.GoalStatusUpDate;
+import vn.uth.financeservice.dto.GoalWithdrawRequestDto;
 import vn.uth.financeservice.entity.Goal;
 import vn.uth.financeservice.entity.GoalStatus;
+import vn.uth.financeservice.entity.Transaction;
+import vn.uth.financeservice.entity.TransactionType;
 import vn.uth.financeservice.repository.GoalRepository;
+import vn.uth.financeservice.repository.TransactionRepository;
+import vn.uth.financeservice.repository.CategoryRepository;
+import vn.uth.financeservice.entity.Category;
+import vn.uth.financeservice.entity.CategoryType;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -20,6 +28,9 @@ import java.util.stream.Collectors;
 public class GoalService {
 
     private final GoalRepository goalRepository;
+    private final TransactionRepository transactionRepository;
+    private final CategoryRepository categoryRepository;
+    private final EntityManager entityManager;
 
     @Transactional
     public Goal createGoal(UUID userId, GoalRequestDto request) {
@@ -36,30 +47,50 @@ public class GoalService {
         return goalRepository.save(g);
     }
 
+    /**
+     * Xác nhận hoàn thành mục tiêu
+     * Chỉ cho phép xác nhận khi savedAmount >= amount
+     * Sau khi xác nhận, goal chuyển sang COMPLETED và không thể thao tác nữa
+     */
     @Transactional
-    public Goal updateStatus(UUID goalId, GoalStatusUpDate dto, UUID userId) {
-        Goal g = goalRepository.findById(goalId)
+    public Goal confirmCompletion(UUID goalId, UUID userId) {
+        Goal goal = goalRepository.findById(goalId)
                 .orElseThrow(() -> new RuntimeException("Goal not found"));
 
-        if (!g.getUserId().equals(userId)) {
+        if (!goal.getUserId().equals(userId)) {
             throw new RuntimeException("Forbidden");
         }
 
-        // Convert String -> Enum
-        GoalStatus newStatus = GoalStatus.valueOf(dto.getStatus().toUpperCase());
-        g.setStatus(newStatus);
-        g.setNewStatus(newStatus); // Cập nhật cả newStatus
-        g.setUpdatedAt(LocalDateTime.now()); // Cập nhật updatedAt
+        // Kiểm tra goal đã đủ tiền chưa
+        BigDecimal savedAmount = goal.getSavedAmount() != null ? goal.getSavedAmount() : BigDecimal.ZERO;
+        BigDecimal targetAmount = goal.getAmount() != null ? goal.getAmount() : BigDecimal.ZERO;
+        
+        if (savedAmount.compareTo(targetAmount) < 0) {
+            throw new RuntimeException("Mục tiêu chưa đủ tiền. Số tiền hiện có: " + savedAmount + ", cần: " + targetAmount);
+        }
 
-        return goalRepository.save(g);
+        // Chỉ cho phép xác nhận nếu goal chưa COMPLETED
+        if (goal.getStatus() == GoalStatus.COMPLETED) {
+            throw new RuntimeException("Mục tiêu đã được xác nhận hoàn thành");
+        }
+
+        // Chuyển goal sang COMPLETED
+        goal.setStatus(GoalStatus.COMPLETED);
+        goal.setNewStatus(GoalStatus.COMPLETED);
+        goal.setUpdatedAt(LocalDateTime.now());
+
+        return goalRepository.save(goal);
     }
 
     /**
      * Kiểm tra và cập nhật status của goal dựa trên savedAmount và endAt
      * Logic:
-     * - Nếu savedAmount >= amount → COMPLETED
+     * - Nếu savedAmount >= amount → newStatus = COMPLETED (nhưng không tự động chuyển, cần user xác nhận)
      * - Nếu endAt < now và savedAmount < amount → FAILED
-     * - Còn lại → giữ nguyên status (ACTIVE)
+     * - Còn lại → ACTIVE
+     * 
+     * Note: Method này chỉ check và set newStatus, không tự động chuyển sang COMPLETED
+     * User phải xác nhận hoàn thành thông qua API confirm-completion
      */
     @Transactional
     public Goal checkAndUpdateGoalStatus(Goal goal) {
@@ -67,8 +98,8 @@ public class GoalService {
             return null;
         }
 
-        // Chỉ check và update nếu goal đang ở trạng thái ACTIVE
-        if (goal.getStatus() != GoalStatus.ACTIVE) {
+        // Không check và update nếu goal đã FAILED hoặc đã COMPLETED (đã xác nhận)
+        if (goal.getStatus() == GoalStatus.FAILED || goal.getStatus() == GoalStatus.COMPLETED) {
             return goal;
         }
 
@@ -78,21 +109,36 @@ public class GoalService {
         LocalDateTime endAt = goal.getEndAt();
 
         GoalStatus newStatus = goal.getStatus();
+        GoalStatus newStatusFlag = goal.getNewStatus();
 
-        // Check: Nếu đã đạt mục tiêu (savedAmount >= amount) → COMPLETED
+        // Check: Nếu đã đạt mục tiêu (savedAmount >= amount) → set newStatus = COMPLETED (nhưng không chuyển status)
         if (savedAmount.compareTo(targetAmount) >= 0 && targetAmount.compareTo(BigDecimal.ZERO) > 0) {
-            newStatus = GoalStatus.COMPLETED;
+            newStatusFlag = GoalStatus.COMPLETED; // Chỉ set flag, không chuyển status
+            // Status vẫn giữ ACTIVE để user có thể xác nhận
         }
         // Check: Nếu hết hạn mà chưa đạt mục tiêu → FAILED
         else if (endAt != null && endAt.isBefore(now) && savedAmount.compareTo(targetAmount) < 0) {
             newStatus = GoalStatus.FAILED;
+            newStatusFlag = GoalStatus.FAILED;
         }
-        // Còn lại → giữ ACTIVE
+        // Còn lại → ACTIVE (nếu savedAmount < amount và chưa hết hạn)
+        else {
+            newStatus = GoalStatus.ACTIVE;
+            newStatusFlag = GoalStatus.ACTIVE;
+        }
 
-        // Chỉ update nếu status thay đổi
+        // Update nếu có thay đổi
+        boolean needUpdate = false;
         if (newStatus != goal.getStatus()) {
             goal.setStatus(newStatus);
-            goal.setNewStatus(newStatus);
+            needUpdate = true;
+        }
+        if (newStatusFlag != goal.getNewStatus()) {
+            goal.setNewStatus(newStatusFlag);
+            needUpdate = true;
+        }
+        
+        if (needUpdate) {
             goal.setUpdatedAt(now);
             return goalRepository.save(goal);
         }
@@ -119,5 +165,123 @@ public class GoalService {
         return goals.stream()
                 .map(this::checkAndUpdateGoalStatus)
                 .collect(Collectors.toList());
+    }
+
+    /**
+     * Rút tiền từ goal
+     * Tạo WITHDRAWAL transaction và giảm savedAmount của goal
+     */
+    @Transactional
+    public Transaction withdrawFromGoal(UUID goalId, GoalWithdrawRequestDto request, UUID userId) {
+        // Tìm goal
+        Goal goal = goalRepository.findById(goalId)
+                .orElseThrow(() -> new RuntimeException("Goal not found"));
+
+        // Kiểm tra quyền sở hữu
+        if (!goal.getUserId().equals(userId)) {
+            throw new RuntimeException("Forbidden");
+        }
+
+        // Không cho phép rút nếu goal đã được xác nhận hoàn thành
+        if (goal.getStatus() == GoalStatus.COMPLETED) {
+            throw new RuntimeException("Không thể rút tiền từ mục tiêu đã hoàn thành");
+        }
+
+        // Kiểm tra số tiền có thể rút
+        BigDecimal savedAmount = goal.getSavedAmount() != null ? goal.getSavedAmount() : BigDecimal.ZERO;
+        BigDecimal withdrawAmount = request.getAmount();
+
+        if (savedAmount.compareTo(withdrawAmount) < 0) {
+            throw new RuntimeException(
+                    String.format("Không đủ số tiền trong mục tiêu. Số tiền có thể rút: %s", savedAmount)
+            );
+        }
+
+        // Tìm category "Rút tiền" hoặc tạo mới nếu chưa có
+        Category withdrawalCategory = categoryRepository
+                .findByUserIdAndName(userId, "Rút tiền")
+                .orElse(null);
+
+        if (withdrawalCategory == null) {
+            // Tạo category "Rút tiền" nếu chưa có
+            withdrawalCategory = new Category();
+            withdrawalCategory.setCategoryId(UUID.randomUUID());
+            withdrawalCategory.setUserId(userId);
+            withdrawalCategory.setName("Rút tiền");
+            withdrawalCategory.setType(CategoryType.EXPENSE); // EXPENSE vì rút tiền là một dạng chi tiêu
+            withdrawalCategory.setIsDefault(false);
+            withdrawalCategory.setCreatedAt(LocalDateTime.now());
+            withdrawalCategory = categoryRepository.save(withdrawalCategory);
+        }
+
+        // Tạo WITHDRAWAL transaction
+        Transaction transaction = new Transaction();
+        transaction.setTransactionId(UUID.randomUUID());
+        transaction.setUserId(userId);
+        transaction.setType(TransactionType.WITHDRAWAL);
+        transaction.setAmount(withdrawAmount);
+        transaction.setName("Rút tiền từ mục tiêu \"" + goal.getTitle() + "\"");
+        transaction.setNote(request.getNote());
+        transaction.setCategory(withdrawalCategory);
+        transaction.setGoal(goal);
+        transaction.setTransactionDate(LocalDateTime.now());
+        transaction.setStatus("ACTIVE");
+        transaction.setCreatedAt(LocalDateTime.now());
+        transaction.setUpdatedAt(LocalDateTime.now());
+
+        // Giảm savedAmount của goal
+        goal.setSavedAmount(savedAmount.subtract(withdrawAmount));
+        goal.setUpdatedAt(LocalDateTime.now());
+        goalRepository.save(goal);
+
+        // Tự động check và update goal status
+        checkAndUpdateGoalStatus(goal);
+
+        // Lưu transaction
+        return transactionRepository.save(transaction);
+    }
+
+    /**
+     * Xóa goal và tất cả transaction liên quan đến goal
+     * Logic:
+     * - Tìm tất cả transaction liên quan đến goal
+     * - Xóa tất cả transaction đó
+     * - Xóa goal
+     * 
+     * Số dư sẽ tự động đúng vì:
+     * - Xóa transaction INCOME có goalId → totalGoalDeposit giảm → số dư tăng (tiền không còn bị khóa)
+     * - Xóa transaction WITHDRAWAL có goalId → totalWithdrawal giảm → số dư giảm (không còn cộng nữa)
+     * - Kết quả: Số dư vẫn đúng, không cần tạo WITHDRAWAL transaction mới
+     */
+    @Transactional
+    public void deleteGoal(UUID goalId, UUID userId) {
+        // Tìm goal
+        Goal goal = goalRepository.findById(goalId)
+                .orElseThrow(() -> new RuntimeException("Goal not found"));
+
+        // Kiểm tra quyền sở hữu
+        if (!goal.getUserId().equals(userId)) {
+            throw new RuntimeException("Forbidden");
+        }
+
+        // Không cho phép xóa nếu goal đã được xác nhận hoàn thành
+        if (goal.getStatus() == GoalStatus.COMPLETED) {
+            throw new RuntimeException("Không thể xóa mục tiêu đã hoàn thành");
+        }
+
+        // Tìm tất cả transaction liên quan đến goal
+        List<Transaction> relatedTransactions = transactionRepository.findByGoalId(goalId);
+
+        // Xóa tất cả transaction liên quan đến goal
+        for (Transaction transaction : relatedTransactions) {
+            transactionRepository.delete(transaction);
+        }
+
+        // Flush để đảm bảo tất cả transaction đã được xóa trước khi xóa goal
+        // Điều này fix lỗi Hibernate TransientObjectException và foreign key constraint
+        entityManager.flush();
+
+        // Xóa goal khỏi database
+        goalRepository.delete(goal);
     }
 }

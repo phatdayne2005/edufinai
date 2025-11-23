@@ -14,6 +14,9 @@ public interface CategoryRepository extends JpaRepository<Category, UUID> {
     List<Category> findByUserIdOrIsDefaultTrue(UUID userId);
     Optional<Category> findByUserIdAndName(UUID userId, String name);
     boolean existsByUserIdAndName(UUID userId, String name);
+    
+    // Tìm category "Khác" (default category, type = BOTH)
+    Optional<Category> findByNameAndIsDefaultTrue(String name);
 }
 
 

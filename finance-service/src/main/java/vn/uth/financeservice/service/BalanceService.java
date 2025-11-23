@@ -3,7 +3,7 @@ package vn.uth.financeservice.service;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import vn.uth.financeservice.dto.SummaryResponseDto;
+import vn.uth.financeservice.dto.BalanceResponseDto;
 import vn.uth.financeservice.entity.Transaction;
 import vn.uth.financeservice.entity.TransactionType;
 import vn.uth.financeservice.entity.UserBalance;
@@ -11,69 +11,64 @@ import vn.uth.financeservice.repository.TransactionRepository;
 import vn.uth.financeservice.repository.UserBalanceRepository;
 
 import java.math.BigDecimal;
-import java.math.RoundingMode;
 import java.time.LocalDateTime;
-import java.time.YearMonth;
 import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
-public class SummaryService {
+public class BalanceService {
 
-    private final TransactionRepository transactionRepository;
     private final UserBalanceRepository userBalanceRepository;
+    private final TransactionRepository transactionRepository;
+
+    @Transactional
+    public UserBalance initializeBalance(UUID userId, BigDecimal amount) {
+        // Kiểm tra xem user đã có balance chưa
+        UserBalance existingBalance = userBalanceRepository.findByUserId(userId).orElse(null);
+        
+        if (existingBalance != null) {
+            throw new RuntimeException("Số dư ban đầu đã được khai báo. Không thể khai báo lại.");
+        }
+
+        // Tạo balance mới
+        UserBalance balance = new UserBalance();
+        balance.setUserId(userId);
+        balance.setInitialBalance(amount);
+        balance.setCreatedAt(LocalDateTime.now());
+        balance.setUpdatedAt(LocalDateTime.now());
+
+        return userBalanceRepository.save(balance);
+    }
 
     @Transactional(readOnly = true)
-    public SummaryResponseDto getMonthlySummary(UUID userId) {
-        // Lấy tháng hiện tại
-        YearMonth currentMonth = YearMonth.now();
-        LocalDateTime startOfMonth = currentMonth.atDay(1).atStartOfDay();
-        LocalDateTime endOfMonth = currentMonth.atEndOfMonth().atTime(23, 59, 59);
-
-        // Tính tổng thu nhập trong tháng (chỉ INCOME không có goalId, ACTIVE)
-        BigDecimal monthlyIncome = transactionRepository
-                .findByUserIdAndTypeAndStatusAndTransactionDateBetween(
-                        userId, TransactionType.INCOME, "ACTIVE", startOfMonth, endOfMonth)
-                .stream()
-                .filter(t -> t.getGoal() == null) // Chỉ tính INCOME không có goalId
-                .map(Transaction::getAmount)
-                .reduce(BigDecimal.ZERO, BigDecimal::add);
-
-        // Tính tổng chi tiêu trong tháng (chỉ ACTIVE)
-        BigDecimal monthlyExpense = transactionRepository
-                .findByUserIdAndTypeAndStatusAndTransactionDateBetween(
-                        userId, TransactionType.EXPENSE, "ACTIVE", startOfMonth, endOfMonth)
-                .stream()
-                .map(Transaction::getAmount)
-                .reduce(BigDecimal.ZERO, BigDecimal::add);
-
+    public BalanceResponseDto getCurrentBalance(UUID userId) {
         // Lấy initial balance (mặc định 0 nếu chưa khai báo)
         BigDecimal initialBalance = userBalanceRepository.findByUserId(userId)
                 .map(UserBalance::getInitialBalance)
                 .orElse(BigDecimal.ZERO);
 
-        // Tính tổng thu nhập thông thường (INCOME không có goalId, tất cả thời gian, chỉ ACTIVE)
+        // Tính tổng thu nhập thông thường (INCOME không có goalId, chỉ ACTIVE)
         BigDecimal totalIncome = transactionRepository
                 .findByUserIdAndTypeAndStatusAndGoalIsNull(userId, TransactionType.INCOME, "ACTIVE")
                 .stream()
                 .map(Transaction::getAmount)
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
 
-        // Tính tổng nạp vào goal (INCOME có goalId, tất cả thời gian, chỉ ACTIVE)
+        // Tính tổng nạp vào goal (INCOME có goalId, chỉ ACTIVE) - sẽ trừ khỏi số dư
         BigDecimal totalGoalDeposit = transactionRepository
                 .findByUserIdAndTypeAndStatusAndGoalIsNotNull(userId, TransactionType.INCOME, "ACTIVE")
                 .stream()
                 .map(Transaction::getAmount)
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
 
-        // Tính tổng chi tiêu (tất cả thời gian, chỉ ACTIVE)
+        // Tính tổng chi tiêu (chỉ ACTIVE)
         BigDecimal totalExpense = transactionRepository
                 .findByUserIdAndTypeAndStatus(userId, TransactionType.EXPENSE, "ACTIVE")
                 .stream()
                 .map(Transaction::getAmount)
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
 
-        // Tính tổng rút tiền từ goal (tất cả thời gian, chỉ ACTIVE)
+        // Tính tổng rút tiền từ goal (chỉ ACTIVE) - sẽ cộng vào số dư
         BigDecimal totalWithdrawal = transactionRepository
                 .findByUserIdAndTypeAndStatus(userId, TransactionType.WITHDRAWAL, "ACTIVE")
                 .stream()
@@ -88,16 +83,19 @@ public class SummaryService {
                 .subtract(totalGoalDeposit)  // Nạp vào goal: trừ (tiền bị khóa)
                 .add(totalWithdrawal);      // Rút từ goal: cộng (tiền được giải phóng)
 
-        // Tỷ lệ tiết kiệm = (số dư / thu nhập) * 100
-        double savingRate = 0.0;
-        if (monthlyIncome.compareTo(BigDecimal.ZERO) > 0) {
-            BigDecimal balance = monthlyIncome.subtract(monthlyExpense);
-            savingRate = balance.divide(monthlyIncome, 4, RoundingMode.HALF_UP)
-                    .multiply(BigDecimal.valueOf(100))
-                    .doubleValue();
-        }
+        return new BalanceResponseDto(
+                currentBalance,
+                initialBalance,
+                totalIncome,
+                totalGoalDeposit,
+                totalExpense,
+                totalWithdrawal
+        );
+    }
 
-        return new SummaryResponseDto(currentBalance, monthlyIncome, monthlyExpense, savingRate);
+    @Transactional(readOnly = true)
+    public boolean hasInitializedBalance(UUID userId) {
+        return userBalanceRepository.findByUserId(userId).isPresent();
     }
 }
 

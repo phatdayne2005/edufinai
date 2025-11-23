@@ -12,8 +12,7 @@ public class TransactionRequestDto {
     private BigDecimal amount;
     @NotNull
     private String name; // Tên giao dịch
-    @NotNull
-    private UUID categoryId; // Category ID
+    private UUID categoryId; // Category ID - Optional khi có goalId, bắt buộc khi không có goalId
     private String note;
     private UUID goalId; // Optional: gắn transaction vào goal
     private LocalDateTime transactionDate; // Ngày giao dịch (nếu null thì dùng hiện tại)

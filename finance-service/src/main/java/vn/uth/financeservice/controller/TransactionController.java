@@ -10,6 +10,7 @@ import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import vn.uth.financeservice.dto.TransactionRequestDto;
 import vn.uth.financeservice.dto.TransactionResponseDto;
+import vn.uth.financeservice.entity.Transaction;
 import vn.uth.financeservice.client.AuthServiceClient;
 import vn.uth.financeservice.service.TransactionService;
 
@@ -27,9 +28,11 @@ public class TransactionController {
     private final AuthServiceClient authServiceClient;
 
     @PostMapping
-    public ResponseEntity<?> create(@RequestBody @Validated TransactionRequestDto dto) {
+    public ResponseEntity<TransactionResponseDto> create(@RequestBody @Validated TransactionRequestDto dto) {
         UUID userId = authServiceClient.getCurrentUserId();
-        return ResponseEntity.ok(transactionService.createTransaction(userId, dto));
+        Transaction transaction = transactionService.createTransaction(userId, dto);
+        TransactionResponseDto response = toTransactionResponseDto(transaction);
+        return ResponseEntity.ok(response);
     }
 
     @DeleteMapping("/{id}")
@@ -66,6 +69,19 @@ public class TransactionController {
         
         Page<TransactionResponseDto> transactions = transactionService.getTransactions(userId, pageable, startDate, endDate);
         return ResponseEntity.ok(transactions);
+    }
+
+    private TransactionResponseDto toTransactionResponseDto(Transaction t) {
+        return new TransactionResponseDto(
+                t.getTransactionId(),
+                t.getType(),
+                t.getName(),
+                t.getCategory() != null ? t.getCategory().getName() : null,
+                t.getNote(),
+                t.getAmount(),
+                t.getTransactionDate(),
+                t.getGoal() != null ? t.getGoal().getGoalId() : null
+        );
     }
 }
 

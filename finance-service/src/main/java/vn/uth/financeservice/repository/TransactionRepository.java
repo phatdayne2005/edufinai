@@ -19,6 +19,12 @@ public interface TransactionRepository extends JpaRepository<Transaction, UUID> 
     
     List<Transaction> findByUserIdAndTypeAndStatus(UUID userId, TransactionType type, String status);
     
+    @Query("SELECT t FROM Transaction t WHERE t.userId = :userId AND t.type = :type AND t.status = :status AND t.goal IS NULL")
+    List<Transaction> findByUserIdAndTypeAndStatusAndGoalIsNull(UUID userId, TransactionType type, String status);
+    
+    @Query("SELECT t FROM Transaction t WHERE t.userId = :userId AND t.type = :type AND t.status = :status AND t.goal IS NOT NULL")
+    List<Transaction> findByUserIdAndTypeAndStatusAndGoalIsNotNull(UUID userId, TransactionType type, String status);
+    
     List<Transaction> findByUserIdAndTypeAndStatusAndTransactionDateBetween(
             UUID userId, TransactionType type, String status, 
             LocalDateTime start, LocalDateTime end);
@@ -46,6 +52,12 @@ public interface TransactionRepository extends JpaRepository<Transaction, UUID> 
     default List<Transaction> findTopByUserIdAndStatusOrderByTransactionDateDesc(UUID userId, String status, int limit) {
         return findTopByUserIdAndStatusOrderByTransactionDateDesc(userId, status, org.springframework.data.domain.Pageable.ofSize(limit));
     }
+    
+    @Query("SELECT t FROM Transaction t WHERE t.goal.goalId = :goalId")
+    List<Transaction> findByGoalId(@Param("goalId") UUID goalId);
+    
+    @Query("SELECT t FROM Transaction t WHERE t.category.categoryId = :categoryId")
+    List<Transaction> findByCategoryId(@Param("categoryId") UUID categoryId);
 }
 
 
