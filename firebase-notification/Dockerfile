@@ -14,6 +14,8 @@ ENV SPRING_PROFILES_ACTIVE=docker
 
 COPY --from=builder /workspace/target/*.jar /app/app.jar
 
-EXPOSE 8761
+# Will be overridden via env SERVER_PORT (default 8205 in docker-compose)
+EXPOSE 8205
 
 ENTRYPOINT ["java", "-jar", "/app/app.jar"]
+

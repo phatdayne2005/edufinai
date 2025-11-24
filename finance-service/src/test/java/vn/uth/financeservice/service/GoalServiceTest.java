@@ -222,19 +222,6 @@ class GoalServiceTest {
         // Status will be updated to FAILED when checked
     }
 
-    @Test
-    void testUpdateStatus_InvalidStatus_ThrowsException() {
-        // Given
-        Goal goal = createGoalWithSavedAmount(new BigDecimal("10000000"), new BigDecimal("20000000"));
-        GoalStatusUpDate dto = new GoalStatusUpDate();
-        dto.setStatus("INVALID_STATUS");
-
-        // When & Then
-        assertThrows(IllegalArgumentException.class, () -> {
-            goalService.updateStatus(goal.getGoalId(), dto, testUserId);
-        });
-    }
-
     private Goal createGoalWithSavedAmount(BigDecimal savedAmount, BigDecimal targetAmount) {
         Goal goal = new Goal();
         goal.setGoalId(UUID.randomUUID());

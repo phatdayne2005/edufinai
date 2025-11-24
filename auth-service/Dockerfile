@@ -14,6 +14,7 @@ ENV SPRING_PROFILES_ACTIVE=docker
 
 COPY --from=builder /workspace/target/*.jar /app/app.jar
 
-EXPOSE 8761
+EXPOSE 9000
 
 ENTRYPOINT ["java", "-jar", "/app/app.jar"]
+
