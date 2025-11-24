@@ -40,10 +40,14 @@ public class TransactionService {
         t.setName(request.getName());
         t.setNote(request.getNote());
         
-        // Set category
-        Category category = categoryRepository.findById(request.getCategoryId())
-                .orElseThrow(() -> new RuntimeException("Category not found"));
-        t.setCategory(category);
+        // Set category (optional)
+        if (request.getCategoryId() != null) {
+            Category category = categoryRepository.findById(request.getCategoryId())
+                    .orElseThrow(() -> new RuntimeException("Category not found"));
+            t.setCategory(category);
+        } else {
+            t.setCategory(null);
+        }
         
         // Set transaction date (default to now if not provided)
         t.setTransactionDate(request.getTransactionDate() != null 

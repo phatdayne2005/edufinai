@@ -1,11 +1,15 @@
 package vn.uth.financeservice.service;
 
+import jakarta.persistence.EntityManager;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import vn.uth.financeservice.dto.CategoryRequestDto;
 import vn.uth.financeservice.entity.Category;
+import vn.uth.financeservice.entity.CategoryType;
+import vn.uth.financeservice.entity.Transaction;
 import vn.uth.financeservice.repository.CategoryRepository;
+import vn.uth.financeservice.repository.TransactionRepository;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -16,6 +20,8 @@ import java.util.UUID;
 public class CategoryService {
 
     private final CategoryRepository categoryRepository;
+    private final TransactionRepository transactionRepository;
+    private final EntityManager entityManager;
 
     @Transactional(readOnly = true)
     public List<Category> getUserCategories(UUID userId) {
@@ -34,18 +40,33 @@ public class CategoryService {
         category.setCategoryId(UUID.randomUUID());
         category.setUserId(userId);
         category.setName(request.getName());
+        category.setType(request.getType() != null ? CategoryType.valueOf(request.getType()) : CategoryType.EXPENSE);
         category.setIsDefault(false);
         category.setCreatedAt(LocalDateTime.now());
         
         return categoryRepository.save(category);
     }
 
+    /**
+     * Xóa category và tự động chuyển tất cả transaction liên quan sang category "Khác"
+     * Logic:
+     * - Không cho phép xóa category "Khác" (default category, type = BOTH)
+     * - Không cho phép xóa default categories khác
+     * - Tìm tất cả transaction dùng category đó
+     * - Update transaction.category thành category "Khác"
+     * - Xóa category
+     */
     @Transactional
     public void deleteCategory(UUID categoryId, UUID userId) {
         Category category = categoryRepository.findById(categoryId)
                 .orElseThrow(() -> new RuntimeException("Category not found"));
         
-        // Không cho phép xóa default categories
+        // Không cho phép xóa category "Khác" (default category, type = BOTH)
+        if ("Khác".equals(category.getName()) && category.getIsDefault()) {
+            throw new RuntimeException("Cannot delete default category 'Khác'");
+        }
+        
+        // Không cho phép xóa default categories khác
         if (category.getIsDefault()) {
             throw new RuntimeException("Cannot delete default category");
         }
@@ -55,7 +76,43 @@ public class CategoryService {
             throw new RuntimeException("Cannot delete other user's category");
         }
         
+        // Tìm hoặc tạo category "Khác" (default category, type = BOTH)
+        Category otherCategory = getOrCreateOtherCategory();
+        
+        // Tìm tất cả transaction dùng category này
+        List<Transaction> relatedTransactions = transactionRepository.findByCategoryId(categoryId);
+        
+        // Update tất cả transaction sang category "Khác"
+        for (Transaction transaction : relatedTransactions) {
+            transaction.setCategory(otherCategory);
+            transaction.setUpdatedAt(LocalDateTime.now());
+            transactionRepository.save(transaction);
+        }
+        
+        // Flush để đảm bảo tất cả transaction đã được update trước khi xóa category
+        entityManager.flush();
+        
+        // Xóa category
         categoryRepository.delete(category);
+    }
+    
+    /**
+     * Tìm hoặc tạo category "Khác" (default category, type = BOTH)
+     * Category này luôn tồn tại và không thể xóa
+     */
+    private Category getOrCreateOtherCategory() {
+        return categoryRepository.findByNameAndIsDefaultTrue("Khác")
+                .orElseGet(() -> {
+                    // Tạo category "Khác" nếu chưa có
+                    Category otherCategory = new Category();
+                    otherCategory.setCategoryId(UUID.randomUUID());
+                    otherCategory.setUserId(UUID.fromString("00000000-0000-0000-0000-000000000000")); // Global user
+                    otherCategory.setName("Khác");
+                    otherCategory.setType(CategoryType.BOTH);
+                    otherCategory.setIsDefault(true);
+                    otherCategory.setCreatedAt(LocalDateTime.now());
+                    return categoryRepository.save(otherCategory);
+                });
     }
 }
 

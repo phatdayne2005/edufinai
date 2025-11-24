@@ -1,7 +1,5 @@
 package vn.uth.edufinai.util;
 
-import java.util.Set;
-
 /**
  * Constants chung cho toàn bộ application
  */
@@ -10,15 +8,6 @@ public final class Constants {
     private Constants() {
         // Utility class - prevent instantiation
     }
-
-    /**
-     * Widget contexts không được lưu vào conversation history
-     */
-    public static final Set<String> WIDGET_CONTEXTS = Set.of(
-            "SPENDING_WIDGET",
-            "SAVING_WIDGET",
-            "GOAL_WIDGET"
-    );
 
     /**
      * Default timeout cho WebClient calls (seconds)

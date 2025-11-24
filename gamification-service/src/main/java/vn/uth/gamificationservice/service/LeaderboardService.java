@@ -1,18 +1,9 @@
 package vn.uth.gamificationservice.service;
 
-import jakarta.ws.rs.core.MediaType;
-import org.apache.hc.core5.http.HttpEntity;
 import org.springframework.data.redis.core.RedisTemplate;
-import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
 import org.springframework.stereotype.Service;
-import org.springframework.web.client.RestClientException;
-import org.springframework.web.client.RestTemplate;
 import vn.uth.gamificationservice.dto.*;
 
-import java.net.http.HttpHeaders;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.WeekFields;
@@ -20,7 +11,7 @@ import java.util.*;
 
 @Service
 public class LeaderboardService {
-    private final RedisTemplate redisTemplate;
+    private final RedisTemplate<String, String> redisTemplate;
     private final UserService userService;
 
     private static final String LEADERBOARD_PREFIX = "leaderboard:";
@@ -28,7 +19,7 @@ public class LeaderboardService {
     private static final DateTimeFormatter MONTH_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM");
     private static final WeekFields WEEK_FIELDS = WeekFields.of(Locale.getDefault());
 
-    public LeaderboardService(RedisTemplate redisTemplate, UserService userService) {
+    public LeaderboardService(RedisTemplate<String, String> redisTemplate, UserService userService) {
         this.redisTemplate = redisTemplate;
         this.userService = userService;
     }
@@ -38,7 +29,7 @@ public class LeaderboardService {
      */
     public LeaderboardResponse getTop(int topNumber, LeaderboardType type) {
         String key = getLeaderboardKey(type);
-        Set<UUID> members = redisTemplate.opsForZSet().reverseRange(key, 0, topNumber - 1);
+        Set<String> members = redisTemplate.opsForZSet().reverseRange(key, 0, topNumber - 1);
         if (members == null || members.isEmpty())
             return new LeaderboardResponse(Collections.emptyList(), "SUCCESS");
 
@@ -46,8 +37,9 @@ public class LeaderboardService {
 
         int rank = 1;
 
-        for (UUID member : members) {
-            Double score = redisTemplate.opsForZSet().score(key, member);
+        for (String memberStr : members) {
+            UUID member = UUID.fromString(memberStr);
+            Double score = redisTemplate.opsForZSet().score(key, memberStr);
             result.add(new LeaderboardEntry(member, score != null ? score : 0.0, rank));
             rank++;
         }
@@ -62,15 +54,15 @@ public class LeaderboardService {
     public ApiResponse<LeaderboardEntry> getCurrentUserTop(LeaderboardType type) {
         UserInfo userInfo = this.userService.getMyInfo();
         String key = getLeaderboardKey(type);
+        String userIdStr = userInfo.getId().toString();
 
-
-        Long myRankZeroBased = redisTemplate.opsForZSet().reverseRank(key, userInfo.getId());
+        Long myRankZeroBased = redisTemplate.opsForZSet().reverseRank(key, userIdStr);
         if (myRankZeroBased == null) {
             return ApiResponse.empty();
         }
 
         int myRank = myRankZeroBased.intValue() + 1;
-        Double myScore = redisTemplate.opsForZSet().score(key, userInfo.getId());
+        Double myScore = redisTemplate.opsForZSet().score(key, userIdStr);
         double safeScore = myScore != null ? myScore : 0.0;
 
         LeaderboardEntry myTopInfo = new LeaderboardEntry(userInfo.getId(), safeScore, myRank);

@@ -24,6 +24,10 @@ public class Category {
     @Column(nullable = false, length = 100)
     private String name;
 
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, length = 10)
+    private CategoryType type; // INCOME, EXPENSE, BOTH
+
     @Column(name = "is_default", nullable = false)
     private Boolean isDefault = false;
 

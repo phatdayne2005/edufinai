@@ -25,7 +25,7 @@ spring:
   datasource:
     url: jdbc:mysql://localhost:3306/ai_service
     username: root
-    password: root
+    password: 123456
     driver-class-name: com.mysql.cj.jdbc.Driver
 
   jpa:
@@ -45,8 +45,10 @@ spring:
 logging:
   level:
     root: INFO
-    org.springframework.web.reactive.function.client: WARN
+    org.springframework.web.reactive.function.client: DEBUG
     reactor.netty.http.client: WARN
+    vn.uth.edufinai.util.WebClientUtils: DEBUG
+    vn.uth.edufinai.controller.ChatController: DEBUG
     com.xdpm.service5.ai_service: INFO
     org.springframework.web: INFO
     org.springframework.web.reactive: INFO
@@ -86,26 +88,17 @@ eureka:
     non-secure-port-enabled: true
     secure-port-enabled: false
     instance-id: ${EUREKA_INSTANCE_IP:127.0.0.1}:${server.port}
-
-# Khai báo downstream services (đặt URL HTTP đầy đủ tới endpoint summary phù hợp của từng service)
-#services:
-#  transaction:
-#    url: http://finance-service/api/summary/daily
-#  userprofile:
-#    url: http://auth-service/api/summary/daily
-#  goals:
-#    url: http://gamification-service/api/summary/daily
-#  learning:
-#    url: http://learning-service/api/summary/daily
-  services:
-    transaction:
-      url: http://localhost:9100/api/summary/daily
-    userprofile:
-      url: http://localhost:9100/api/userprofile/summary
-    goals:
-      url: http://localhost:9100/api/goals/summary
-    learning:
-      url: http://localhost:9100/api/learning/summary
+    
+# Khai báo downstream services - dùng service discovery qua Eureka
+# Format: lb://SERVICE-NAME/path
+# Code tự động chọn LoadBalanced WebClient khi URL bắt đầu bằng "lb://"
+services:
+  finance:
+    url: lb://FINANCE-SERVICE/api/summary/month-optimized
+  learning:
+    url: lb://LEARNING-SERVICE/api/learning/summary
+  gamification:
+    url: lb://GAMIFICATION-SERVICE/api/challenges/summary
 gemini:
   apiUrl: https://generativelanguage.googleapis.com/v1beta
   apiKey: ${GEMINI_API_KEY:}
