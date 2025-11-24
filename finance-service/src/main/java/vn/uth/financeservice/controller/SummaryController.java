@@ -7,6 +7,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import vn.uth.financeservice.dto.SummaryResponseDto;
+import vn.uth.financeservice.dto.MonthOptimizedResponseDto;
 import vn.uth.financeservice.service.SummaryService;
 import vn.uth.financeservice.client.AuthServiceClient;
 
@@ -44,6 +45,13 @@ public class SummaryController {
     public ResponseEntity<SummaryResponseDto> getMonthlySummary() {
         UUID userId = authServiceClient.getCurrentUserId();
         SummaryResponseDto summary = summaryService.getMonthlySummary(userId);
+        return ResponseEntity.ok(summary);
+    }
+
+    @GetMapping("/month-optimized")
+    public ResponseEntity<MonthOptimizedResponseDto> getMonthOptimizedSummary() {
+        UUID userId = authServiceClient.getCurrentUserId();
+        MonthOptimizedResponseDto summary = summaryService.getMonthOptimizedSummary(userId);
         return ResponseEntity.ok(summary);
     }
 }
