@@ -45,6 +45,10 @@ public class ChallengeProgressService {
     @Transactional
     public void processEvent(ChallengeEventRequest request) {
         ZonedDateTime now = request.getOccurredAt() != null ? request.getOccurredAt() : ZonedDateTime.now();
+        log.debug("Processing challenge event: userId={}, eventType={}, action={}, accuracy={}, score={}",
+                request.getUserId(), request.getEventType(), request.getAction(),
+                request.getAccuracyPercent(), request.getScore());
+
         List<Challenge> activeChallenges = challengeRepository
                 .findByActiveTrueAndApprovalStatusAndStartAtLessThanEqualAndEndAtGreaterThanEqual(
                         ChallengeApprovalStatus.APPROVED,
@@ -59,6 +63,7 @@ public class ChallengeProgressService {
     private void handleChallenge(Challenge challenge, ChallengeEventRequest event) {
         ChallengeRule rule = ruleEvaluator.parse(challenge.getRule());
         if (!ruleEvaluator.matches(rule, event)) {
+            log.debug("Event did not match rule for challenge {} ({})", challenge.getId(), challenge.getTitle());
             return;
         }
 
@@ -164,10 +169,10 @@ public class ChallengeProgressService {
                 .map(this::toSummaryItem)
                 .collect(Collectors.toList());
         long totalChallenges = challengeRepository.countByApprovalStatus(ChallengeApprovalStatus.APPROVED);
-        return ChallengeSummaryResponse.builder()
-                .challenges(items)
-                .totalCount(totalChallenges)
-                .build();
+        ChallengeSummaryResponse response = new ChallengeSummaryResponse();
+        response.setChallenges(items);
+        response.setTotalCount(totalChallenges);
+        return response;
     }
 
     private ChallengeSummaryItem toSummaryItem(UserChallengeProgress progress) {
@@ -180,11 +185,7 @@ public class ChallengeProgressService {
         double rounded = Math.round(normalized * 10.0) / 10.0;
         Challenge challenge = progress.getChallenge();
         String content = challenge.getTitle() != null ? challenge.getTitle() : challenge.getDescription();
-        return ChallengeSummaryItem.builder()
-                .challengeId(challenge.getId())
-                .content(content)
-                .progress(rounded)
-                .build();
+        return new ChallengeSummaryItem(challenge.getId(), content, rounded);
     }
 }
 

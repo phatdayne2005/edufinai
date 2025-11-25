@@ -1,14 +1,20 @@
 package vn.uth.gamificationservice.dto;
 
-import lombok.AllArgsConstructor;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
-
-@Getter
-@Setter
-@AllArgsConstructor
-@NoArgsConstructor
 public class SimpleResponse {
-    String status;
+    private String status;
+
+    public SimpleResponse() {
+    }
+
+    public SimpleResponse(String status) {
+        this.status = status;
+    }
+
+    public String getStatus() {
+        return status;
+    }
+
+    public void setStatus(String status) {
+        this.status = status;
+    }
 }

@@ -1,18 +1,32 @@
 package vn.uth.gamificationservice.dto;
 
-import lombok.AllArgsConstructor;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
-import org.springframework.stereotype.Service;
-
 import java.util.UUID;
 
-@Getter
-@Setter
-@NoArgsConstructor
-@AllArgsConstructor
 public class ChallengeResponse {
     private UUID challengeId;
     private String status;
+
+    public ChallengeResponse() {
+    }
+
+    public ChallengeResponse(UUID challengeId, String status) {
+        this.challengeId = challengeId;
+        this.status = status;
+    }
+
+    public UUID getChallengeId() {
+        return challengeId;
+    }
+
+    public void setChallengeId(UUID challengeId) {
+        this.challengeId = challengeId;
+    }
+
+    public String getStatus() {
+        return status;
+    }
+
+    public void setStatus(String status) {
+        this.status = status;
+    }
 }

@@ -4,16 +4,10 @@ import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
 
 import java.util.UUID;
 
 @Entity
-@Data
-@AllArgsConstructor
-@NoArgsConstructor
 @Table(name = "user_rewards")
 public class UserRewardSummary {
     @Id
@@ -23,5 +17,27 @@ public class UserRewardSummary {
     @Column(name = "total_score")
     private Double totalScore;
 
+    public UserRewardSummary() {
+    }
 
+    public UserRewardSummary(UUID userId, Double totalScore) {
+        this.userId = userId;
+        this.totalScore = totalScore;
+    }
+
+    public UUID getUserId() {
+        return userId;
+    }
+
+    public void setUserId(UUID userId) {
+        this.userId = userId;
+    }
+
+    public Double getTotalScore() {
+        return totalScore;
+    }
+
+    public void setTotalScore(Double totalScore) {
+        this.totalScore = totalScore;
+    }
 }

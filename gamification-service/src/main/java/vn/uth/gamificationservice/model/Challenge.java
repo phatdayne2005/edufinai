@@ -1,9 +1,6 @@
 package vn.uth.gamificationservice.model;
 
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
 import org.jetbrains.annotations.NotNull;
 
 import java.time.ZoneId;
@@ -12,9 +9,6 @@ import java.util.UUID;
 
 @Entity
 @Table(name = "challenges")
-@Data
-@AllArgsConstructor
-@NoArgsConstructor
 public class Challenge {
     @Id
     @GeneratedValue
@@ -74,6 +68,133 @@ public class Challenge {
     @Enumerated(EnumType.STRING)
     private ChallengeApprovalStatus approvalStatus;
 
+    @Column(name = "updated_at")
+    private ZonedDateTime updatedAt;
+
+    public UUID getId() {
+        return id;
+    }
+
+    public String getTitle() {
+        return title;
+    }
+
+    public void setTitle(String title) {
+        this.title = title;
+    }
+
+    public String getDescription() {
+        return description;
+    }
+
+    public void setDescription(String description) {
+        this.description = description;
+    }
+
+    public ChallengeType getType() {
+        return type;
+    }
+
+    public void setType(ChallengeType type) {
+        this.type = type;
+    }
+
+    public ChallengeScope getScope() {
+        return scope;
+    }
+
+    public void setScope(ChallengeScope scope) {
+        this.scope = scope;
+    }
+
+    public Integer getTargetValue() {
+        return targetValue;
+    }
+
+    public void setTargetValue(Integer targetValue) {
+        this.targetValue = targetValue;
+    }
+
+    public ZonedDateTime getStartAt() {
+        return startAt;
+    }
+
+    public void setStartAt(ZonedDateTime startAt) {
+        this.startAt = startAt;
+    }
+
+    public ZonedDateTime getEndAt() {
+        return endAt;
+    }
+
+    public void setEndAt(ZonedDateTime endAt) {
+        this.endAt = endAt;
+    }
+
+    public boolean isActive() {
+        return active;
+    }
+
+    public void setActive(boolean active) {
+        this.active = active;
+    }
+
+    public String getRule() {
+        return rule;
+    }
+
+    public void setRule(String rule) {
+        this.rule = rule;
+    }
+
+    public Integer getRewardScore() {
+        return rewardScore;
+    }
+
+    public void setRewardScore(Integer rewardScore) {
+        this.rewardScore = rewardScore;
+    }
+
+    public String getRewardBadgeCode() {
+        return rewardBadgeCode;
+    }
+
+    public void setRewardBadgeCode(String rewardBadgeCode) {
+        this.rewardBadgeCode = rewardBadgeCode;
+    }
+
+    public Integer getMaxProgressPerDay() {
+        return maxProgressPerDay;
+    }
+
+    public void setMaxProgressPerDay(Integer maxProgressPerDay) {
+        this.maxProgressPerDay = maxProgressPerDay;
+    }
+
+    public ZonedDateTime getCreatedAt() {
+        return createdAt;
+    }
+
+    public void setCreatedAt(ZonedDateTime createdAt) {
+        this.createdAt = createdAt;
+    }
+
+    public ChallengeApprovalStatus getApprovalStatus() {
+        return approvalStatus;
+    }
+
+    public void setApprovalStatus(ChallengeApprovalStatus approvalStatus) {
+        this.approvalStatus = approvalStatus;
+    }
+
+    public ZonedDateTime getUpdatedAt() {
+        return updatedAt;
+    }
+
+    public void setUpdatedAt(ZonedDateTime updatedAt) {
+        this.updatedAt = updatedAt;
+    }
+
     @PrePersist
     protected void onCreate() {
         if (this.createdAt == null) {
@@ -83,7 +204,4 @@ public class Challenge {
             this.approvalStatus = ChallengeApprovalStatus.PENDING;
         }
     }
-
-    @Column(name = "updated_at")
-    private ZonedDateTime updatedAt;
 }

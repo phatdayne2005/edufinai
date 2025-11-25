@@ -2,6 +2,7 @@ package vn.uth.gamificationservice.service;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import vn.uth.gamificationservice.dto.BadgeCreateRequest;
 import vn.uth.gamificationservice.model.Badge;
 import vn.uth.gamificationservice.model.UserBadge;
 import vn.uth.gamificationservice.repository.BadgeRepository;
@@ -46,6 +47,24 @@ public class BadgeService {
 
     public List<UserBadge> getBadgesOfUser(UUID userId) {
         return userBadgeRepository.findByUserId(userId);
+    }
+
+    public List<Badge> getAllBadges() {
+        return badgeRepository.findAll();
+    }
+
+    @Transactional
+    public Badge createBadge(BadgeCreateRequest request) {
+        if (badgeRepository.existsByCode(request.getCode())) {
+            throw new IllegalArgumentException("Badge code already exists: " + request.getCode());
+        }
+        Badge badge = new Badge();
+        badge.setCode(request.getCode());
+        badge.setName(request.getName());
+        badge.setDescription(request.getDescription());
+        badge.setType(request.getType());
+        badge.setIconUrl(request.getIconUrl());
+        return badgeRepository.save(badge);
     }
 
     private UserBadge createUserBadge(UUID userId, Badge badge) {

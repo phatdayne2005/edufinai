@@ -2,9 +2,12 @@ package vn.uth.gamificationservice.service;
 
 import jakarta.transaction.Transactional;
 import org.springframework.stereotype.Service;
-import vn.uth.gamificationservice.model.*;
+import vn.uth.gamificationservice.model.Challenge;
+import vn.uth.gamificationservice.model.ChallengeApprovalHistory;
+import vn.uth.gamificationservice.model.ChallengeApprovalStatus;
 import vn.uth.gamificationservice.repository.ChallengeApprovalHistoryRepository;
 import vn.uth.gamificationservice.repository.ChallengeRepository;
+import vn.uth.gamificationservice.repository.UserChallengeProgressRepository;
 
 import java.time.ZonedDateTime;
 import java.util.List;
@@ -13,11 +16,14 @@ import java.util.UUID;
 @Service
 public class ChallengeService {
     private final ChallengeRepository challengeRepository;
+    private final UserChallengeProgressRepository progressRepository;
     private final ChallengeApprovalHistoryRepository approvalHistoryRepository;
 
     public ChallengeService(ChallengeRepository challengeRepository,
+                            UserChallengeProgressRepository progressRepository,
                             ChallengeApprovalHistoryRepository approvalHistoryRepository) {
         this.challengeRepository = challengeRepository;
+        this.progressRepository = progressRepository;
         this.approvalHistoryRepository = approvalHistoryRepository;
     }
 
@@ -35,6 +41,8 @@ public class ChallengeService {
 
     @Transactional
     public void delete(UUID challengeId) {
+        progressRepository.deleteByChallenge_Id(challengeId);
+        approvalHistoryRepository.deleteByChallenge_Id(challengeId);
         challengeRepository.deleteById(challengeId);
     }
 

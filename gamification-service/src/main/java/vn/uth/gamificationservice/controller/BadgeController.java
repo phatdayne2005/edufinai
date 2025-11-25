@@ -3,12 +3,9 @@ package vn.uth.gamificationservice.controller;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
-import vn.uth.gamificationservice.dto.ApiResponse;
-import vn.uth.gamificationservice.dto.UserBadgeResponse;
-import vn.uth.gamificationservice.dto.UserInfo;
+import org.springframework.web.bind.annotation.*;
+import vn.uth.gamificationservice.dto.*;
+import vn.uth.gamificationservice.model.Badge;
 import vn.uth.gamificationservice.model.UserBadge;
 import vn.uth.gamificationservice.service.BadgeService;
 import vn.uth.gamificationservice.service.UserService;
@@ -50,6 +47,33 @@ public class BadgeController {
         resp.setLastEarnedAt(userBadge.getLastEarnedAt());
         resp.setSourceChallengeId(userBadge.getSourceChallengeId());
         return resp;
+    }
+
+    @Operation(summary = "List all badges")
+    @GetMapping("/badge")
+    public ResponseEntity<ApiResponse<List<BadgeResponse>>> listBadges() {
+        List<BadgeResponse> badges = badgeService.getAllBadges().stream()
+                .map(this::toBadgeResponse)
+                .collect(Collectors.toList());
+        return ResponseEntity.ok(ApiResponse.success(badges, "Badges retrieved successfully"));
+    }
+
+    @Operation(summary = "Create badge")
+    @PostMapping("/badge")
+    public ResponseEntity<ApiResponse<BadgeResponse>> createBadge(@RequestBody @jakarta.validation.Valid BadgeCreateRequest request) {
+        Badge badge = badgeService.createBadge(request);
+        return ResponseEntity.ok(ApiResponse.success(toBadgeResponse(badge), "Badge created"));
+    }
+
+    private BadgeResponse toBadgeResponse(Badge badge) {
+        return new BadgeResponse(
+                badge.getId(),
+                badge.getCode(),
+                badge.getName(),
+                badge.getDescription(),
+                badge.getType(),
+                badge.getIconUrl()
+        );
     }
 }
 

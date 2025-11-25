@@ -733,6 +733,79 @@ curl -X POST http://localhost:8080/gamification/reward \
 
 ---
 
+#### 3.4.2. Danh sách Badge
+
+**Endpoint**: `GET /api/v1/gamify/badge`  
+**Gateway**: `GET /gamification/badge`
+
+**Mô tả**: Dành cho trang quản trị/frontend để hiển thị toàn bộ badge hiện có (không phụ thuộc user).
+
+**Authentication**: ✅ Required
+
+**Response** (200 OK):
+
+```json
+{
+  "code": 200,
+  "result": [
+    {
+      "id": "9f7b2b71-99f5-4c89-b6e5-5a1d1b8b7b26",
+      "code": "DAILY_BADGE",
+      "name": "Quiz Daily Master",
+      "description": "Hoàn thành 3 quiz mỗi ngày",
+      "type": "QUIZ",
+      "iconUrl": "https://cdn.example.com/badges/daily.png"
+    }
+  ],
+  "message": "Badges retrieved successfully"
+}
+```
+
+---
+
+#### 3.4.3. Tạo Badge
+
+**Endpoint**: `POST /api/v1/gamify/badge`  
+**Gateway**: `POST /gamification/badge`
+
+**Mô tả**: Cho phép admin/frontend tạo badge mới. Hiện chỉ cần `code`, `name`, `iconUrl`; `description` và `type` có thể dùng giá trị mặc định (`QUIZ`).
+
+**Request Body**:
+
+```json
+{
+  "code": "DAILY_BADGE",
+  "name": "Quiz Daily Master",
+  "description": "Hoàn thành 3 quiz mỗi ngày",
+  "type": "QUIZ",
+  "iconUrl": "https://cdn.example.com/badges/daily.png"
+}
+```
+
+**Response** (200 OK):
+
+```json
+{
+  "code": 200,
+  "result": {
+    "id": "9f7b2b71-99f5-4c89-b6e5-5a1d1b8b7b26",
+    "code": "DAILY_BADGE",
+    "name": "Quiz Daily Master",
+    "description": "Hoàn thành 3 quiz mỗi ngày",
+    "type": "QUIZ",
+    "iconUrl": "https://cdn.example.com/badges/daily.png"
+  },
+  "message": "Badge created"
+}
+```
+
+**Validation & lưu ý**:
+- `code` phải là duy nhất (backend trả lỗi 400 nếu trùng).
+- `iconUrl` yêu cầu dạng URL hợp lệ.
+- `type` mặc định `QUIZ` nếu không gửi.
+
+---
+
 ### 3.5. Leaderboard APIs
 
 #### 3.5.1. Lấy Bảng Xếp Hạng
@@ -1238,7 +1311,6 @@ AI service chỉ cần forward JWT của user hiện tại qua header `Authoriza
 }
 ```
 
-
 ```json
 {
   "challengeId": UUID,
@@ -1247,6 +1319,31 @@ AI service chỉ cần forward JWT của user hiện tại qua header `Authoriza
   "targetProgress": Integer,
   "completed": Boolean,
   "completedAt": ZonedDateTime
+}
+```
+
+### 6.9. BadgeResponse Model
+
+```json
+{
+  "id": "UUID",
+  "code": "DAILY_BADGE",
+  "name": "Quiz Daily Master",
+  "description": "Hoàn thành 3 quiz mỗi ngày",
+  "type": "QUIZ",
+  "iconUrl": "https://cdn.example.com/badges/daily.png"
+}
+```
+
+### 6.10. BadgeCreateRequest Model
+
+```json
+{
+  "code": "DAILY_BADGE",
+  "name": "Quiz Daily Master",
+  "description": "Hoàn thành 3 quiz mỗi ngày",
+  "type": "QUIZ",
+  "iconUrl": "https://cdn.example.com/badges/daily.png"
 }
 ```
 

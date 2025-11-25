@@ -20,5 +20,7 @@ public interface UserChallengeProgressRepository extends JpaRepository<UserChall
     List<UserChallengeProgress> findByUserId(UUID userId);
 
     List<UserChallengeProgress> findByChallenge_Scope(ChallengeScope scope);
+
+    void deleteByChallenge_Id(UUID challengeId);
 }
 

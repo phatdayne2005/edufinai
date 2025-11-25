@@ -8,5 +8,7 @@ import java.util.UUID;
 
 public interface ChallengeApprovalHistoryRepository extends JpaRepository<ChallengeApprovalHistory, UUID> {
     List<ChallengeApprovalHistory> findByChallenge_IdOrderByCreatedAtDesc(UUID challengeId);
+
+    void deleteByChallenge_Id(UUID challengeId);
 }
 

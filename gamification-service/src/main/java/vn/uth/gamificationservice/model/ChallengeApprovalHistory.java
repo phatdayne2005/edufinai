@@ -1,16 +1,12 @@
 package vn.uth.gamificationservice.model;
 
 import jakarta.persistence.*;
-import lombok.Getter;
-import lombok.Setter;
 
 import java.time.ZonedDateTime;
 import java.util.UUID;
 
 @Entity
 @Table(name = "challenge_approval_history")
-@Getter
-@Setter
 public class ChallengeApprovalHistory {
 
     @Id
@@ -34,5 +30,49 @@ public class ChallengeApprovalHistory {
 
     @Column(name = "created_at", nullable = false)
     private ZonedDateTime createdAt;
+
+    public UUID getId() {
+        return id;
+    }
+
+    public Challenge getChallenge() {
+        return challenge;
+    }
+
+    public void setChallenge(Challenge challenge) {
+        this.challenge = challenge;
+    }
+
+    public ChallengeApprovalStatus getStatus() {
+        return status;
+    }
+
+    public void setStatus(ChallengeApprovalStatus status) {
+        this.status = status;
+    }
+
+    public UUID getReviewerId() {
+        return reviewerId;
+    }
+
+    public void setReviewerId(UUID reviewerId) {
+        this.reviewerId = reviewerId;
+    }
+
+    public String getNote() {
+        return note;
+    }
+
+    public void setNote(String note) {
+        this.note = note;
+    }
+
+    public ZonedDateTime getCreatedAt() {
+        return createdAt;
+    }
+
+    public void setCreatedAt(ZonedDateTime createdAt) {
+        this.createdAt = createdAt;
+    }
 }
 

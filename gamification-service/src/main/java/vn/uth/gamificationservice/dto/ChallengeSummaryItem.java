@@ -1,19 +1,43 @@
 package vn.uth.gamificationservice.dto;
 
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
-
 import java.util.UUID;
 
-@Data
-@Builder
-@NoArgsConstructor
-@AllArgsConstructor
 public class ChallengeSummaryItem {
     private UUID challengeId;
     private String content;
     private double progress;
+
+    public ChallengeSummaryItem() {
+    }
+
+    public ChallengeSummaryItem(UUID challengeId, String content, double progress) {
+        this.challengeId = challengeId;
+        this.content = content;
+        this.progress = progress;
+    }
+
+    public UUID getChallengeId() {
+        return challengeId;
+    }
+
+    public String getContent() {
+        return content;
+    }
+
+    public double getProgress() {
+        return progress;
+    }
+
+    public void setChallengeId(UUID challengeId) {
+        this.challengeId = challengeId;
+    }
+
+    public void setContent(String content) {
+        this.content = content;
+    }
+
+    public void setProgress(double progress) {
+        this.progress = progress;
+    }
 }
 

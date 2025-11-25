@@ -86,13 +86,12 @@ public class ChallengeController {
     @GetMapping("/challenge/{challengeId}/approval-history")
     public ResponseEntity<List<ChallengeApprovalHistoryRes>> history(@PathVariable UUID challengeId) {
         List<ChallengeApprovalHistoryRes> history = challengeService.getApprovalHistory(challengeId).stream()
-                .map(h -> ChallengeApprovalHistoryRes.builder()
-                        .historyId(h.getId())
-                        .status(h.getStatus())
-                        .reviewerId(h.getReviewerId())
-                        .note(h.getNote())
-                        .createdAt(h.getCreatedAt())
-                        .build())
+                .map(h -> new ChallengeApprovalHistoryRes(
+                        h.getId(),
+                        h.getStatus(),
+                        h.getReviewerId(),
+                        h.getNote(),
+                        h.getCreatedAt()))
                 .toList();
         return ResponseEntity.ok(history);
     }

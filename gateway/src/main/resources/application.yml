@@ -27,18 +27,19 @@ spring:
           globalcors:
             cors-configurations:
               '[/**]':
-                allowedOrigins: "http://localhost:3000"
+                allowedOrigins: "*"
                 allowedMethods:
                   - GET
                   - POST
                   - PUT
                   - DELETE
                   - OPTIONS
+                  - PATCH
                 allowedHeaders:
-                  - "*"  # Cho phép tất cả headers (bao gồm Authorization)
-                allowCredentials: true
+                  - "*"
+                allowCredentials: false
                 exposedHeaders:
-                  - "Authorization"  # Cho phép client đọc Authorization từ response (nếu cần)
+                  - "*"
 
           # ROUTE CONFIG
           routes:
