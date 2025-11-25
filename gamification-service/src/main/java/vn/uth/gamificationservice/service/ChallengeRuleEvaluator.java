@@ -41,6 +41,15 @@ public class ChallengeRuleEvaluator {
         if (rule.getMaxScore() != null && event.getScore() != null && event.getScore() > rule.getMaxScore()) {
             return false;
         }
+        if (rule.getMinAccuracy() != null) {
+            if (event.getAccuracyPercent() == null || event.getAccuracyPercent() < rule.getMinAccuracy()) {
+                return false;
+            }
+        }
+        if (rule.getMaxAccuracy() != null && event.getAccuracyPercent() != null
+                && event.getAccuracyPercent() > rule.getMaxAccuracy()) {
+            return false;
+        }
         return true;
     }
 

@@ -1,0 +1,280 @@
+version: "3.9"
+
+networks:
+  edufin-net:
+
+volumes:
+  mysql-auth-data:
+  mysql-gamification-data:
+  mysql-finance-data:
+  mysql-ai-data:
+  mysql-learning-data:
+  mysql-firebase-data:
+
+services:
+  eureka:
+    build: ./eureka
+    image: edufinai/eureka-service
+    container_name: eureka
+    ports:
+      - "8761:8761"
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+    networks:
+      - edufin-net
+
+  redis:
+    image: redis:7.4-alpine
+    container_name: redis
+    command: ["redis-server", "--save", "20", "1", "--loglevel", "warning", "--requirepass", "123456"]
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "-a", "123456", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    networks:
+      - edufin-net
+
+  mysql-auth:
+    image: mysql:8.0
+    container_name: mysql-auth
+    command: ["--character-set-server=utf8mb4", "--collation-server=utf8mb4_unicode_ci"]
+    environment:
+      MYSQL_ROOT_PASSWORD: 123456
+      MYSQL_DATABASE: identity
+    ports:
+      - "3310:3306"
+    volumes:
+      - mysql-auth-data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-p123456"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    networks:
+      - edufin-net
+
+  mysql-gamification:
+    image: mysql:8.0
+    container_name: mysql-gamification
+    command: ["--character-set-server=utf8mb4", "--collation-server=utf8mb4_unicode_ci"]
+    environment:
+      MYSQL_ROOT_PASSWORD: 123456
+      MYSQL_DATABASE: gamification
+    ports:
+      - "3312:3306"
+    volumes:
+      - mysql-gamification-data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-p123456"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    networks:
+      - edufin-net
+
+  mysql-finance:
+    image: mysql:8.0
+    container_name: mysql-finance
+    command: ["--character-set-server=utf8mb4", "--collation-server=utf8mb4_unicode_ci"]
+    environment:
+      MYSQL_ROOT_PASSWORD: 123456
+      MYSQL_DATABASE: finance
+    ports:
+      - "3311:3306"
+    volumes:
+      - mysql-finance-data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-p123456"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    networks:
+      - edufin-net
+
+  mysql-ai:
+    image: mysql:8.0
+    container_name: mysql-ai
+    command: ["--character-set-server=utf8mb4", "--collation-server=utf8mb4_unicode_ci"]
+    environment:
+      MYSQL_ROOT_PASSWORD: 123456
+      MYSQL_DATABASE: ai_service
+    ports:
+      - "3313:3306"
+    volumes:
+      - mysql-ai-data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-p123456"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    networks:
+      - edufin-net
+
+  mysql-learning:
+    image: mysql:8.0
+    container_name: mysql-learning
+    command: ["--character-set-server=utf8mb4", "--collation-server=utf8mb4_unicode_ci"]
+    environment:
+      MYSQL_ROOT_PASSWORD: 123456
+      MYSQL_DATABASE: learning
+    ports:
+      - "3314:3306"
+    volumes:
+      - mysql-learning-data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-p123456"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    networks:
+      - edufin-net
+
+  mysql-firebase:
+    image: mysql:8.0
+    container_name: mysql-firebase
+    command: ["--character-set-server=utf8mb4", "--collation-server=utf8mb4_unicode_ci"]
+    environment:
+      MYSQL_ROOT_PASSWORD: 123456
+      MYSQL_DATABASE: firebase
+    ports:
+      - "3315:3306"
+    volumes:
+      - mysql-firebase-data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-p123456"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    networks:
+      - edufin-net
+
+  auth-service:
+    build: ./auth-service
+    image: edufinai/auth-service
+    container_name: auth-service
+    depends_on:
+      mysql-auth:
+        condition: service_healthy
+      eureka:
+        condition: service_started
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+      EUREKA_INSTANCE_HOSTNAME: auth-service
+      EUREKA_INSTANCE_IP: auth-service
+    networks:
+      - edufin-net
+
+  gamification-service:
+    build: ./gamification-service
+    image: edufinai/gamification-service
+    container_name: gamification-service
+    depends_on:
+      mysql-gamification:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      eureka:
+        condition: service_started
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+      EUREKA_INSTANCE_HOSTNAME: gamification-service
+      EUREKA_INSTANCE_IP: gamification-service
+    networks:
+      - edufin-net
+
+  finance-service:
+    build: ./finance-service
+    image: edufinai/finance-service
+    container_name: finance-service
+    depends_on:
+      mysql-finance:
+        condition: service_healthy
+      eureka:
+        condition: service_started
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+      EUREKA_INSTANCE_HOSTNAME: finance-service
+      EUREKA_INSTANCE_IP: finance-service
+    networks:
+      - edufin-net
+
+  ai-service:
+    build: ./ai-service
+    image: edufinai/ai-service
+    container_name: ai-service
+    depends_on:
+      mysql-ai:
+        condition: service_healthy
+      eureka:
+        condition: service_started
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+      EUREKA_INSTANCE_HOSTNAME: ai-service
+      EUREKA_INSTANCE_IP: ai-service
+      GEMINI_API_KEY: ${GEMINI_API_KEY:-}
+    networks:
+      - edufin-net
+
+  learning-service:
+    build: ./learning-service
+    image: edufinai/learning-service
+    container_name: learning-service
+    depends_on:
+      mysql-learning:
+        condition: service_healthy
+      eureka:
+        condition: service_started
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+      EUREKA_INSTANCE_HOSTNAME: learning-service
+      EUREKA_INSTANCE_IP: learning-service
+    networks:
+      - edufin-net
+
+  firebase-notification:
+    build: ./firebase-notification
+    image: edufinai/firebase-notification
+    container_name: firebase-notification
+    depends_on:
+      mysql-firebase:
+        condition: service_healthy
+      eureka:
+        condition: service_started
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+      EUREKA_INSTANCE_HOSTNAME: firebase-notification
+      EUREKA_INSTANCE_IP: firebase-notification
+    networks:
+      - edufin-net
+
+  gateway:
+    build: ./gateway
+    image: edufinai/gateway
+    container_name: gateway
+    depends_on:
+      eureka:
+        condition: service_started
+      auth-service:
+        condition: service_started
+      gamification-service:
+        condition: service_started
+      finance-service:
+        condition: service_started
+      ai-service:
+        condition: service_started
+      learning-service:
+        condition: service_started
+      firebase-notification:
+        condition: service_started
+    ports:
+      - "8080:8080"
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+      EUREKA_INSTANCE_HOSTNAME: gateway
+      EUREKA_INSTANCE_IP: gateway
+    networks:
+      - edufin-net
+

@@ -10,17 +10,14 @@ import java.time.*;
 import java.util.*;
 
 @Entity
-@Table(
-        name = "lesson",
-        uniqueConstraints = @UniqueConstraint(columnNames = "slug")
-)
+@Table(name = "lesson", uniqueConstraints = @UniqueConstraint(columnNames = "slug"))
 @Getter
 @Setter
 @NoArgsConstructor
 public class Lesson {
     @Id
     @Column(name = "lesson_id")
-    @GeneratedValue(strategy =  GenerationType.UUID)
+    @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
 
     @OneToMany(mappedBy = "lesson")
@@ -83,9 +80,8 @@ public class Lesson {
 
     // Simple tagging without extra file (ElementCollection → join table)
     @ElementCollection
-    @CollectionTable(name = "lesson_tags",
-            joinColumns = @JoinColumn(name = "lesson_id"),
-            uniqueConstraints = @UniqueConstraint(columnNames = {"lesson_id","tag"}))
+    @CollectionTable(name = "lesson_tags", joinColumns = @JoinColumn(name = "lesson_id"), uniqueConstraints = @UniqueConstraint(columnNames = {
+            "lesson_id", "tag" }))
     @Column(name = "tag", length = 50, nullable = false)
     @Enumerated(EnumType.STRING)
     @OnDelete(action = OnDeleteAction.CASCADE)
@@ -120,9 +116,17 @@ public class Lesson {
     @Column(name = "updated_at", nullable = false)
     private LocalDateTime updatedAt;
 
-    public enum Difficulty { BASIC, INTERMEDIATE, ADVANCED }
-    public enum Status { DRAFT, PENDING, APPROVED, REJECTED }
-    public enum Tag { BUDGETING, INVESTING, SAVING, DEBT, TAX }
+    public enum Difficulty {
+        BASIC, INTERMEDIATE, ADVANCED
+    }
+
+    public enum Status {
+        DRAFT, PENDING, APPROVED, REJECTED
+    }
+
+    public enum Tag {
+        BUDGETING, INVESTING, SAVING, DEBT, TAX
+    }
 
     public static String slugify(String input) {
         if (input == null || input.isBlank()) {

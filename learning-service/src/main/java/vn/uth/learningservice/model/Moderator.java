@@ -18,5 +18,5 @@ public class Moderator {
     private UUID id;
 
     @OneToMany(mappedBy = "moderator")
-    private List<Lesson> lessons = new  ArrayList<>();
+    private List<Lesson> lessons = new ArrayList<>();
 }

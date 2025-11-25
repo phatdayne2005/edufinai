@@ -25,8 +25,10 @@ public class Learner {
     @Column(name = "level", length = 20, nullable = false)
     private Level level = Level.BEGINNER;
 
-    @Column(name = "total_points_learning", nullable = false)
-    private Integer totalPointsLearning = 0;
+    @Column(name = "total_exp")
+    private Long totalExp = 0L;
 
-    public enum Level { BEGINNER, INTERMEDIATE, ADVANCED }
+    public enum Level {
+        BEGINNER, INTERMEDIATE, ADVANCED
+    }
 }

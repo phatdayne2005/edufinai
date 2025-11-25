@@ -15,6 +15,7 @@ import vn.uth.learningservice.model.Creator;
 import vn.uth.learningservice.model.Lesson;
 import vn.uth.learningservice.service.CreatorService;
 import vn.uth.learningservice.service.LessonService;
+import vn.uth.learningservice.service.UserService;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -30,11 +31,25 @@ public class LessonController {
     private final CreatorService creatorService;
     private final LessonMapper lessonMapper;
     private final ObjectMapper objectMapper;
+    private final UserService userService;
 
     @GetMapping
     public ResponseEntity<List<LessonRes>> findAll() {
         List<Lesson> lessons = lessonService.listAll();
         return ResponseEntity.ok(mapToResList(lessons));
+    }
+
+    @GetMapping("/{id}")
+    public ResponseEntity<LessonRes> findById(@PathVariable("id") UUID id) {
+        Lesson lesson = lessonService.getById(id);
+        return ResponseEntity.ok(lessonMapper.toRes(lesson, objectMapper));
+    }
+
+    @GetMapping("/slug/{slug}")
+    public ResponseEntity<LessonRes> findBySlug(@PathVariable("slug") String slug) {
+        Lesson lesson = lessonService.findBySlug(slug)
+                .orElseThrow(() -> new IllegalArgumentException("Lesson not found with slug: " + slug));
+        return ResponseEntity.ok(lessonMapper.toRes(lesson, objectMapper));
     }
 
     @GetMapping("/tags/{tag}")
@@ -58,10 +73,10 @@ public class LessonController {
     @PostMapping
     @PreAuthorize("hasAuthority('SCOPE_ROLE_CREATOR')")
     public ResponseEntity<LessonRes> createLesson(
-            @Valid @RequestBody LessonCreateReq request,
-            org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken auth) {
+            @Valid @RequestBody LessonCreateReq request) {
 
-        UUID creatorId = UUID.fromString(auth.getToken().getSubject());
+        var userInfo = userService.getMyInfo();
+        UUID creatorId = userInfo.getId();
         Creator creator = creatorService.getOrCreate(creatorId);
 
         Lesson lesson = lessonMapper.toEntity(request, objectMapper);
@@ -90,38 +105,54 @@ public class LessonController {
     @PreAuthorize("hasAuthority('SCOPE_ROLE_CREATOR')")
     public ResponseEntity<LessonRes> updateLesson(
             @PathVariable("lessonId") UUID lessonId,
-            @Valid @RequestBody LessonUpdateReq request,
-            org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken auth) {
+            @Valid @RequestBody LessonUpdateReq request) {
 
         Lesson existing = lessonService.getById(lessonId);
-        UUID userId = UUID.fromString(auth.getToken().getSubject());
+        var userInfo = userService.getMyInfo();
+        UUID userId = userInfo.getId();
 
-        // Kiểm tra xem người đang gọi API (userId) có phải là chủ sở hữu bài học không
         if (!existing.getCreator().getId().equals(userId)) {
             return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
         }
 
-        // Map changes from req to existing entity
         lessonMapper.patch(existing, request, objectMapper);
-
-        // Logic mới: Khi update nội dung, status luôn quay về DRAFT
         existing.setStatus(Lesson.Status.DRAFT);
-
-        // Save changes
         Lesson updated = lessonService.save(existing);
 
-        LessonRes response = lessonMapper.toRes(updated, objectMapper);
-        return ResponseEntity.ok(response);
+        return ResponseEntity.ok(lessonMapper.toRes(updated, objectMapper));
+    }
+
+    @PutMapping("/slug/{slug}")
+    @PreAuthorize("hasAuthority('SCOPE_ROLE_CREATOR')")
+    public ResponseEntity<LessonRes> updateLessonBySlug(
+            @PathVariable("slug") String slug,
+            @Valid @RequestBody LessonUpdateReq request) {
+
+        Lesson existing = lessonService.findBySlug(slug)
+                .orElseThrow(() -> new IllegalArgumentException("Lesson not found with slug: " + slug));
+
+        var userInfo = userService.getMyInfo();
+        UUID userId = userInfo.getId();
+
+        if (!existing.getCreator().getId().equals(userId)) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        }
+
+        lessonMapper.patch(existing, request, objectMapper);
+        existing.setStatus(Lesson.Status.DRAFT);
+        Lesson updated = lessonService.save(existing);
+
+        return ResponseEntity.ok(lessonMapper.toRes(updated, objectMapper));
     }
 
     @PutMapping("/{lessonId}/submit")
     @PreAuthorize("hasAuthority('SCOPE_ROLE_CREATOR')")
     public ResponseEntity<LessonRes> submitLesson(
-            @PathVariable("lessonId") UUID lessonId,
-            org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken auth) {
+            @PathVariable("lessonId") UUID lessonId) {
 
         Lesson lesson = lessonService.getById(lessonId);
-        UUID userId = UUID.fromString(auth.getToken().getSubject());
+        var userInfo = userService.getMyInfo();
+        UUID userId = userInfo.getId();
 
         if (!lesson.getCreator().getId().equals(userId)) {
             return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
@@ -131,20 +162,58 @@ public class LessonController {
         return ResponseEntity.ok(lessonMapper.toRes(submitted, objectMapper));
     }
 
+    @PutMapping("/slug/{slug}/submit")
+    @PreAuthorize("hasAuthority('SCOPE_ROLE_CREATOR')")
+    public ResponseEntity<LessonRes> submitLessonBySlug(
+            @PathVariable("slug") String slug) {
+
+        Lesson lesson = lessonService.findBySlug(slug)
+                .orElseThrow(() -> new IllegalArgumentException("Lesson not found with slug: " + slug));
+
+        var userInfo = userService.getMyInfo();
+        UUID userId = userInfo.getId();
+
+        if (!lesson.getCreator().getId().equals(userId)) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        }
+
+        Lesson submitted = lessonService.submitLesson(lesson.getId());
+        return ResponseEntity.ok(lessonMapper.toRes(submitted, objectMapper));
+    }
+
     @DeleteMapping("/{lessonId}")
     @PreAuthorize("hasAuthority('SCOPE_ROLE_CREATOR')")
     public ResponseEntity<Void> deleteLesson(
-            @PathVariable("lessonId") UUID lessonId,
-            org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken auth) {
+            @PathVariable("lessonId") UUID lessonId) {
 
         Lesson lesson = lessonService.getById(lessonId);
-        UUID userId = UUID.fromString(auth.getToken().getSubject());
+        var userInfo = userService.getMyInfo();
+        UUID userId = userInfo.getId();
 
         if (!lesson.getCreator().getId().equals(userId)) {
             return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
         }
 
         lessonService.delete(lessonId);
+        return ResponseEntity.noContent().build();
+    }
+
+    @DeleteMapping("/slug/{slug}")
+    @PreAuthorize("hasAuthority('SCOPE_ROLE_CREATOR')")
+    public ResponseEntity<Void> deleteLessonBySlug(
+            @PathVariable("slug") String slug) {
+
+        Lesson lesson = lessonService.findBySlug(slug)
+                .orElseThrow(() -> new IllegalArgumentException("Lesson not found with slug: " + slug));
+
+        var userInfo = userService.getMyInfo();
+        UUID userId = userInfo.getId();
+
+        if (!lesson.getCreator().getId().equals(userId)) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        }
+
+        lessonService.delete(lesson.getId());
         return ResponseEntity.noContent().build();
     }
 

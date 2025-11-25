@@ -10,6 +10,8 @@ public class ChallengeRule {
     private Integer minScore;
     private Integer maxScore;
     private Integer maxProgressPerDay;
+    private Integer minAccuracy;
+    private Integer maxAccuracy;
 
     public String getEventType() {
         return eventType;
@@ -57,6 +59,22 @@ public class ChallengeRule {
 
     public void setMaxProgressPerDay(Integer maxProgressPerDay) {
         this.maxProgressPerDay = maxProgressPerDay;
+    }
+
+    public Integer getMinAccuracy() {
+        return minAccuracy;
+    }
+
+    public void setMinAccuracy(Integer minAccuracy) {
+        this.minAccuracy = minAccuracy;
+    }
+
+    public Integer getMaxAccuracy() {
+        return maxAccuracy;
+    }
+
+    public void setMaxAccuracy(Integer maxAccuracy) {
+        this.maxAccuracy = maxAccuracy;
     }
 }
 

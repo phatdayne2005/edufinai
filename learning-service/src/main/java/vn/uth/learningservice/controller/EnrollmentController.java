@@ -9,12 +9,8 @@ import vn.uth.learningservice.dto.request.EnrollmentCreateReq;
 import vn.uth.learningservice.dto.request.EnrollmentProgressReq;
 import vn.uth.learningservice.dto.response.EnrollmentRes;
 import vn.uth.learningservice.mapper.EnrollmentMapper;
-import vn.uth.learningservice.model.Enrollment;
-import vn.uth.learningservice.model.Learner;
-import vn.uth.learningservice.model.Lesson;
-import vn.uth.learningservice.service.EnrollmentService;
-import vn.uth.learningservice.service.LearnerService;
-import vn.uth.learningservice.service.LessonService;
+import vn.uth.learningservice.model.*;
+import vn.uth.learningservice.service.*;
 
 import java.util.List;
 import java.util.UUID;
@@ -25,89 +21,133 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class EnrollmentController {
 
-    private final EnrollmentService enrollmentService;
-    private final LearnerService learnerService;
-    private final LessonService lessonService;
-    private final EnrollmentMapper enrollmentMapper;
+        private final EnrollmentService enrollmentService;
+        private final LearnerService learnerService;
+        private final LessonService lessonService;
+        private final EnrollmentMapper enrollmentMapper;
+        private final UserService userService;
 
-    @PostMapping
-    @PreAuthorize("hasAuthority('SCOPE_ROLE_LEARNER')")
-    public ResponseEntity<EnrollmentRes> enroll(
-            @Valid @RequestBody EnrollmentCreateReq req,
-            org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken auth) {
+        @PostMapping
+        @PreAuthorize("hasAuthority('SCOPE_ROLE_LEARNER')")
+        public ResponseEntity<EnrollmentRes> enroll(
+                        @Valid @RequestBody EnrollmentCreateReq req) {
 
-        UUID learnerId = UUID.fromString(auth.getToken().getSubject());
-        Learner learner = learnerService.getOrCreate(learnerId);
-        Lesson lesson = lessonService.getById(req.getLessonId());
+                var userInfo = userService.getMyInfo();
+                UUID learnerId = userInfo.getId();
+                Learner learner = learnerService.getOrCreate(learnerId);
+                Lesson lesson = lessonService.getById(req.getLessonId());
 
-        Enrollment newEnroll = new Enrollment();
-        newEnroll.setLearner(learner);
-        newEnroll.setLesson(lesson);
-        newEnroll.setStatus(Enrollment.Status.IN_PROGRESS);
-        newEnroll.setStartedAt(java.time.LocalDateTime.now());
-        newEnroll.setLastActivityAt(java.time.LocalDateTime.now());
+                Enrollment newEnroll = new Enrollment();
+                newEnroll.setLearner(learner);
+                newEnroll.setLesson(lesson);
+                newEnroll.setStatus(Enrollment.Status.IN_PROGRESS);
+                newEnroll.setStartedAt(java.time.LocalDateTime.now());
+                newEnroll.setLastActivityAt(java.time.LocalDateTime.now());
 
-        Enrollment saved = enrollmentService.enrollIfAbsent(newEnroll);
-        return ResponseEntity.ok(enrollmentMapper.toRes(saved));
-    }
-
-    @GetMapping
-    @PreAuthorize("hasAuthority('SCOPE_ROLE_LEARNER')")
-    public ResponseEntity<List<EnrollmentRes>> listMyEnrollments(
-            org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken auth) {
-
-        UUID learnerId = UUID.fromString(auth.getToken().getSubject());
-        // Ensure learner exists
-        learnerService.getById(learnerId);
-
-        List<Enrollment> list = enrollmentService.listByLearner(learnerId);
-        return ResponseEntity.ok(list.stream()
-                .map(enrollmentMapper::toRes)
-                .collect(Collectors.toList()));
-    }
-
-    @GetMapping("/{enrollmentId}")
-    @PreAuthorize("hasAuthority('SCOPE_ROLE_LEARNER')")
-    public ResponseEntity<EnrollmentRes> getEnrollment(
-            @PathVariable UUID enrollmentId,
-            org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken auth) {
-
-        Enrollment enrollment = enrollmentService.getById(enrollmentId);
-        UUID userId = UUID.fromString(auth.getToken().getSubject());
-
-        // Check if user is the owner
-        if (!enrollment.getLearner().getId().equals(userId)) {
-            return ResponseEntity.status(org.springframework.http.HttpStatus.FORBIDDEN).build();
+                Enrollment saved = enrollmentService.enrollIfAbsent(newEnroll);
+                return ResponseEntity.ok(enrollmentMapper.toRes(saved));
         }
 
-        return ResponseEntity.ok(enrollmentMapper.toRes(enrollment));
-    }
+        @GetMapping
+        @PreAuthorize("hasAuthority('SCOPE_ROLE_LEARNER')")
+        public ResponseEntity<List<EnrollmentRes>> listMyEnrollments() {
 
-    @PutMapping("/{enrollmentId}/progress")
-    @PreAuthorize("hasAuthority('SCOPE_ROLE_LEARNER')")
-    public ResponseEntity<Void> updateProgress(
-            @PathVariable UUID enrollmentId,
-            @Valid @RequestBody EnrollmentProgressReq req,
-            org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken auth) {
+                var userInfo = userService.getMyInfo();
+                UUID learnerId = userInfo.getId();
+                // Ensure learner exists
+                learnerService.getById(learnerId);
 
-        Enrollment enrollment = enrollmentService.getById(enrollmentId);
-        UUID userId = UUID.fromString(auth.getToken().getSubject());
-
-        // Check if user is the owner
-        if (!enrollment.getLearner().getId().equals(userId)) {
-            return ResponseEntity.status(org.springframework.http.HttpStatus.FORBIDDEN).build();
+                List<Enrollment> list = enrollmentService.listByLearner(learnerId);
+                return ResponseEntity.ok(list.stream()
+                                .map(enrollmentMapper::toRes)
+                                .collect(Collectors.toList()));
         }
 
-        // Map DTO status to Entity status
-        Enrollment.Status status = Enrollment.Status.valueOf(req.getStatus().name());
+        @GetMapping("/{enrollmentId}")
+        @PreAuthorize("hasAuthority('SCOPE_ROLE_LEARNER')")
+        public ResponseEntity<EnrollmentRes> getEnrollment(
+                        @PathVariable UUID enrollmentId) {
 
-        enrollmentService.updateProgress(
-                enrollmentId,
-                status,
-                req.getProgressPercent(),
-                req.getScore(),
-                req.getAddAttempt());
+                Enrollment enrollment = enrollmentService.getById(enrollmentId);
+                var userInfo = userService.getMyInfo();
+                UUID userId = userInfo.getId();
 
-        return ResponseEntity.ok().build();
-    }
+                // Check if user is the owner
+                if (!enrollment.getLearner().getId().equals(userId)) {
+                        return ResponseEntity.status(org.springframework.http.HttpStatus.FORBIDDEN).build();
+                }
+
+                return ResponseEntity.ok(enrollmentMapper.toRes(enrollment));
+        }
+
+        @PutMapping("/{enrollmentId}/progress")
+        @PreAuthorize("hasAuthority('SCOPE_ROLE_LEARNER')")
+        public ResponseEntity<vn.uth.learningservice.dto.response.GamificationRes> updateProgress(
+                        @PathVariable UUID enrollmentId,
+                        @Valid @RequestBody EnrollmentProgressReq req) {
+
+                Enrollment enrollment = enrollmentService.getById(enrollmentId);
+                var userInfo = userService.getMyInfo();
+                UUID userId = userInfo.getId();
+
+                // Check if user is the owner
+                if (!enrollment.getLearner().getId().equals(userId)) {
+                        return ResponseEntity.status(org.springframework.http.HttpStatus.FORBIDDEN).build();
+                }
+
+                var res = enrollmentService.updateProgress(enrollmentId, req);
+                return ResponseEntity.ok(res);
+        }
+
+        // ========== Context-Aware Endpoints (Slug-based) ==========
+
+        /**
+         * Get my enrollment for a specific lesson using lesson slug.
+         * This eliminates the need to expose enrollment ID in URLs.
+         */
+        @GetMapping("/lessons/{slug}/my-enrollment")
+        @PreAuthorize("hasAuthority('SCOPE_ROLE_LEARNER')")
+        public ResponseEntity<EnrollmentRes> getMyEnrollmentForLesson(
+                        @PathVariable("slug") String slug) {
+
+                var userInfo = userService.getMyInfo();
+                UUID learnerId = userInfo.getId();
+
+                // Find lesson by slug
+                Lesson lesson = lessonService.findBySlug(slug)
+                                .orElseThrow(() -> new IllegalArgumentException("Lesson not found with slug: " + slug));
+
+                // Find enrollment for this learner and lesson
+                Enrollment enrollment = enrollmentService.findByLearnerAndLesson(learnerId, lesson.getId())
+                                .orElseThrow(() -> new IllegalArgumentException("Not enrolled in this lesson"));
+
+                return ResponseEntity.ok(enrollmentMapper.toRes(enrollment));
+        }
+
+        /**
+         * Update progress for my enrollment using lesson slug.
+         * Frontend only needs to know the lesson slug, not the enrollment ID.
+         */
+        @PutMapping("/lessons/{slug}/my-enrollment/progress")
+        @PreAuthorize("hasAuthority('SCOPE_ROLE_LEARNER')")
+        public ResponseEntity<vn.uth.learningservice.dto.response.GamificationRes> updateMyEnrollmentProgress(
+                        @PathVariable("slug") String slug,
+                        @Valid @RequestBody EnrollmentProgressReq req) {
+
+                var userInfo = userService.getMyInfo();
+                UUID learnerId = userInfo.getId();
+
+                // Find lesson by slug
+                Lesson lesson = lessonService.findBySlug(slug)
+                                .orElseThrow(() -> new IllegalArgumentException("Lesson not found with slug: " + slug));
+
+                // Find enrollment for this learner and lesson
+                Enrollment enrollment = enrollmentService.findByLearnerAndLesson(learnerId, lesson.getId())
+                                .orElseThrow(() -> new IllegalArgumentException("Not enrolled in this lesson"));
+
+                // Update progress
+                var res = enrollmentService.updateProgress(enrollment.getId(), req);
+
+                return ResponseEntity.ok(res);
+        }
 }

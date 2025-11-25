@@ -12,5 +12,5 @@ import java.util.*;
 public class LearnerRes {
     private UUID id;
     private LearnerLevel level;
-    private int totalPointsLearning;
+    private Long totalExp;
 }

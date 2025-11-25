@@ -16,6 +16,10 @@
             "method": "POST",
             "header": [
               {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              },
+              {
                 "key": "Content-Type",
                 "value": "application/json"
               }
@@ -66,6 +70,12 @@
           "name": "Get My Reward Summary",
           "request": {
             "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
             "url": {
               "raw": "{{baseUrl}}/reward",
               "host": [
@@ -87,6 +97,12 @@
           "name": "Get All Challenges",
           "request": {
             "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
             "url": {
               "raw": "{{baseUrl}}/challenge",
               "host": [
@@ -104,6 +120,10 @@
           "request": {
             "method": "POST",
             "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              },
               {
                 "key": "Content-Type",
                 "value": "application/json"
@@ -129,6 +149,12 @@
           "name": "Delete Challenge",
           "request": {
             "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
             "url": {
               "raw": "{{baseUrl}}/challenge/{{challengeId}}",
               "host": [
@@ -146,6 +172,12 @@
           "name": "Get Current User Info (/me)",
           "request": {
             "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
             "url": {
               "raw": "{{baseUrl}}/me",
               "host": [
@@ -168,6 +200,10 @@
           "request": {
             "method": "POST",
             "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              },
               {
                 "key": "Content-Type",
                 "value": "application/json"
@@ -194,6 +230,12 @@
           "name": "Get Challenge Progress",
           "request": {
             "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
             "url": {
               "raw": "{{baseUrl}}/challenge/{{challengeId}}/progress",
               "host": [
@@ -212,6 +254,12 @@
           "name": "Get My Active Challenges",
           "request": {
             "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
             "url": {
               "raw": "{{baseUrl}}/challenge/me/active",
               "host": [
@@ -230,6 +278,12 @@
           "name": "Get My Completed Challenges",
           "request": {
             "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
             "url": {
               "raw": "{{baseUrl}}/challenge/me/completed",
               "host": [
@@ -253,6 +307,12 @@
           "name": "Get Leaderboard Top N",
           "request": {
             "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
             "url": {
               "raw": "{{baseUrl}}/leaderboard/{{leaderboardType}}/{{topNumber}}",
               "host": [
@@ -271,6 +331,12 @@
           "name": "Get My Rank",
           "request": {
             "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
             "url": {
               "raw": "{{baseUrl}}/leaderboard/{{leaderboardType}}/me",
               "host": [
@@ -294,6 +360,12 @@
           "name": "Get My Badges",
           "request": {
             "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
             "url": {
               "raw": "{{baseUrl}}/badge/me",
               "host": [
@@ -308,13 +380,140 @@
           "response": []
         }
       ]
+    },
+    {
+      "name": "Scenario - Challenge Progress Tests",
+      "description": "Chạy tuần tự để mô phỏng user hoàn thành quiz/goal và theo dõi progress.",
+      "item": [
+        {
+          "name": "Scenario - Publish Quiz Event (Day 1)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"userId\": \"{{userId}}\",\n  \"eventType\": \"QUIZ\",\n  \"action\": \"COMPLETE\",\n  \"lessonId\": \"{{lessonId}}\",\n  \"enrollId\": \"{{enrollId}}\",\n  \"score\": 90,\n  \"amount\": 1,\n  \"occurredAt\": \"{{quizEventTimestamp1}}\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/challenge/event",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "challenge",
+                "event"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Scenario - Publish Quiz Event (Day 2)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"userId\": \"{{userId}}\",\n  \"eventType\": \"QUIZ\",\n  \"action\": \"COMPLETE\",\n  \"lessonId\": \"{{lessonId}}\",\n  \"enrollId\": \"{{enrollId}}\",\n  \"score\": 95,\n  \"amount\": 1,\n  \"occurredAt\": \"{{quizEventTimestamp2}}\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/challenge/event",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "challenge",
+                "event"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Scenario - Publish Goal Deposit Event",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"userId\": \"{{userId}}\",\n  \"eventType\": \"GOAL\",\n  \"action\": \"DEPOSIT\",\n  \"amount\": {{goalEventAmount}},\n  \"occurredAt\": \"{{goalEventTimestamp}}\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/challenge/event",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "challenge",
+                "event"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Scenario - Get My Active Challenges",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/challenge/me/active",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "challenge",
+                "me",
+                "active"
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
     }
   ],
   "event": [],
   "variable": [
     {
       "key": "baseUrl",
-      "value": "http://localhost:8203/api/v1/gamify"
+      "value": "http://localhost:8080/gamification"
+    },
+    {
+      "key": "authToken",
+      "value": "<paste-your-jwt>"
     },
     {
       "key": "userId",
@@ -339,6 +538,22 @@
     {
       "key": "topNumber",
       "value": "10"
+    },
+    {
+      "key": "quizEventTimestamp1",
+      "value": "2025-11-24T08:00:00+07:00[Asia/Ho_Chi_Minh]"
+    },
+    {
+      "key": "quizEventTimestamp2",
+      "value": "2025-11-25T09:30:00+07:00[Asia/Ho_Chi_Minh]"
+    },
+    {
+      "key": "goalEventAmount",
+      "value": "500000"
+    },
+    {
+      "key": "goalEventTimestamp",
+      "value": "2025-11-25T10:00:00+07:00[Asia/Ho_Chi_Minh]"
     }
   ]
 }

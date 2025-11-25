@@ -9,11 +9,16 @@ import vn.uth.learningservice.dto.shared.LessonTag;
 
 import java.util.*;
 
-@Data @NoArgsConstructor @AllArgsConstructor @Builder
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
 public class LessonCreateReq {
-    @NotBlank @Size(max = 150)
+    @NotBlank
+    @Size(max = 150)
     private String title;
 
+    @NotBlank
     @Size(max = 1000)
     private String description;
 
@@ -23,7 +28,7 @@ public class LessonCreateReq {
     @NotBlank
     private String content;
 
-    @NotNull @Min(1) @Max(6000)
+    @Min(0)
     private Integer durationMinutes;
 
     @NotNull
@@ -35,6 +40,7 @@ public class LessonCreateReq {
     @Size(max = 255)
     private String videoUrl;
 
+    @NotNull
     private Set<LessonTag> tags;
 
     // Quiz JSON: chứa thông tin số thứ tự, câu hỏi và đáp án
