@@ -30,13 +30,14 @@ public class CreatorController {
     private final CreatorMapper mapper;
     private final LessonService lessonService;
     private final LessonMapper lessonMapper;
+    private final vn.uth.learningservice.service.UserService userService;
     private final ObjectMapper objectMapper;
 
     // GET /api/creators/me - Lấy thông tin của chính creator đang đăng nhập
     @GetMapping("/me")
-    public ResponseEntity<CreatorRes> getMe(
-            org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken auth) {
-        UUID id = UUID.fromString(auth.getToken().getSubject());
+    public ResponseEntity<CreatorRes> getMe() {
+        var userInfo = userService.getMyInfo();
+        UUID id = userInfo.getId();
         Creator creator = creatorService.getOrCreate(id);
         CreatorRes dto = mapper.toDto(creator);
         long totalLessons = creatorService.countLessons(id);
@@ -44,6 +45,7 @@ public class CreatorController {
         return ResponseEntity.ok(dto);
     }
 
+<<<<<<< Updated upstream
     // GET /api/creators/me/lessons - Lấy danh sách bài học của chính creator đang đăng nhập
     @GetMapping("/me/lessons")
     public ResponseEntity<List<LessonRes>> getMyLessons(
@@ -57,6 +59,19 @@ public class CreatorController {
                 .map(lesson -> lessonMapper.toRes(lesson, objectMapper))
                 .collect(Collectors.toList());
         return ResponseEntity.ok(lessonResList);
+=======
+    // GET /api/creators/me/lessons - Lấy danh sách bài học của creator đang đăng
+    // nhập
+    @GetMapping("/me/lessons")
+    @org.springframework.security.access.prepost.PreAuthorize("hasAuthority('SCOPE_ROLE_CREATOR')")
+    public ResponseEntity<List<LessonRes>> getMyLessons() {
+        var userInfo = userService.getMyInfo();
+        UUID creatorId = userInfo.getId();
+        List<Lesson> lessons = lessonService.listByCreator(creatorId);
+        return ResponseEntity.ok(lessons.stream()
+                .map(lesson -> lessonMapper.toRes(lesson, objectMapper))
+                .collect(Collectors.toList()));
+>>>>>>> Stashed changes
     }
 
     // GET /api/creators/{id} - Lấy thông tin chi tiết của một creator theo ID

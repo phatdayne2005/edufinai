@@ -18,31 +18,28 @@ import java.nio.charset.StandardCharsets;
 @EnableMethodSecurity
 public class SecurityConfig {
 
-    @Value("${jwt.secret}")
-    private String secret;
+        @Value("${jwt.secret}")
+        private String secret;
 
-    @Bean
-    public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
-        http
-                .csrf(csrf -> csrf.disable())
-                .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/actuator/health").permitAll()
-                        .anyRequest().authenticated()
-                )
-                .oauth2ResourceServer(oauth -> oauth
-                        .jwt(Customizer.withDefaults())
-                );
+        @Bean
+        public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+                http
+                                .csrf(csrf -> csrf.disable())
+                                .authorizeHttpRequests(auth -> auth
+                                                .requestMatchers("/actuator/health").permitAll()
+                                                .anyRequest().authenticated())
+                                .oauth2ResourceServer(oauth -> oauth
+                                                .jwt(Customizer.withDefaults()));
 
-        return http.build();
-    }
+                return http.build();
+        }
 
-    @Bean
-    public JwtDecoder jwtDecoder() {
-        SecretKeySpec secretKeySpec =
-                new SecretKeySpec(secret.getBytes(StandardCharsets.UTF_8), "HmacSHA512");
+        @Bean
+        public JwtDecoder jwtDecoder() {
+                SecretKeySpec secretKeySpec = new SecretKeySpec(secret.getBytes(StandardCharsets.UTF_8), "HmacSHA512");
 
-        return NimbusJwtDecoder.withSecretKey(secretKeySpec)
-                .macAlgorithm(MacAlgorithm.HS512)
-                .build();
-    }
+                return NimbusJwtDecoder.withSecretKey(secretKeySpec)
+                                .macAlgorithm(MacAlgorithm.HS512)
+                                .build();
+        }
 }

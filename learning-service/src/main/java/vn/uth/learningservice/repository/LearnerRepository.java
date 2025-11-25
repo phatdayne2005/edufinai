@@ -14,6 +14,6 @@ public interface LearnerRepository extends JpaRepository<Learner, UUID> {
 
     @Modifying
     @Transactional
-    @Query("update Learner l set l.totalPointsLearning = l.totalPointsLearning + :delta where l.id = :learnerId")
-    int addLearningPoints(@Param("learnerId") UUID learnerId, @Param("delta") int delta);
+    @Query("update Learner l set l.totalExp = l.totalExp + :delta where l.id = :learnerId")
+    int addExp(@Param("learnerId") UUID learnerId, @Param("delta") long delta);
 }

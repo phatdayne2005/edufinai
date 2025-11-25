@@ -45,6 +45,15 @@ public class Enrollment {
     @Column(name = "attempts", nullable = false)
     private Integer attempts = 0;
 
+    @Column(name = "earned_exp")
+    private Long earnedExp = 0L;
+
+    @Column(name = "correct_answers_count")
+    private Integer correctAnswersCount = 0;
+
+    @Column(name = "total_quiz_questions")
+    private Integer totalQuizQuestions = 0;
+
     @Column(name = "started_at")
     private LocalDateTime startedAt;
 

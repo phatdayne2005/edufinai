@@ -9,7 +9,10 @@ import vn.uth.learningservice.dto.shared.LessonTag;
 
 import java.util.*;
 
-@Data @NoArgsConstructor @AllArgsConstructor @Builder
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
 public class LessonUpdateReq {
     @Size(max = 150)
     private String title;
@@ -20,7 +23,7 @@ public class LessonUpdateReq {
     private LessonStatus status;
     private LessonDifficulty difficulty;
 
-    @Min(1) @Max(6000)
+    @Min(0)
     private Integer durationMinutes;
 
     @Size(max = 255)

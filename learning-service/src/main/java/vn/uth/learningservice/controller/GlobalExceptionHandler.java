@@ -17,8 +17,7 @@ public class GlobalExceptionHandler {
     public ResponseEntity<Object> handleNotFound(EntityNotFoundException ex) {
         Map<String, Object> body = Map.of(
                 "error", "not_found",
-                "message", ex.getMessage()
-        );
+                "message", ex.getMessage());
         return new ResponseEntity<>(body, HttpStatus.NOT_FOUND);
     }
 
@@ -26,8 +25,7 @@ public class GlobalExceptionHandler {
     public ResponseEntity<Object> handleBadRequest(IllegalArgumentException ex) {
         Map<String, Object> body = Map.of(
                 "error", "bad_request",
-                "message", ex.getMessage()
-        );
+                "message", ex.getMessage());
         return new ResponseEntity<>(body, HttpStatus.BAD_REQUEST);
     }
 
@@ -41,8 +39,7 @@ public class GlobalExceptionHandler {
         });
         Map<String, Object> body = Map.of(
                 "error", "validation_failed",
-                "details", errors
-        );
+                "details", errors);
         return new ResponseEntity<>(body, HttpStatus.BAD_REQUEST);
     }
 
@@ -51,9 +48,7 @@ public class GlobalExceptionHandler {
     public ResponseEntity<Object> handleAll(Exception ex) {
         Map<String, Object> body = Map.of(
                 "error", "internal_error",
-                "message", ex.getMessage()
-        );
+                "message", ex.getMessage());
         return new ResponseEntity<>(body, HttpStatus.INTERNAL_SERVER_ERROR);
     }
 }
-
