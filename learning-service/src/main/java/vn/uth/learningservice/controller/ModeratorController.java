@@ -21,12 +21,13 @@ import java.util.stream.Collectors;
 @RestController
 @RequestMapping("/api/moderators")
 @RequiredArgsConstructor
-@PreAuthorize("hasAuthority('SCOPE_ROLE_MODERATOR')")
+@PreAuthorize("hasAnyAuthority('SCOPE_ROLE_MODERATOR', 'SCOPE_ROLE_MOD')")
 public class ModeratorController {
 
     private final ModeratorService moderatorService;
     private final LessonService lessonService;
     private final LessonMapper lessonMapper;
+    private final vn.uth.learningservice.service.UserService userService;
     private final ObjectMapper objectMapper;
 
     @GetMapping
@@ -36,10 +37,10 @@ public class ModeratorController {
 
     @GetMapping("/lessons")
     public ResponseEntity<List<LessonRes>> listByStatus(
-            @RequestParam(value = "status", required = false) Lesson.Status status,
-            org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken auth) {
+            @RequestParam(value = "status", required = false) Lesson.Status status) {
 
-        UUID moderatorId = UUID.fromString(auth.getToken().getSubject());
+        var userInfo = userService.getMyInfo();
+        UUID moderatorId = userInfo.getId();
         moderatorService.getOrCreate(moderatorId); // Ensure moderator exists
 
         List<Lesson> lessons;
@@ -58,10 +59,10 @@ public class ModeratorController {
 
     @GetMapping("/lessons/{lessonId}")
     public ResponseEntity<LessonRes> viewLessonById(
-            @PathVariable("lessonId") UUID lessonId,
-            org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken auth) {
+            @PathVariable("lessonId") UUID lessonId) {
 
-        UUID moderatorId = UUID.fromString(auth.getToken().getSubject());
+        var userInfo = userService.getMyInfo();
+        UUID moderatorId = userInfo.getId();
         moderatorService.getOrCreate(moderatorId); // Verify moderator exists
 
         Lesson lesson = lessonService.getById(lessonId);
@@ -77,10 +78,10 @@ public class ModeratorController {
     @PostMapping("/lessons/{lessonId}/decision")
     public ResponseEntity<LessonRes> moderateLesson(
             @PathVariable("lessonId") UUID lessonId,
-            @Valid @RequestBody LessonModerationReq request,
-            org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken auth) {
+            @Valid @RequestBody LessonModerationReq request) {
 
-        UUID moderatorId = UUID.fromString(auth.getToken().getSubject());
+        var userInfo = userService.getMyInfo();
+        UUID moderatorId = userInfo.getId();
         moderatorService.getById(moderatorId); // Ensure moderator exists
 
         Lesson updated = lessonService.moderateLesson(moderatorId, lessonId, request.getStatus(),

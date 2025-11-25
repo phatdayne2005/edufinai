@@ -71,7 +71,8 @@ public class ChallengeProgressService {
             return;
         }
 
-        int increment = event.getAmount() != null ? event.getAmount() : 1;
+        // amount dùng ở rule kiểu "ghi nhận 1 giao dịch", nên mặc định 1 để tránh tăng lệch
+        int increment = 1;
         progress.setCurrentProgress(progress.getCurrentProgress() + increment);
 
         LocalDate today = LocalDate.now();

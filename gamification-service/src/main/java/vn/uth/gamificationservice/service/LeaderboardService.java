@@ -1,7 +1,10 @@
 package vn.uth.gamificationservice.service;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
+import org.springframework.util.StringUtils;
 import vn.uth.gamificationservice.dto.*;
 
 import java.time.LocalDate;
@@ -11,6 +14,7 @@ import java.util.*;
 
 @Service
 public class LeaderboardService {
+    private static final Logger log = LoggerFactory.getLogger(LeaderboardService.class);
     private final RedisTemplate<String, String> redisTemplate;
     private final UserService userService;
 
@@ -40,7 +44,7 @@ public class LeaderboardService {
         for (String memberStr : members) {
             UUID member = UUID.fromString(memberStr);
             Double score = redisTemplate.opsForZSet().score(key, memberStr);
-            result.add(new LeaderboardEntry(member, score != null ? score : 0.0, rank));
+            result.add(buildEntry(member, score != null ? score : 0.0, rank));
             rank++;
         }
 
@@ -65,7 +69,13 @@ public class LeaderboardService {
         Double myScore = redisTemplate.opsForZSet().score(key, userIdStr);
         double safeScore = myScore != null ? myScore : 0.0;
 
-        LeaderboardEntry myTopInfo = new LeaderboardEntry(userInfo.getId(), safeScore, myRank);
+        LeaderboardEntry myTopInfo = new LeaderboardEntry(
+                userInfo.getId(),
+                safeScore,
+                myRank,
+                buildFullName(userInfo.getFirstName(), userInfo.getLastName()),
+                userInfo.getUsername()
+        );
         ApiResponse<LeaderboardEntry> resp = new ApiResponse(200, myTopInfo, "SUCCESS");
 
         return resp;
@@ -98,5 +108,37 @@ public class LeaderboardService {
      */
     public String getLeaderboardKeyForType(LeaderboardType type) {
         return getLeaderboardKey(type);
+    }
+
+    private LeaderboardEntry buildEntry(UUID userId, double score, int rank) {
+        LeaderboardEntry entry = new LeaderboardEntry();
+        entry.setUserId(userId);
+        entry.setScore(score);
+        entry.setTop(rank);
+
+        try {
+            UserInfo info = userService.getUserInfoById(userId);
+            if (info != null) {
+                entry.setUsername(info.getUsername());
+                entry.setName(buildFullName(info.getFirstName(), info.getLastName()));
+            }
+        } catch (Exception ex) {
+            log.warn("Could not enrich leaderboard entry for user {}", userId, ex);
+        }
+
+        return entry;
+    }
+
+    private String buildFullName(String firstName, String lastName) {
+        if (!StringUtils.hasText(firstName) && !StringUtils.hasText(lastName)) {
+            return null;
+        }
+        if (!StringUtils.hasText(firstName)) {
+            return lastName;
+        }
+        if (!StringUtils.hasText(lastName)) {
+            return firstName;
+        }
+        return firstName + " " + lastName;
     }
 }

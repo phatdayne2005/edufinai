@@ -19,6 +19,9 @@ public class EnrollmentRes {
     private int progressPercent;
     private Integer score;
     private int attempts;
+    private Integer totalQuizQuestions;
+    private Integer correctAnswersCount;
+    private Long earnedExp;
 
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private LocalDateTime startedAt;

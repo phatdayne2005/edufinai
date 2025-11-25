@@ -1,10 +1,19 @@
-FROM openjdk:21
+FROM maven:3.9.6-eclipse-temurin-21 AS builder
+WORKDIR /workspace
 
-ARG FILE_JAR=target/*.jar
+COPY pom.xml .
+RUN mvn -q -B dependency:go-offline
 
-ADD ${FILE_JAR} eureka-service.jar
+COPY src src
+RUN mvn -q -B clean package -DskipTests
 
-ENTRYPOINT ["java", "-jar", "eureka-service.jar"]
+FROM eclipse-temurin:21-jre
+WORKDIR /app
+
+ENV SPRING_PROFILES_ACTIVE=docker
+
+COPY --from=builder /workspace/target/*.jar /app/app.jar
 
 EXPOSE 8761
 
+ENTRYPOINT ["java", "-jar", "/app/app.jar"]

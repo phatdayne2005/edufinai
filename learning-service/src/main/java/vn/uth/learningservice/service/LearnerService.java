@@ -38,11 +38,28 @@ public class LearnerService {
     }
 
     @Transactional
-    public void addPoints(UUID learnerId, int delta) {
+    public void addExp(UUID learnerId, long delta) {
         if (delta <= 0)
-            return; // chỉ cộng điểm nếu delta > 0
-        int updated = learnerRepo.addLearningPoints(learnerId, delta);
+            return;
+        int updated = learnerRepo.addExp(learnerId, delta);
         if (updated == 0)
             throw new EntityNotFoundException("Learner not found: " + learnerId);
+
+        // Check and update level
+        Learner learner = learnerRepo.findById(learnerId).orElseThrow();
+        updateLevel(learner);
+        learnerRepo.save(learner);
+    }
+
+    private void updateLevel(Learner learner) {
+        long exp = learner.getTotalExp();
+        // Simple logic: < 1000 Beginner, 1000-5000 Intermediate, > 5000 Advanced
+        if (exp >= 5000) {
+            learner.setLevel(Learner.Level.ADVANCED);
+        } else if (exp >= 1000) {
+            learner.setLevel(Learner.Level.INTERMEDIATE);
+        } else {
+            learner.setLevel(Learner.Level.BEGINNER);
+        }
     }
 }

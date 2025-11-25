@@ -13,8 +13,10 @@ public class LeaderboardEntry {
     private UUID userId;
     private double score;
     private int top;
+    private String name;
+    private String username;
 
     public static LeaderboardEntry empty() {
-        return new LeaderboardEntry(null, 0.0, -1);
+        return new LeaderboardEntry(null, 0.0, -1, null, null);
     }
 }

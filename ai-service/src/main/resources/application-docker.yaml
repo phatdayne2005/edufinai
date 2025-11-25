@@ -1,0 +1,32 @@
+server:
+  port: 0
+
+spring:
+  datasource:
+    url: jdbc:mysql://mysql-ai:3306/ai_service?useSSL=false&allowPublicKeyRetrieval=true&characterEncoding=UTF-8
+    username: root
+    password: 123456
+  application:
+    name: ai-service
+
+eureka:
+  client:
+    service-url:
+      defaultZone: http://eureka:8761/eureka/
+    register-with-eureka: true
+    fetch-registry: true
+  instance:
+    prefer-ip-address: false
+    hostname: ${EUREKA_INSTANCE_HOSTNAME:ai-service}
+    ip-address: ${EUREKA_INSTANCE_IP:ai-service}
+
+services:
+  transaction:
+    url: http://finance-service/api/summary/daily
+  userprofile:
+    url: http://auth-service/identity/api/userprofile/summary
+  goals:
+    url: http://gamification-service/api/summary/daily
+  learning:
+    url: http://learning-service/api/summary/daily
+

@@ -21,4 +21,7 @@ public class EnrollmentProgressReq {
 
     @Min(0)
     private int addAttempt;
+
+    @Min(0)
+    private Integer correctAnswersCount;
 }
