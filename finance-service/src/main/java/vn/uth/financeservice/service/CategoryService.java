@@ -5,15 +5,22 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import vn.uth.financeservice.dto.CategoryRequestDto;
+import vn.uth.financeservice.dto.CategoryTransactionsDto;
+import vn.uth.financeservice.dto.TransactionResponseDto;
 import vn.uth.financeservice.entity.Category;
 import vn.uth.financeservice.entity.CategoryType;
 import vn.uth.financeservice.entity.Transaction;
 import vn.uth.financeservice.repository.CategoryRepository;
 import vn.uth.financeservice.repository.TransactionRepository;
 
+import java.math.BigDecimal;
+import java.math.RoundingMode;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.YearMonth;
 import java.util.List;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -113,6 +120,114 @@ public class CategoryService {
                     otherCategory.setCreatedAt(LocalDateTime.now());
                     return categoryRepository.save(otherCategory);
                 });
+    }
+    
+    /**
+     * API: GET /api/v1/categories/{categoryId}/transactions
+     * Lấy tất cả transactions của một category trong khoảng thời gian cụ thể
+     * 
+     * @param categoryId UUID của category
+     * @param userId UUID của user (từ JWT)
+     * @param month Tháng (1-12), null = tháng hiện tại
+     * @param year Năm (2024, 2025...), null = năm hiện tại
+     * @param page Số trang (0-based)
+     * @param size Số items mỗi trang
+     * @return CategoryTransactionsDto với period, summary, và danh sách transactions
+     */
+    @Transactional(readOnly = true)
+    public CategoryTransactionsDto getCategoryTransactions(
+            UUID categoryId, UUID userId, Integer month, Integer year,
+            int page, int size) {
+        
+        // 1. Tìm category và kiểm tra quyền truy cập
+        Category category = categoryRepository.findById(categoryId)
+                .orElseThrow(() -> new RuntimeException("Category not found"));
+        
+        // Chỉ cho phép xem category của chính user hoặc default categories
+        if (!category.getUserId().equals(userId) && !category.getIsDefault()) {
+            throw new RuntimeException("Forbidden: Cannot view other user's category");
+        }
+        
+        // 2. Xác định period (tháng hiện tại nếu không truyền month/year)
+        YearMonth period = YearMonth.of(
+                year != null ? year : LocalDate.now().getYear(),
+                month != null ? month : LocalDate.now().getMonthValue()
+        );
+        LocalDateTime startDate = period.atDay(1).atStartOfDay();
+        LocalDateTime endDate = period.atEndOfMonth().atTime(23, 59, 59);
+        
+        // 3. Lấy tất cả transactions của category trong khoảng thời gian
+        List<Transaction> transactions = transactionRepository
+                .findByCategoryIdAndStatusAndTransactionDateBetween(
+                        categoryId, "ACTIVE", startDate, endDate
+                );
+        
+        // 4. Tính summary (tổng tiền, số lượng, trung bình)
+        BigDecimal totalAmount = transactions.stream()
+                .map(Transaction::getAmount)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+        
+        BigDecimal averageAmount = transactions.isEmpty()
+                ? BigDecimal.ZERO
+                : totalAmount.divide(
+                        BigDecimal.valueOf(transactions.size()),
+                        2,
+                        RoundingMode.HALF_UP
+                );
+        
+        // 5. Phân trang (in-memory pagination)
+        int start = page * size;
+        int end = Math.min(start + size, transactions.size());
+        List<Transaction> pagedTransactions =
+                start < transactions.size()
+                        ? transactions.subList(start, end)
+                        : List.of();
+        
+        // 6. Convert sang TransactionResponseDto
+        List<TransactionResponseDto> transactionDtos = pagedTransactions.stream()
+                .map(this::toTransactionResponseDto)
+                .collect(Collectors.toList());
+        
+        // 7. Tạo response
+        CategoryTransactionsDto.PeriodInfo periodInfo =
+                new CategoryTransactionsDto.PeriodInfo(
+                        period.getMonthValue(),
+                        period.getYear(),
+                        period.atDay(1),
+                        period.atEndOfMonth()
+                );
+        
+        CategoryTransactionsDto.TransactionSummary summary =
+                new CategoryTransactionsDto.TransactionSummary(
+                        totalAmount,
+                        transactions.size(),
+                        averageAmount
+                );
+        
+        return new CategoryTransactionsDto(
+                category.getCategoryId(),
+                category.getName(),
+                category.getType(),
+                periodInfo,
+                summary,
+                transactionDtos
+        );
+    }
+    
+    /**
+     * Helper method: Convert Transaction entity sang TransactionResponseDto
+     */
+    private TransactionResponseDto toTransactionResponseDto(Transaction transaction) {
+        return new TransactionResponseDto(
+                transaction.getTransactionId(),
+                transaction.getType(),
+                transaction.getName(),
+                transaction.getCategory() != null ? transaction.getCategory().getName() : null,
+                transaction.getNote(),
+                transaction.getAmount(),
+                transaction.getTransactionDate(),
+                transaction.getGoal() != null ? transaction.getGoal().getGoalId() : null
+        );
     }
 }
 

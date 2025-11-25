@@ -596,6 +596,195 @@ GET /finance/v1/transactions?page=0&size=20&startDate=2025-01-01T00:00:00&endDat
 
 ---
 
+#### 3.4. Lấy giao dịch theo danh mục
+
+**Endpoint:** `GET /finance/v1/categories/{id}/transactions` (qua Gateway)  
+**Service Endpoint:** `GET /api/v1/categories/{id}/transactions` (internal)
+
+**Mô tả:** Lấy tất cả transactions của một category trong khoảng thời gian cụ thể, kèm theo thống kê tổng hợp.
+
+**Authentication:** Required (JWT)
+
+**Path Parameters:**
+- `id` (UUID, required): ID của category cần lấy transactions
+
+**Query Parameters:**
+- `month` (Integer, optional): Tháng (1-12), mặc định = tháng hiện tại
+- `year` (Integer, optional): Năm (2024, 2025...), mặc định = năm hiện tại
+- `page` (Integer, optional): Số trang (0-based), mặc định = 0
+- `size` (Integer, optional): Số items mỗi trang, mặc định = 20
+
+**Response 200 OK:**
+```json
+{
+  "categoryId": "c1d2e3f4-0000-0000-0000-000000000000",
+  "categoryName": "Ăn uống",
+  "categoryType": "EXPENSE",
+  "period": {
+    "month": 11,
+    "year": 2025,
+    "startDate": "2025-11-01",
+    "endDate": "2025-11-30"
+  },
+  "summary": {
+    "totalAmount": 2000000.00,
+    "transactionCount": 15,
+    "averageAmount": 133333.33
+  },
+  "transactions": [
+    {
+      "transactionId": "t1a2b3c4-0000-0000-0000-000000000000",
+      "type": "EXPENSE",
+      "name": "Ăn trưa",
+      "category": "Ăn uống",
+      "note": "Cơm văn phòng",
+      "amount": 100000.00,
+      "transactionDate": "2025-11-20T12:00:00",
+      "goalId": null
+    },
+    {
+      "transactionId": "t2b3c4d5-0000-0000-0000-000000000001",
+      "type": "EXPENSE",
+      "name": "Ăn sáng",
+      "category": "Ăn uống",
+      "note": "Phở bò",
+      "amount": 50000.00,
+      "transactionDate": "2025-11-20T08:30:00",
+      "goalId": null
+    }
+  ]
+}
+```
+
+**Business Logic:**
+
+1. **Authorization:**
+   - Chỉ cho phép xem transactions của category thuộc về user (categoryUserId == userId)
+   - Hoặc default categories (isDefault = true) - tất cả user có thể xem
+
+2. **Period Calculation:**
+   - Nếu không truyền `month` hoặc `year` → Mặc định lấy tháng hiện tại
+   - `startDate` = Ngày đầu tháng (00:00:00)
+   - `endDate` = Ngày cuối tháng (23:59:59)
+
+3. **Transaction Filtering:**
+   - Chỉ lấy transactions có `status = "ACTIVE"`
+   - Filter theo `categoryId` và khoảng thời gian (`transactionDate` between `startDate` and `endDate`)
+   - Sắp xếp theo `transactionDate` DESC (mới nhất trước)
+
+4. **Summary Calculation:**
+   - `totalAmount`: Tổng số tiền của tất cả transactions
+   - `transactionCount`: Số lượng transactions
+   - `averageAmount`: Trung bình số tiền (`totalAmount` / `transactionCount`), làm tròn 2 chữ số thập phân
+
+5. **Pagination:**
+   - In-memory pagination sau khi filter và sort
+   - Trả về subset theo `page` và `size`
+
+**Example Requests:**
+
+**1. Lấy transactions của tháng hiện tại (qua Gateway):**
+```bash
+curl -X GET "http://localhost:8080/finance/v1/categories/c1d2e3f4-0000-0000-0000-000000000000/transactions" \
+  -H "Authorization: Bearer <jwt-token>"
+```
+
+**2. Lấy transactions của tháng 10/2025:**
+```bash
+curl -X GET "http://localhost:8080/finance/v1/categories/c1d2e3f4-0000-0000-0000-000000000000/transactions?month=10&year=2025" \
+  -H "Authorization: Bearer <jwt-token>"
+```
+
+**3. Phân trang (page 1, size 10):**
+```bash
+curl -X GET "http://localhost:8080/finance/v1/categories/c1d2e3f4-0000-0000-0000-000000000000/transactions?page=1&size=10" \
+  -H "Authorization: Bearer <jwt-token>"
+```
+
+**Error Responses:**
+
+| Status Code | Mô tả | Response Body |
+|-------------|-------|---------------|
+| 400 | Invalid month/year | `{"timestamp": "...", "status": 400, "error": "Bad Request", "message": "Invalid month or year"}` |
+| 401 | Unauthorized | `{"timestamp": "...", "status": 401, "error": "Unauthorized", "message": "Full authentication is required..."}` |
+| 403 | Forbidden (không có quyền xem category này) | `{"timestamp": "...", "status": 403, "error": "Forbidden", "message": "Forbidden: Cannot view other user's category"}` |
+| 404 | Category không tồn tại | `{"timestamp": "...", "status": 404, "error": "Not Found", "message": "Category not found"}` |
+| 500 | Lỗi server nội bộ | `{"timestamp": "...", "status": 500, "error": "Internal Server Error", "message": "..."}` |
+
+**Use Cases:**
+
+1. **Thu nhập theo danh mục (Income Categories):**
+   - User click vào category "Lương" trong "Thu nhập theo danh mục"
+   - Frontend gọi API với `categoryId` của "Lương"
+   - Response trả về tất cả transactions thu nhập (INCOME) của category "Lương" trong tháng
+
+2. **Chi tiêu theo danh mục (Expense Categories):**
+   - User click vào category "Ăn uống" trong "Chi tiêu theo danh mục"
+   - Frontend gọi API với `categoryId` của "Ăn uống"
+   - Response trả về tất cả transactions chi tiêu (EXPENSE) của category "Ăn uống" trong tháng
+
+**Frontend Integration Example:**
+
+```javascript
+// React/TypeScript example
+async function handleCategoryClick(categoryId: string) {
+  try {
+    const token = localStorage.getItem('jwt');
+    const response = await fetch(
+      `http://localhost:8080/finance/v1/categories/${categoryId}/transactions`,
+      {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      }
+    );
+    
+    if (!response.ok) {
+      throw new Error('Failed to fetch category transactions');
+    }
+    
+    const data = await response.json();
+    
+    // Hiển thị modal với:
+    // - Tiêu đề: "Giao dịch - {data.categoryName}"
+    // - Tổng: {data.summary.totalAmount} đ
+    // - Số lượng: {data.summary.transactionCount} giao dịch
+    // - Trung bình: {data.summary.averageAmount} đ/giao dịch
+    // - Danh sách: {data.transactions}
+    
+    openTransactionModal(data);
+  } catch (error) {
+    console.error('Error:', error);
+    showErrorMessage('Không thể tải giao dịch');
+  }
+}
+
+// Filter theo tháng
+async function handleMonthChange(categoryId: string, month: number, year: number) {
+  const token = localStorage.getItem('jwt');
+  const response = await fetch(
+    `http://localhost:8080/finance/v1/categories/${categoryId}/transactions?month=${month}&year=${year}`,
+    {
+      headers: {
+        'Authorization': `Bearer ${token}`
+      }
+    }
+  );
+  
+  const data = await response.json();
+  updateTransactionList(data);
+}
+```
+
+**Lưu ý quan trọng:**
+- ✅ Endpoint này CHỈ lấy transactions có `status = "ACTIVE"` (không lấy transactions đã xóa)
+- ✅ Transactions được sắp xếp theo ngày mới nhất trước
+- ✅ Pagination là in-memory (đủ cho < 1000 transactions/category/month)
+- ✅ Nếu category không có transactions trong tháng → `transactions` là array rỗng `[]`, `totalAmount` = 0, `transactionCount` = 0
+- ⚠️ Đối với categories có rất nhiều transactions (> 1000), có thể cần implement database-level pagination trong tương lai
+
+---
+
 ### 4. Goal Management (Quản lý Mục tiêu Tài chính)
 
 #### 4.1. Tạo mục tiêu mới
@@ -900,6 +1089,422 @@ curl -X DELETE http://localhost:8080/finance/v1/goals/a12b34c5-0000-0000-0000-00
 
 ---
 
+#### 4.6. Lấy lịch sử giao dịch của mục tiêu
+
+**Endpoint:** `GET /finance/v1/goals/{id}/transactions` (qua Gateway)  
+**Service Endpoint:** `GET /api/v1/goals/{id}/transactions` (internal)
+
+**Mô tả:** Lấy lịch sử tất cả giao dịch (nạp/rút) của một mục tiêu cụ thể. API này hiển thị đầy đủ thông tin goal và danh sách giao dịch, phù hợp cho trang "Lịch sử giao dịch - {Tên mục tiêu}".
+
+**Authentication:** Required (JWT)
+
+**Path Parameters:**
+- `id` (UUID, required): ID của mục tiêu
+
+**Response 200 OK:**
+```json
+{
+  "goalTitle": "Mua xe",
+  "goalAmount": 50000000.00,
+  "savedAmount": 20000000.00,
+  "transactions": [
+    {
+      "transactionId": "550e8400-e29b-41d4-a716-446655440000",
+      "type": "INCOME",
+      "name": "Nạp tiền vào mục tiêu \"Mua xe\"",
+      "categoryName": "Tiết kiệm",
+      "note": "Lương tháng 11",
+      "amount": 5000000.00,
+      "transactionDate": "2025-11-20T14:30:00",
+      "goalId": "660e8400-e29b-41d4-a716-446655440001"
+    },
+    {
+      "transactionId": "550e8400-e29b-41d4-a716-446655440002",
+      "type": "WITHDRAWAL",
+      "name": "Rút tiền từ mục tiêu \"Mua xe\"",
+      "categoryName": "Rút tiền",
+      "note": "Cần tiền gấp",
+      "amount": 1000000.00,
+      "transactionDate": "2025-11-15T10:00:00",
+      "goalId": "660e8400-e29b-41d4-a716-446655440001"
+    }
+  ],
+  "summary": {
+    "totalDeposit": 25000000.00,
+    "totalWithdrawal": 5000000.00,
+    "transactionCount": 15
+  }
+}
+```
+
+**Response Fields:**
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `goalTitle` | String | Tên mục tiêu |
+| `goalAmount` | BigDecimal | Số tiền mục tiêu |
+| `savedAmount` | BigDecimal | Số tiền đã tiết kiệm |
+| **transactions** | Array | Danh sách giao dịch |
+| `transactions[].transactionId` | UUID | ID giao dịch |
+| `transactions[].type` | String (Enum) | Loại: `INCOME` (nạp) hoặc `WITHDRAWAL` (rút) |
+| `transactions[].name` | String | Tên giao dịch |
+| `transactions[].categoryName` | String/null | Tên danh mục |
+| `transactions[].note` | String/null | Ghi chú |
+| `transactions[].amount` | BigDecimal | Số tiền |
+| `transactions[].transactionDate` | DateTime (ISO 8601) | Ngày giờ giao dịch |
+| `transactions[].goalId` | UUID | ID mục tiêu |
+| **summary** | Object | Tổng hợp |
+| `summary.totalDeposit` | BigDecimal | Tổng số tiền đã nạp |
+| `summary.totalWithdrawal` | BigDecimal | Tổng số tiền đã rút |
+| `summary.transactionCount` | Integer | Tổng số giao dịch |
+
+**Business Logic:**
+1. Kiểm tra goal tồn tại và thuộc về user (nếu không → 404 hoặc 403)
+2. Lấy tất cả transactions có `goal_id = {id}` và `status = "ACTIVE"`
+3. Sắp xếp theo `transactionDate` giảm dần (mới nhất trước)
+4. Tính tổng:
+   - `totalDeposit`: Tổng các giao dịch INCOME
+   - `totalWithdrawal`: Tổng các giao dịch WITHDRAWAL
+   - `transactionCount`: Số lượng giao dịch
+5. Trả về thông tin goal + transactions + summary
+
+**Lưu ý:**
+- Chỉ trả về transactions có `status = "ACTIVE"` (không bao gồm đã xóa)
+- Sắp xếp mặc định: Ngày mới nhất lên đầu
+- API này tối ưu cho trang "Lịch sử giao dịch" với tiêu đề: "Lịch sử giao dịch - {goalTitle}"
+
+**Error Responses:**
+
+| Status Code | Mô tả | Response Body |
+|-------------|-------|---------------|
+| 401 | Unauthorized | `{"timestamp": "...", "status": 401, "error": "Unauthorized", "message": "Full authentication is required..."}` |
+| 403 | Forbidden (user không sở hữu goal này) | `{"timestamp": "...", "status": 403, "error": "Forbidden", "message": "Forbidden"}` |
+| 404 | Goal không tồn tại | `{"timestamp": "...", "status": 404, "error": "Not Found", "message": "Goal not found"}` |
+| 500 | Lỗi server nội bộ | `{"timestamp": "...", "status": 500, "error": "Internal Server Error", "message": "..."}` |
+
+**Example Request (qua Gateway):**
+```bash
+curl -X GET http://localhost:8080/finance/v1/goals/660e8400-e29b-41d4-a716-446655440001/transactions \
+  -H "Authorization: Bearer eyJhbGciOiJIUzUxMiJ9..."
+```
+
+**Example Request (trực tiếp service - chỉ dùng cho testing):**
+```bash
+curl -X GET http://localhost:8202/api/v1/goals/660e8400-e29b-41d4-a716-446655440001/transactions \
+  -H "Authorization: Bearer eyJhbGciOiJIUzUxMiJ9..."
+```
+
+**Frontend Integration Example (JavaScript):**
+
+```javascript
+// Service function
+async function getGoalTransactionHistory(goalId) {
+  const token = localStorage.getItem('token');
+  
+  const response = await fetch(
+    `http://localhost:8080/finance/v1/goals/${goalId}/transactions`,
+    {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      }
+    }
+  );
+  
+  if (!response.ok) {
+    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+  }
+  
+  return response.json();
+}
+
+// Sử dụng trong component
+async function showTransactionHistory(goalId) {
+  try {
+    const history = await getGoalTransactionHistory(goalId);
+    
+    // Hiển thị tiêu đề
+    document.getElementById('page-title').textContent = 
+      `Lịch sử giao dịch - ${history.goalTitle}`;
+    
+    // Hiển thị thông tin goal
+    document.getElementById('goal-amount').textContent = 
+      history.goalAmount.toLocaleString('vi-VN') + ' đ';
+    document.getElementById('saved-amount').textContent = 
+      history.savedAmount.toLocaleString('vi-VN') + ' đ';
+    
+    // Hiển thị summary
+    document.getElementById('total-deposit').textContent = 
+      history.summary.totalDeposit.toLocaleString('vi-VN') + ' đ';
+    document.getElementById('total-withdrawal').textContent = 
+      history.summary.totalWithdrawal.toLocaleString('vi-VN') + ' đ';
+    document.getElementById('transaction-count').textContent = 
+      history.summary.transactionCount + ' giao dịch';
+    
+    // Hiển thị danh sách transactions
+    renderTransactions(history.transactions);
+    
+  } catch (error) {
+    console.error('Lỗi:', error);
+    alert('Không thể tải lịch sử giao dịch');
+  }
+}
+
+// Render transactions
+function renderTransactions(transactions) {
+  const container = document.getElementById('transactions-list');
+  container.innerHTML = '';
+  
+  transactions.forEach(tx => {
+    const item = document.createElement('div');
+    item.className = 'transaction-item';
+    item.innerHTML = `
+      <div class="tx-icon">${tx.type === 'INCOME' ? '⬇️' : '⬆️'}</div>
+      <div class="tx-info">
+        <div class="tx-name">${tx.name}</div>
+        <div class="tx-date">
+          ${new Date(tx.transactionDate).toLocaleDateString('vi-VN')}
+        </div>
+      </div>
+      <div class="tx-amount ${tx.type === 'INCOME' ? 'income' : 'withdrawal'}">
+        ${tx.type === 'INCOME' ? '+' : '-'}
+        ${tx.amount.toLocaleString('vi-VN')} đ
+      </div>
+    `;
+    container.appendChild(item);
+  });
+}
+```
+
+**React Example:**
+
+```jsx
+import { useState, useEffect } from 'react';
+
+function GoalTransactionHistory({ goalId }) {
+  const [history, setHistory] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    loadHistory();
+  }, [goalId]);
+
+  const loadHistory = async () => {
+    try {
+      const data = await getGoalTransactionHistory(goalId);
+      setHistory(data);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (loading) return <div>Đang tải...</div>;
+  if (error) return <div className="error">{error}</div>;
+  if (!history) return null;
+
+  return (
+    <div className="transaction-history">
+      {/* Header */}
+      <h1>Lịch sử giao dịch - {history.goalTitle}</h1>
+      
+      {/* Goal Info */}
+      <div className="goal-info">
+        <div className="info-item">
+          <span>Mục tiêu:</span>
+          <span>{history.goalAmount.toLocaleString('vi-VN')} đ</span>
+        </div>
+        <div className="info-item">
+          <span>Đã tiết kiệm:</span>
+          <span>{history.savedAmount.toLocaleString('vi-VN')} đ</span>
+        </div>
+      </div>
+
+      {/* Summary */}
+      <div className="summary">
+        <div className="summary-item">
+          <span>Tổng nạp:</span>
+          <span className="income">
+            {history.summary.totalDeposit.toLocaleString('vi-VN')} đ
+          </span>
+        </div>
+        <div className="summary-item">
+          <span>Tổng rút:</span>
+          <span className="withdrawal">
+            {history.summary.totalWithdrawal.toLocaleString('vi-VN')} đ
+          </span>
+        </div>
+        <div className="summary-item">
+          <span>Số giao dịch:</span>
+          <span>{history.summary.transactionCount}</span>
+        </div>
+      </div>
+
+      {/* Transactions List */}
+      <div className="transactions-list">
+        <h3>Danh sách giao dịch</h3>
+        {history.transactions.length === 0 ? (
+          <div className="empty">Chưa có giao dịch nào</div>
+        ) : (
+          history.transactions.map(tx => (
+            <div key={tx.transactionId} className="transaction-item">
+              <div className="tx-icon">
+                {tx.type === 'INCOME' ? '⬇️' : '⬆️'}
+              </div>
+              <div className="tx-info">
+                <div className="tx-name">{tx.name}</div>
+                <div className="tx-date">
+                  {new Date(tx.transactionDate).toLocaleDateString('vi-VN')}
+                </div>
+                {tx.note && <div className="tx-note">{tx.note}</div>}
+              </div>
+              <div className={`tx-amount ${tx.type === 'INCOME' ? 'income' : 'withdrawal'}`}>
+                {tx.type === 'INCOME' ? '+' : '-'}
+                {tx.amount.toLocaleString('vi-VN')} đ
+              </div>
+            </div>
+          ))
+        )}
+      </div>
+    </div>
+  );
+}
+```
+
+**Vue 3 Example:**
+
+```vue
+<script setup>
+import { ref, onMounted } from 'vue';
+
+const props = defineProps({
+  goalId: String
+});
+
+const history = ref(null);
+const loading = ref(true);
+const error = ref(null);
+
+onMounted(async () => {
+  await loadHistory();
+});
+
+async function loadHistory() {
+  try {
+    const data = await getGoalTransactionHistory(props.goalId);
+    history.value = data;
+  } catch (err) {
+    error.value = err.message;
+  } finally {
+    loading.value = false;
+  }
+}
+</script>
+
+<template>
+  <div class="transaction-history">
+    <div v-if="loading">Đang tải...</div>
+    <div v-else-if="error" class="error">{{ error }}</div>
+    <div v-else-if="history">
+      <!-- Header -->
+      <h1>Lịch sử giao dịch - {{ history.goalTitle }}</h1>
+      
+      <!-- Goal Info -->
+      <div class="goal-info">
+        <div class="info-item">
+          <span>Mục tiêu:</span>
+          <span>{{ history.goalAmount.toLocaleString('vi-VN') }} đ</span>
+        </div>
+        <div class="info-item">
+          <span>Đã tiết kiệm:</span>
+          <span>{{ history.savedAmount.toLocaleString('vi-VN') }} đ</span>
+        </div>
+      </div>
+
+      <!-- Summary -->
+      <div class="summary">
+        <div class="summary-item">
+          <span>Tổng nạp:</span>
+          <span class="income">
+            {{ history.summary.totalDeposit.toLocaleString('vi-VN') }} đ
+          </span>
+        </div>
+        <div class="summary-item">
+          <span>Tổng rút:</span>
+          <span class="withdrawal">
+            {{ history.summary.totalWithdrawal.toLocaleString('vi-VN') }} đ
+          </span>
+        </div>
+        <div class="summary-item">
+          <span>Số giao dịch:</span>
+          <span>{{ history.summary.transactionCount }}</span>
+        </div>
+      </div>
+
+      <!-- Transactions List -->
+      <div class="transactions-list">
+        <h3>Danh sách giao dịch</h3>
+        <div v-if="history.transactions.length === 0" class="empty">
+          Chưa có giao dịch nào
+        </div>
+        <div 
+          v-else 
+          v-for="tx in history.transactions" 
+          :key="tx.transactionId"
+          class="transaction-item"
+        >
+          <div class="tx-icon">
+            {{ tx.type === 'INCOME' ? '⬇️' : '⬆️' }}
+          </div>
+          <div class="tx-info">
+            <div class="tx-name">{{ tx.name }}</div>
+            <div class="tx-date">
+              {{ new Date(tx.transactionDate).toLocaleDateString('vi-VN') }}
+            </div>
+            <div v-if="tx.note" class="tx-note">{{ tx.note }}</div>
+          </div>
+          <div :class="['tx-amount', tx.type === 'INCOME' ? 'income' : 'withdrawal']">
+            {{ tx.type === 'INCOME' ? '+' : '-' }}
+            {{ tx.amount.toLocaleString('vi-VN') }} đ
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</template>
+```
+
+**UI Layout Suggestion:**
+
+```
+┌────────────────────────────────────────────┐
+│  Lịch sử giao dịch - Mua xe              ← │
+├────────────────────────────────────────────┤
+│  Mục tiêu: 50,000,000 đ                    │
+│  Đã tiết kiệm: 20,000,000 đ                │
+├────────────────────────────────────────────┤
+│  📊 Tổng hợp:                              │
+│  • Tổng nạp: 25,000,000 đ                 │
+│  • Tổng rút: 5,000,000 đ                  │
+│  • Số giao dịch: 15                        │
+├────────────────────────────────────────────┤
+│  📝 Danh sách giao dịch:                   │
+│                                            │
+│  ⬇️ Nạp tiền vào mục tiêu    +5,000,000 đ │
+│     20/11/2025                             │
+│                                            │
+│  ⬆️ Rút tiền từ mục tiêu     -1,000,000 đ │
+│     15/11/2025                             │
+│                                            │
+│  ...                                       │
+└────────────────────────────────────────────┘
+```
+
+---
+
 ### 5. Summary (Tổng hợp Tài chính)
 
 #### 5.1. Lấy tổng hợp tài chính tháng hiện tại
@@ -972,6 +1577,609 @@ curl -X DELETE http://localhost:8080/finance/v1/goals/a12b34c5-0000-0000-0000-00
 |-------------|-------|
 | 401 | Unauthorized |
 | 500 | Lỗi server nội bộ |
+
+---
+
+#### 5.3. Lấy tổng hợp tài chính tháng (tối ưu)
+
+**Endpoint:** `GET /finance/summary/month-optimized` (qua Gateway)  
+**Service Endpoint:** `GET /api/summary/month-optimized` (internal)
+
+**Mô tả:** Lấy tổng hợp tài chính tháng hiện tại với dữ liệu chi tiết hơn, bao gồm:
+- Period (khoảng thời gian)
+- Summary (tổng hợp thu chi, tỷ lệ tiết kiệm, chi tiêu trung bình mỗi ngày)
+- Income (top categories thu nhập)
+- Expense (top categories chi tiêu)
+- Goals (mục tiêu đang hoạt động với progress và risk)
+- Trends (so sánh với tháng trước)
+
+**Authentication:** Required (JWT)
+
+**Response 200 OK:**
+```json
+{
+  "period": {
+    "startDate": "2025-11-01",
+    "endDate": "2025-11-30"
+  },
+  "summary": {
+    "totalIncome": 15000000.00,
+    "totalExpense": 5000000.00,
+    "totalBalance": 10000000.00,
+    "savingRate": 66.67,
+    "averageDailyExpense": 166666.67
+  },
+  "Income": {
+    "topCategories": [
+      { "cat": "Lương", "amt": 15000000.00, "cnt": 1, "pct": 100.0 }
+    ]
+  },
+  "Expense": {
+    "topCategories": [
+      { "cat": "Ăn uống", "amt": 2000000.00, "cnt": 15, "pct": 40.0 },
+      { "cat": "Giải trí", "amt": 1500000.00, "cnt": 10, "pct": 30.0 }
+    ]
+  },
+  "goals": [
+    { "title": "Mua laptop", "prog": 33.3, "days": 30, "risk": false },
+    { "title": "Du lịch", "prog": 20.0, "days": 60, "risk": true }
+  ],
+  "trends": {
+    "expenseChange": 15.5,
+    "incomeChange": 0.0
+  }
+}
+```
+
+**Field Descriptions:**
+- `period`: Khoảng thời gian (tháng hiện tại)
+- `summary.totalBalance`: Số dư hiện tại từ BalanceService
+- `summary.savingRate`: Tỷ lệ tiết kiệm (%) = (totalIncome - totalExpense) / totalIncome * 100
+- `summary.averageDailyExpense`: Chi tiêu trung bình mỗi ngày = totalExpense / số ngày trong tháng
+- `Income.topCategories`: Top categories thu nhập (sắp xếp theo amount giảm dần)
+  - `cat`: Tên category
+  - `amt`: Tổng số tiền
+  - `cnt`: Số lượng transactions
+  - `pct`: Phần trăm so với tổng thu nhập
+- `Expense.topCategories`: Top categories chi tiêu (sắp xếp theo amount giảm dần)
+- `goals`: Danh sách mục tiêu đang ACTIVE
+  - `prog`: Progress (%) = savedAmount / targetAmount * 100
+  - `days`: Số ngày còn lại đến deadline
+  - `risk`: true nếu progress < 50% và còn < 30 ngày
+- `trends`: So sánh với tháng trước
+  - `expenseChange`: % thay đổi chi tiêu so với tháng trước
+  - `incomeChange`: % thay đổi thu nhập so với tháng trước
+
+**Error Responses:**
+
+| Status Code | Mô tả |
+|-------------|-------|
+| 401 | Unauthorized |
+| 500 | Lỗi server nội bộ |
+
+---
+
+#### 5.4. Lấy tổng hợp tài chính 7 ngày
+
+**Endpoint:** `GET /finance/summary/7days` (qua Gateway)  
+**Service Endpoint:** `GET /api/summary/7days` (internal)
+
+**Mô tả:** Lấy tổng hợp tài chính 7 ngày gần nhất (từ hôm nay - 6 ngày đến hôm nay), bao gồm:
+- Period (khoảng thời gian 7 ngày)
+- Summary (tổng hợp thu chi, số dư, tỷ lệ tiết kiệm, chi tiêu/thu nhập trung bình mỗi ngày)
+- Expense (top categories và chi tiêu theo từng ngày)
+- Income (top sources thu nhập)
+- Goals (mục tiêu đang hoạt động với progress)
+
+**Authentication:** Required (JWT)
+
+**Response 200 OK:**
+```json
+{
+  "period": {
+    "startDate": "2025-11-24",
+    "endDate": "2025-11-30",
+    "days": 7
+  },
+  "summary": {
+    "totalIncome": 5000000.0,
+    "totalExpense": 3500000.0,
+    "totalBalance": 10000000.0,
+    "savingRate": 30.0,
+    "averageDailyExpense": 500000.0,
+    "averageDailyIncome": 714285.71
+  },
+  "expense": {
+    "topCategories": [
+      { "cat": "Ăn uống", "amt": 1500000.0, "cnt": 12, "pct": 42.86 },
+      { "cat": "Giải trí", "amt": 1000000.0, "cnt": 8, "pct": 28.57 }
+    ],
+    "dailyBreakdown": [
+      { "date": "2025-11-30", "total": 500000.0, "count": 4 },
+      { "date": "2025-11-29", "total": 600000.0, "count": 5 }
+    ]
+  },
+  "income": {
+    "topSources": [
+      { "source": "Lương", "amt": 5000000.0, "cnt": 1, "pct": 100.0 }
+    ]
+  },
+  "goals": [
+    {
+      "title": "Mua laptop",
+      "progressPct": 33.3,
+      "daysRemaining": 30
+    }
+  ]
+}
+```
+
+**Field Descriptions:**
+
+**Period:**
+- `startDate`: Ngày bắt đầu (hôm nay - 6 ngày)
+- `endDate`: Ngày kết thúc (hôm nay)
+- `days`: Số ngày (luôn = 7)
+
+**Summary:**
+- `totalIncome`: Tổng thu nhập trong 7 ngày (INCOME transactions, status = ACTIVE)
+- `totalExpense`: Tổng chi tiêu trong 7 ngày (EXPENSE transactions, status = ACTIVE)
+- `totalBalance`: Số dư hiện tại từ BalanceService (không phải trong 7 ngày)
+- `savingRate`: Tỷ lệ tiết kiệm (%) = (totalIncome - totalExpense) / totalIncome * 100
+- `averageDailyExpense`: Chi tiêu trung bình mỗi ngày = totalExpense / 7
+- `averageDailyIncome`: Thu nhập trung bình mỗi ngày = totalIncome / 7
+
+**Expense:**
+- `topCategories`: Top categories chi tiêu (sắp xếp theo amount giảm dần)
+  - `cat`: Tên category
+  - `amt`: Tổng số tiền
+  - `cnt`: Số lượng transactions
+  - `pct`: Phần trăm so với tổng chi tiêu
+- `dailyBreakdown`: Chi tiêu theo từng ngày (sắp xếp theo ngày mới nhất trước)
+  - `date`: Ngày
+  - `total`: Tổng chi tiêu trong ngày
+  - `count`: Số lượng transactions trong ngày
+
+**Income:**
+- `topSources`: Top nguồn thu nhập (sắp xếp theo amount giảm dần)
+  - `source`: Tên category thu nhập
+  - `amt`: Tổng số tiền
+  - `cnt`: Số lượng transactions
+  - `pct`: Phần trăm so với tổng thu nhập
+
+**Goals:**
+- Danh sách mục tiêu đang ACTIVE
+- `title`: Tên mục tiêu
+- `progressPct`: Progress (%) = savedAmount / targetAmount * 100
+- `daysRemaining`: Số ngày còn lại đến deadline
+
+**Business Logic:**
+
+1. **Period Calculation:**
+   - `startDate` = LocalDate.now().minusDays(6)
+   - `endDate` = LocalDate.now()
+   - Luôn lấy 7 ngày gần nhất (bao gồm cả hôm nay)
+
+2. **Data Filtering:**
+   - Chỉ lấy transactions có `status = "ACTIVE"`
+   - Filter theo `transactionDate` between `startDate 00:00:00` và `endDate 23:59:59`
+   - Filter theo `userId` từ JWT token
+
+3. **Summary Calculation:**
+   - `totalBalance`: Gọi `BalanceService.getCurrentBalance(userId)` để lấy số dư thực tế
+   - `savingRate`: Nếu `totalIncome > 0`, tính = (totalIncome - totalExpense) / totalIncome * 100
+   - Làm tròn 2 chữ số thập phân cho averages
+
+4. **Category Aggregation:**
+   - Group transactions by category name
+   - Tính tổng amount và count cho mỗi category
+   - Tính percentage: (category.amount / total) * 100
+   - Sắp xếp theo amount giảm dần
+
+5. **Daily Breakdown:**
+   - Group expense transactions by date (LocalDate)
+   - Tính tổng amount và count cho mỗi ngày
+   - Sắp xếp theo ngày mới nhất trước
+   - Chỉ hiển thị những ngày có transactions (không hiển thị ngày 0 đồng)
+
+6. **Goals:**
+   - Chỉ lấy goals có `status = ACTIVE`
+   - `daysRemaining` = 0 nếu đã quá deadline
+
+**Example Request (qua Gateway):**
+```bash
+curl -X GET "http://localhost:8080/finance/summary/7days" \
+  -H "Authorization: Bearer <jwt-token>"
+```
+
+**Example Request (trực tiếp service - chỉ dùng cho testing):**
+```bash
+curl -X GET "http://localhost:8202/api/summary/7days" \
+  -H "Authorization: Bearer <jwt-token>"
+```
+
+**Use Cases:**
+
+1. **Dashboard 7 ngày:**
+   - Frontend hiển thị overview tài chính tuần gần nhất
+   - Charts: Daily expense breakdown (bar chart)
+   - Pie charts: Top expense categories, top income sources
+
+2. **Quick Summary:**
+   - User muốn xem nhanh chi tiêu/thu nhập tuần này
+   - So sánh với average daily để điều chỉnh chi tiêu
+
+3. **Goal Tracking:**
+   - Hiển thị progress của các mục tiêu đang hoạt động
+   - Cảnh báo nếu daysRemaining thấp
+
+**Frontend Integration Example:**
+
+```javascript
+// React/TypeScript example
+async function fetch7DaysSummary() {
+  try {
+    const token = localStorage.getItem('jwt');
+    const response = await fetch(
+      'http://localhost:8080/finance/summary/7days',
+      {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      }
+    );
+    
+    if (!response.ok) {
+      throw new Error('Failed to fetch 7-day summary');
+    }
+    
+    const data = await response.json();
+    
+    // Hiển thị summary
+    displaySummary(data.summary);
+    
+    // Render daily breakdown chart
+    renderDailyChart(data.expense.dailyBreakdown);
+    
+    // Render expense pie chart
+    renderExpenseChart(data.expense.topCategories);
+    
+    // Render income pie chart
+    renderIncomeChart(data.income.topSources);
+    
+    // Display goals
+    displayGoals(data.goals);
+    
+  } catch (error) {
+    console.error('Error:', error);
+    showErrorMessage('Không thể tải tổng hợp 7 ngày');
+  }
+}
+
+// Daily breakdown chart example (Chart.js)
+function renderDailyChart(dailyBreakdown) {
+  const ctx = document.getElementById('dailyChart').getContext('2d');
+  new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: dailyBreakdown.map(d => d.date),
+      datasets: [{
+        label: 'Chi tiêu',
+        data: dailyBreakdown.map(d => d.total),
+        backgroundColor: 'rgba(255, 99, 132, 0.5)'
+      }]
+    }
+  });
+}
+```
+
+**Error Responses:**
+
+| Status Code | Mô tả |
+|-------------|-------|
+| 401 | Unauthorized (JWT token không hợp lệ hoặc hết hạn) |
+| 500 | Lỗi server nội bộ |
+
+**Lưu ý quan trọng:**
+- ✅ API này lấy dữ liệu 7 ngày **gần nhất** (rolling 7 days), không phải tuần cố định
+- ✅ `totalBalance` là số dư hiện tại (tất cả thời gian), không phải số dư trong 7 ngày
+- ✅ `dailyBreakdown` chỉ hiển thị những ngày có transactions, không hiển thị ngày 0 đồng
+- ✅ Nếu không có transactions nào trong 7 ngày → arrays sẽ rỗng [], totals = 0
+- ⚠️ API này tối ưu cho dashboard/overview, không phải cho detailed analysis
+
+---
+
+#### 5.5. Lấy báo cáo tài chính theo ngày
+
+**Endpoint:** `GET /finance/summary/daily` (qua Gateway)  
+**Service Endpoint:** `GET /api/summary/daily` (internal)
+
+**Mô tả:** Lấy báo cáo tài chính chi tiết của ngày hôm nay, bao gồm:
+- Report Date (ngày báo cáo)
+- Summary (tổng hợp thu chi, netAmount, số lượng transactions, trung bình)
+- Expense Breakdown (chi tiết chi tiêu theo category và giao dịch lớn nhất)
+- Comparison (so sánh với ngày hôm qua và trung bình 7 ngày)
+- Goals (thông tin mục tiêu: active count, tiền tiết kiệm hôm nay/7 ngày, progress)
+
+**Authentication:** Required (JWT)
+
+**Response 200 OK:**
+```json
+{
+  "reportDate": "2025-11-30",
+  "summary": {
+    "totalIncome": 0.0,
+    "totalExpense": 500000.0,
+    "netAmount": -500000.0,
+    "transactionCount": 4,
+    "avgTransactionAmount": 125000.0
+  },
+  "expenseBreakdown": {
+    "byCategory": [
+      { "cat": "Ăn uống", "amt": 300000.0, "cnt": 2, "pct": 60.0 },
+      { "cat": "Di chuyển", "amt": 200000.0, "cnt": 2, "pct": 40.0 }
+    ],
+    "largestTransaction": {
+      "name": "Ăn trưa",
+      "amount": 200000.0,
+      "category": "Ăn uống",
+      "time": "2025-11-30T12:30:00"
+    }
+  },
+  "comparison": {
+    "previousDay": { 
+      "date": "2025-11-29", 
+      "totalExpense": 600000.0, 
+      "totalIncome": 0.0 
+    },
+    "expenseChangePct": -16.67,
+    "incomeChangePct": 0.0,
+    "avg7Days": { 
+      "expense": 500000.0, 
+      "income": 714285.71 
+    }
+  },
+  "goals": {
+    "activeCount": 3,
+    "totalSavedToday": 0.0,
+    "totalSaved7Days": 2000000.0,
+    "goalsProgress": [
+      { 
+        "title": "Mua laptop", 
+        "progressPct": 33.3, 
+        "daysRemaining": 30, 
+        "risk": false 
+      }
+    ]
+  }
+}
+```
+
+**Field Descriptions:**
+
+**Report Date:**
+- `reportDate`: Ngày báo cáo (hôm nay)
+
+**Summary:**
+- `totalIncome`: Tổng thu nhập hôm nay (INCOME transactions, status = ACTIVE)
+- `totalExpense`: Tổng chi tiêu hôm nay (EXPENSE transactions, status = ACTIVE)
+- `netAmount`: Số tiền ròng = totalIncome - totalExpense
+- `transactionCount`: Tổng số giao dịch hôm nay (cả thu và chi)
+- `avgTransactionAmount`: Trung bình số tiền mỗi giao dịch = (totalIncome + totalExpense) / transactionCount
+
+**Expense Breakdown:**
+- `byCategory`: Chi tiết chi tiêu theo từng category (sắp xếp theo amount giảm dần)
+  - `cat`: Tên category
+  - `amt`: Tổng số tiền
+  - `cnt`: Số lượng transactions
+  - `pct`: Phần trăm so với tổng chi tiêu
+- `largestTransaction`: Giao dịch chi tiêu lớn nhất hôm nay
+  - `name`: Tên giao dịch
+  - `amount`: Số tiền
+  - `category`: Tên category
+  - `time`: Thời gian giao dịch (ISO 8601 format)
+
+**Comparison:**
+- `previousDay`: Dữ liệu ngày hôm qua
+  - `date`: Ngày hôm qua
+  - `totalExpense`: Tổng chi tiêu ngày hôm qua
+  - `totalIncome`: Tổng thu nhập ngày hôm qua
+- `expenseChangePct`: % thay đổi chi tiêu so với ngày hôm qua
+  - Dương (+): Chi tiêu tăng
+  - Âm (-): Chi tiêu giảm
+  - Formula: (todayExpense - yesterdayExpense) / yesterdayExpense * 100
+- `incomeChangePct`: % thay đổi thu nhập so với ngày hôm qua
+- `avg7Days`: Trung bình 7 ngày gần nhất (bao gồm hôm nay)
+  - `expense`: Chi tiêu trung bình mỗi ngày = total7DaysExpense / 7
+  - `income`: Thu nhập trung bình mỗi ngày = total7DaysIncome / 7
+
+**Goals:**
+- `activeCount`: Số lượng mục tiêu đang ACTIVE
+- `totalSavedToday`: Tổng tiền nạp vào goals hôm nay (INCOME transactions có goalId)
+- `totalSaved7Days`: Tổng tiền nạp vào goals trong 7 ngày gần nhất
+- `goalsProgress`: Danh sách mục tiêu ACTIVE với progress
+  - `title`: Tên mục tiêu
+  - `progressPct`: Progress (%) = savedAmount / targetAmount * 100
+  - `daysRemaining`: Số ngày còn lại đến deadline
+  - `risk`: true nếu progress < 50% và còn < 30 ngày
+
+**Business Logic:**
+
+1. **Report Date:**
+   - Luôn là ngày hôm nay (LocalDate.now())
+
+2. **Data Filtering:**
+   - Chỉ lấy transactions có `status = "ACTIVE"`
+   - Filter theo `transactionDate` = hôm nay (00:00:00 đến 23:59:59)
+   - Filter theo `userId` từ JWT token
+
+3. **Summary Calculation:**
+   - `netAmount`: totalIncome - totalExpense (có thể âm nếu chi > thu)
+   - `avgTransactionAmount`: Nếu transactionCount = 0 → 0, ngược lại = (totalIncome + totalExpense) / transactionCount
+   - Làm tròn 2 chữ số thập phân
+
+4. **Expense Breakdown:**
+   - Group expense transactions by category name
+   - Tính tổng amount và count cho mỗi category
+   - Tính percentage: (category.amount / totalExpense) * 100
+   - Sắp xếp theo amount giảm dần
+   - `largestTransaction`: Tìm expense transaction có amount lớn nhất
+
+5. **Comparison:**
+   - `previousDay`: Lấy transactions của ngày hôm qua (yesterday 00:00:00 đến 23:59:59)
+   - `expenseChangePct`: Nếu yesterdayExpense = 0 và todayExpense > 0 → 100%
+   - `avg7Days`: Lấy transactions từ 7 ngày trước đến hôm nay, chia 7
+
+6. **Goals:**
+   - `activeCount`: Đếm số goals có status = ACTIVE
+   - `totalSavedToday`: Tổng INCOME transactions có goalId hôm nay
+   - `totalSaved7Days`: Tổng INCOME transactions có goalId trong 7 ngày
+   - `risk`: true nếu progressPct < 50% và daysRemaining < 30
+
+**Example Request (qua Gateway):**
+```bash
+curl -X GET "http://localhost:8080/finance/summary/daily" \
+  -H "Authorization: Bearer <jwt-token>"
+```
+
+**Example Request (trực tiếp service - chỉ dùng cho testing):**
+```bash
+curl -X GET "http://localhost:8202/api/summary/daily" \
+  -H "Authorization: Bearer <jwt-token>"
+```
+
+**Use Cases:**
+
+1. **Dashboard Hôm Nay:**
+   - Frontend hiển thị overview tài chính hôm nay
+   - Biểu đồ: Expense breakdown by category (pie chart)
+   - Highlight: Giao dịch lớn nhất
+
+2. **Daily Tracking:**
+   - User muốn xem chi tiết thu chi hôm nay
+   - So sánh với ngày hôm qua để điều chỉnh
+   - Kiểm tra có vượt trung bình 7 ngày không
+
+3. **Goal Monitoring:**
+   - Theo dõi tiến độ tiết kiệm hôm nay
+   - Xem tổng tiết kiệm tuần này
+   - Cảnh báo mục tiêu có risk
+
+**Frontend Integration Example:**
+
+```javascript
+// React/TypeScript example
+async function fetchDailyReport() {
+  try {
+    const token = localStorage.getItem('jwt');
+    const response = await fetch(
+      'http://localhost:8080/finance/summary/daily',
+      {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      }
+    );
+    
+    if (!response.ok) {
+      throw new Error('Failed to fetch daily report');
+    }
+    
+    const data = await response.json();
+    
+    // Hiển thị summary
+    displayDailySummary(data.summary);
+    
+    // Render expense breakdown pie chart
+    renderExpensePieChart(data.expenseBreakdown.byCategory);
+    
+    // Hiển thị giao dịch lớn nhất
+    if (data.expenseBreakdown.largestTransaction) {
+      displayLargestTransaction(data.expenseBreakdown.largestTransaction);
+    }
+    
+    // Hiển thị comparison
+    displayComparison(data.comparison);
+    
+    // Hiển thị goals progress
+    displayGoalsProgress(data.goals);
+    
+  } catch (error) {
+    console.error('Error:', error);
+    showErrorMessage('Không thể tải báo cáo hôm nay');
+  }
+}
+
+// Expense pie chart example (Chart.js)
+function renderExpensePieChart(byCategory) {
+  const ctx = document.getElementById('expensePieChart').getContext('2d');
+  new Chart(ctx, {
+    type: 'pie',
+    data: {
+      labels: byCategory.map(c => c.cat),
+      datasets: [{
+        data: byCategory.map(c => c.amt),
+        backgroundColor: [
+          'rgba(255, 99, 132, 0.8)',
+          'rgba(54, 162, 235, 0.8)',
+          'rgba(255, 206, 86, 0.8)',
+          'rgba(75, 192, 192, 0.8)'
+        ]
+      }]
+    },
+    options: {
+      plugins: {
+        legend: {
+          display: true,
+          position: 'bottom'
+        },
+        tooltip: {
+          callbacks: {
+            label: function(context) {
+              const label = context.label || '';
+              const value = context.parsed || 0;
+              const pct = byCategory[context.dataIndex].pct;
+              return `${label}: ${value.toLocaleString()}đ (${pct}%)`;
+            }
+          }
+        }
+      }
+    }
+  });
+}
+
+// Display comparison with color coding
+function displayComparison(comparison) {
+  const expenseChange = comparison.expenseChangePct;
+  const expenseColor = expenseChange > 0 ? 'red' : 'green';
+  const expenseIcon = expenseChange > 0 ? '↑' : '↓';
+  
+  document.getElementById('expenseChange').innerHTML = 
+    `<span style="color: ${expenseColor}">${expenseIcon} ${Math.abs(expenseChange).toFixed(2)}%</span>`;
+  
+  // So sánh với average
+  const todayExpense = parseFloat(document.getElementById('todayExpense').value);
+  const avg7Days = comparison.avg7Days.expense;
+  if (todayExpense > avg7Days) {
+    showWarning('Chi tiêu hôm nay cao hơn trung bình 7 ngày!');
+  }
+}
+```
+
+**Error Responses:**
+
+| Status Code | Mô tả |
+|-------------|-------|
+| 401 | Unauthorized (JWT token không hợp lệ hoặc hết hạn) |
+| 500 | Lỗi server nội bộ |
+
+**Lưu ý quan trọng:**
+- ✅ API này lấy dữ liệu **hôm nay** (ngày hiện tại theo server time)
+- ✅ `netAmount` có thể âm nếu chi tiêu > thu nhập
+- ✅ `largestTransaction` = null nếu không có expense transaction nào hôm nay
+- ✅ `expenseChangePct` và `incomeChangePct` = 0 nếu cả 2 ngày đều = 0
+- ✅ Nếu không có transactions hôm nay → totals = 0, arrays = [], largestTransaction = null
+- ⚠️ API này tối ưu cho daily dashboard, không dành cho historical analysis
 
 ---
 
@@ -1698,7 +2906,7 @@ curl -X DELETE http://localhost:8080/finance/v1/goals/a12b34c5-0000-0000-0000-00
 ```
 
 **Response:**
-```json
+```json 
 (Empty body - 200 OK)
 ```
 
