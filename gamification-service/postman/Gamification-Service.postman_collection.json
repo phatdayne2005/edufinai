@@ -509,6 +509,58 @@
             }
           },
           "response": []
+        },
+        {
+          "name": "List All Badges",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/badge",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "badge"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Create Badge",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"code\": \"DAILY_BADGE\",\n  \"name\": \"Daily Quiz Master\",\n  \"description\": \"Hoàn thành 3 quiz trong ngày\",\n  \"type\": \"DAILY\",\n  \"iconUrl\": \"https://example.com/icons/daily-badge.png\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/badge",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "badge"
+              ]
+            }
+          },
+          "response": []
         }
       ]
     },

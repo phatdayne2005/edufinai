@@ -67,5 +67,22 @@ public class RestTemplateConfig {
             return execution.execute(request, body);
         };
     }
+
+    /**
+     * RestTemplate riêng cho Notification Service - KHÔNG forward JWT token
+     * vì endpoint /user/{userId} không cần JWT authentication
+     */
+    @Bean
+    @LoadBalanced
+    public RestTemplate notificationRestTemplate(RestTemplateBuilder builder) {
+        var requestFactory = new SimpleClientHttpRequestFactory();
+        requestFactory.setConnectTimeout(3_000);
+        requestFactory.setReadTimeout(5_000);
+
+        // RestTemplate này KHÔNG có JWT interceptor
+        return builder
+                .requestFactory(() -> requestFactory)
+                .build();
+    }
 }
 

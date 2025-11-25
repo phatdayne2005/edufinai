@@ -2,9 +2,15 @@ package vn.uth.gamificationservice.service;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Lazy;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.client.RestTemplate;
+import vn.uth.gamificationservice.client.dto.NotificationRequest;
 import vn.uth.gamificationservice.dto.*;
 import vn.uth.gamificationservice.model.Challenge;
 import vn.uth.gamificationservice.model.ChallengeApprovalStatus;
@@ -15,7 +21,9 @@ import vn.uth.gamificationservice.repository.UserChallengeProgressRepository;
 
 import java.time.LocalDate;
 import java.time.ZonedDateTime;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -29,17 +37,20 @@ public class ChallengeProgressService {
     private final ChallengeRuleEvaluator ruleEvaluator;
     private final RewardService rewardService;
     private final BadgeService badgeService;
+    private final RestTemplate notificationRestTemplate;
 
     public ChallengeProgressService(ChallengeRepository challengeRepository,
                                     UserChallengeProgressRepository progressRepository,
                                     ChallengeRuleEvaluator ruleEvaluator,
                                     @Lazy RewardService rewardService,
-                                    BadgeService badgeService) {
+                                    BadgeService badgeService,
+                                    @Qualifier("notificationRestTemplate") RestTemplate notificationRestTemplate) {
         this.challengeRepository = challengeRepository;
         this.progressRepository = progressRepository;
         this.ruleEvaluator = ruleEvaluator;
         this.rewardService = rewardService;
         this.badgeService = badgeService;
+        this.notificationRestTemplate = notificationRestTemplate;
     }
 
     @Transactional
@@ -149,6 +160,61 @@ public class ChallengeProgressService {
         } catch (Exception ex) {
             log.error("Failed to award badge for challenge completion", ex);
         }
+
+        // Gửi thông báo Firebase khi challenge hoàn thành
+        sendChallengeCompletionNotification(userId, challenge);
+    }
+
+    private void sendChallengeCompletionNotification(UUID userId, Challenge challenge) {
+        try {
+            String title = "🎉 Chúc mừng! Bạn đã hoàn thành thử thách";
+            String body = buildNotificationBody(challenge);
+
+            Map<String, Object> data = new HashMap<>();
+            data.put("type", "challenge_completed");
+            data.put("challengeId", challenge.getId().toString());
+            data.put("challengeTitle", challenge.getTitle());
+            if (challenge.getRewardScore() != null && challenge.getRewardScore() > 0) {
+                data.put("rewardScore", challenge.getRewardScore());
+            }
+            if (challenge.getRewardBadgeCode() != null && !challenge.getRewardBadgeCode().isEmpty()) {
+                data.put("badgeCode", challenge.getRewardBadgeCode());
+            }
+
+            NotificationRequest request = new NotificationRequest(title, body, data);
+            
+            // Gọi notification service bằng RestTemplate (không forward JWT)
+            String url = "http://notification-service/api/notifications/user/" + userId;
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.APPLICATION_JSON);
+            HttpEntity<NotificationRequest> entity = new HttpEntity<>(request, headers);
+            
+            notificationRestTemplate.postForEntity(url, entity, Void.class);
+            log.debug("Sent challenge completion notification to user {}", userId);
+        } catch (Exception ex) {
+            log.error("Failed to send challenge completion notification to user {}", userId, ex);
+            // Không throw exception để không ảnh hưởng flow chính
+        }
+    }
+
+    private String buildNotificationBody(Challenge challenge) {
+        StringBuilder body = new StringBuilder();
+        body.append("Thử thách \"").append(challenge.getTitle()).append("\" đã được hoàn thành!");
+
+        if (challenge.getRewardScore() != null && challenge.getRewardScore() > 0) {
+            body.append(" Bạn nhận được ").append(challenge.getRewardScore()).append(" điểm thưởng.");
+        }
+
+        if (challenge.getRewardBadgeCode() != null && !challenge.getRewardBadgeCode().isEmpty()) {
+            if (challenge.getRewardScore() != null && challenge.getRewardScore() > 0) {
+                body.append(" Và");
+            } else {
+                body.append(" Bạn");
+            }
+            body.append(" đã nhận được huy hiệu mới!");
+        }
+
+        return body.toString();
     }
 
     public List<UserChallengeProgress> getActiveProgress(UUID userId) {

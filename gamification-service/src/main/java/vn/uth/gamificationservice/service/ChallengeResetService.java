@@ -65,6 +65,7 @@ public class ChallengeResetService {
         ZonedDateTime now = ZonedDateTime.now(VIETNAM_ZONE);
         List<UserChallengeProgress> progresses = progressRepository.findByChallenge_Scope(scope);
         List<UserChallengeProgress> toUpdate = new ArrayList<>();
+        List<UserChallengeProgress> toDelete = new ArrayList<>();
 
         for (UserChallengeProgress progress : progresses) {
             Challenge challenge = progress.getChallenge();
@@ -78,14 +79,31 @@ public class ChallengeResetService {
                 continue;
             }
 
+            // Lưu trạng thái trước khi reset
+            boolean wasCompleted = Boolean.TRUE.equals(progress.getCompleted());
+            
+            // Reset tiến độ về 0
             progress.setCurrentProgress(0);
             progress.setCompleted(false);
             progress.setCompletedAt(null);
             progress.setProgressCountToday(0);
             progress.setLastProgressDate(null);
-            progress.setStartedAt(now);
-            progress.setUpdatedAt(now);
-            toUpdate.add(progress);
+            
+            // Nếu đã completed trước đó, giữ record để lưu lịch sử (startedAt giữ nguyên)
+            if (wasCompleted) {
+                progress.setUpdatedAt(now);
+                toUpdate.add(progress);
+            } 
+            // Nếu chưa completed, xóa record để trạng thái là "chưa tham gia"
+            // (vì sau khi reset, currentProgress = 0, nên không cần giữ record)
+            else {
+                toDelete.add(progress);
+            }
+        }
+
+        if (!toDelete.isEmpty()) {
+            progressRepository.deleteAll(toDelete);
+            log.info("Deleted {} progress records with no progress for scope {}", toDelete.size(), scope);
         }
 
         if (!toUpdate.isEmpty()) {
@@ -93,7 +111,7 @@ public class ChallengeResetService {
             log.info("Reset {} progress records for scope {}", toUpdate.size(), scope);
         }
 
-        return toUpdate.size();
+        return toUpdate.size() + toDelete.size();
     }
 }
 

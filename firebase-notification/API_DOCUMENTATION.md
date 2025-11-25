@@ -1,9 +1,22 @@
 ## Firebase Notification Service API
 
-Base URL: `/api/notifications` (đi qua Gateway hoặc base URL nội bộ tùy môi trường).  
-Các endpoint dành cho frontend (đăng ký/hủy token) yêu cầu người dùng đã đăng nhập (JWT). Riêng các endpoint phục vụ service-to-service như `/user/{userId}` có thể gọi **không cần JWT** (Gateway hoặc dịch vụ nội bộ có thể gọi trực tiếp).
+**Base URL**: 
+- **Gateway**: `http://localhost:8080/notification` (cho frontend và service qua Gateway)
+- **Direct Service**: `http://firebase-notification-service:8080/api/notifications` (cho service-to-service)
 
-**Lưu ý quan trọng**: Backend tự động lấy `userId` (UUID) từ auth-service dựa trên JWT token, frontend không cần gửi userId trong request body.
+### Authentication Requirements
+
+| Endpoint | Authentication | Mục đích |
+|----------|----------------|----------|
+| `POST /register-token` | ✅ JWT Required | Frontend đăng ký FCM token |
+| `DELETE /token` | ✅ JWT Required | Frontend hủy FCM token |
+| `POST /user/{userId}` | ❌ **NO JWT** | Service-to-service gửi thông báo |
+| `POST /topic/{topic}` | ✅ JWT Required | Gửi thông báo tới topic |
+| `POST /broadcast` | ✅ JWT Required | Broadcast toàn hệ thống |
+
+**Lưu ý quan trọng**: 
+- Các endpoint yêu cầu JWT: Backend tự động lấy `userId` (UUID) từ auth-service dựa trên JWT token, frontend **không cần** gửi userId trong request body.
+- Endpoint `/user/{userId}` **không yêu cầu JWT** để các service khác (Learning, Finance, Gamification, AI) có thể gọi trực tiếp mà không cần authenticate.
 
 ---
 
@@ -80,8 +93,15 @@ await api.delete("/api/notifications/token", {
 
 ### 3. Gửi thông báo tới 1 user (Service/Admin only)
 
-- **Method**: `POST /user/{userId}`
-- **Path Parameter**: `userId` (UUID format)
+- **Method**: `POST /user/{userId}`  
+- **Gateway URL**: `POST /notification/user/{userId}` (qua Gateway)  
+- **Direct URL**: `POST http://firebase-notification-service:8080/api/notifications/user/{userId}` (service-to-service)
+- **Path Parameter**: `userId` (UUID format, ví dụ: `550e8400-e29b-41d4-a716-446655440000`)
+- **Authentication**: ❌ **KHÔNG CẦN JWT** (endpoint này được permit trong SecurityConfig để các service khác có thể gọi trực tiếp)
+- **Headers**: 
+  ```
+  Content-Type: application/json
+  ```
 - **Body**:
   ```json
   {
@@ -93,15 +113,63 @@ await api.delete("/api/notifications/token", {
     }
   }
   ```
-- **Response**: `202 Accepted`.
+- **Response**: `202 Accepted` (không có response body)
 - **Ghi chú**: 
-  - Endpoint này dành cho **service nội bộ** hoặc **admin UI** và **không yêu cầu JWT** (để AI/learning/finance service có thể gọi trực tiếp).
-  - Frontend thường **không gọi** để tránh giả mạo userId.
-  - Gửi thông báo tới tất cả token FCM đang active của user đó.
+  - Endpoint này dành cho **service nội bộ** (AI Service, Learning Service, Finance Service, Gamification Service) hoặc **admin UI**.
+  - **KHÔNG yêu cầu JWT token** để các service có thể gọi trực tiếp mà không cần authenticate.
+  - Frontend thường **không nên gọi** endpoint này để tránh giả mạo userId (frontend nên dùng các endpoint khác yêu cầu JWT).
+  - Gửi thông báo tới **tất cả token FCM đang active** của user đó (nếu user có nhiều thiết bị, tất cả đều nhận được).
 
-**Ví dụ từ service khác**:
+**Ví dụ từ service khác (Java/RestTemplate)**:
 ```java
-fcmService.sendToUser(userId, "Thông báo", "Bạn có tin nhắn mới", Map.of("type", "message"));
+// Trong Learning Service, Finance Service, hoặc Gamification Service
+@Autowired
+private RestTemplate restTemplate;
+
+public void sendNotificationToUser(UUID userId, String title, String body) {
+    String url = "http://firebase-notification-service/api/notifications/user/" + userId;
+    
+    Map<String, Object> payload = new HashMap<>();
+    payload.put("title", title);
+    payload.put("body", body);
+    payload.put("data", Map.of("type", "achievement", "source", "gamification"));
+    
+    restTemplate.postForEntity(url, payload, Void.class);
+}
+```
+
+**Ví dụ từ service khác (Feign Client)**:
+```java
+@FeignClient(name = "firebase-notification-service", path = "/api/notifications")
+public interface NotificationServiceClient {
+    
+    @PostMapping("/user/{userId}")
+    void sendToUser(
+        @PathVariable("userId") UUID userId,
+        @RequestBody NotificationRequest request
+    );
+}
+
+// Sử dụng
+notificationServiceClient.sendToUser(
+    userId,
+    new NotificationRequest("Thông báo", "Bạn đã hoàn thành challenge!", 
+        Map.of("type", "challenge", "challengeId", challengeId))
+);
+```
+
+**Ví dụ cURL (từ service hoặc admin)**:
+```bash
+curl -X POST http://localhost:8080/notification/user/550e8400-e29b-41d4-a716-446655440000 \
+  -H "Content-Type: application/json" \
+  -d '{
+    "title": "Thông báo mới",
+    "body": "Bạn có tin nhắn mới từ hệ thống",
+    "data": {
+      "type": "message",
+      "messageId": "123"
+    }
+  }'
 ```
 
 ---
@@ -126,6 +194,133 @@ fcmService.sendToUser(userId, "Thông báo", "Bạn có tin nhắn mới", Map.o
 - **Ghi chú**: 
   - Hiện tại gửi tới topic mặc định (`fcm.default-topic`, giá trị `all`).
   - Tất cả user đã đăng ký token sẽ nhận được thông báo.
+
+---
+
+## Integration Guide cho Backend Services
+
+### Cách các Service khác gọi Firebase Notification Service
+
+Các service như **Learning Service**, **Finance Service**, **Gamification Service**, **AI Service** có thể gọi endpoint `/user/{userId}` để gửi thông báo cho user mà **không cần JWT token**.
+
+#### Option 1: Sử dụng RestTemplate (Spring Boot)
+
+```java
+@Configuration
+public class RestTemplateConfig {
+    
+    @Bean
+    @LoadBalanced
+    public RestTemplate restTemplate() {
+        return new RestTemplate();
+    }
+}
+
+@Service
+public class NotificationService {
+    
+    @Autowired
+    private RestTemplate restTemplate;
+    
+    @Value("${services.notification.base-url:http://firebase-notification-service}")
+    private String notificationServiceUrl;
+    
+    public void sendNotification(UUID userId, String title, String body, Map<String, Object> data) {
+        String url = notificationServiceUrl + "/api/notifications/user/" + userId;
+        
+        Map<String, Object> payload = new HashMap<>();
+        payload.put("title", title);
+        payload.put("body", body);
+        payload.put("data", data != null ? data : new HashMap<>());
+        
+        try {
+            restTemplate.postForEntity(url, payload, Void.class);
+        } catch (Exception e) {
+            log.error("Failed to send notification to user {}", userId, e);
+            // Không throw exception để không ảnh hưởng flow chính
+        }
+    }
+}
+```
+
+#### Option 2: Sử dụng Feign Client (Spring Cloud OpenFeign)
+
+**Thêm dependency**:
+```xml
+<dependency>
+    <groupId>org.springframework.cloud</groupId>
+    <artifactId>spring-cloud-starter-openfeign</artifactId>
+</dependency>
+```
+
+**Tạo Feign Client**:
+```java
+@FeignClient(name = "firebase-notification-service", path = "/api/notifications")
+public interface NotificationServiceClient {
+    
+    @PostMapping("/user/{userId}")
+    void sendToUser(
+        @PathVariable("userId") UUID userId,
+        @RequestBody NotificationRequest request
+    );
+}
+
+@Data
+public class NotificationRequest {
+    private String title;
+    private String body;
+    private Map<String, Object> data;
+}
+```
+
+**Sử dụng**:
+```java
+@Service
+@RequiredArgsConstructor
+public class GoalService {
+    
+    private final NotificationServiceClient notificationClient;
+    
+    public void completeGoal(UUID userId, UUID goalId) {
+        // ... xử lý logic ...
+        
+        // Gửi thông báo
+        NotificationRequest request = new NotificationRequest();
+        request.setTitle("Chúc mừng!");
+        request.setBody("Bạn đã hoàn thành mục tiêu tài chính");
+        request.setData(Map.of(
+            "type", "goal_completed",
+            "goalId", goalId.toString()
+        ));
+        
+        try {
+            notificationClient.sendToUser(userId, request);
+        } catch (Exception e) {
+            log.error("Failed to send notification", e);
+        }
+    }
+}
+```
+
+#### Option 3: Sử dụng Eureka Service Discovery
+
+Nếu các service đều đăng ký với Eureka, có thể dùng service name:
+
+```java
+// application.properties
+services.notification.service-name=firebase-notification-service
+
+// Code
+@Value("${services.notification.service-name}")
+private String serviceName;
+
+String url = "http://" + serviceName + "/api/notifications/user/" + userId;
+```
+
+**Lưu ý**:
+- Endpoint `/user/{userId}` **không yêu cầu JWT**, nên có thể gọi trực tiếp
+- Nên wrap trong try-catch để không ảnh hưởng flow chính nếu notification service lỗi
+- Có thể dùng `@Async` để gửi notification bất đồng bộ
 
 ---
 
@@ -303,8 +498,8 @@ Content-Type: application/json
 HTTP/1.1 200 OK
 ```
 
-### Gửi thông báo tới user
-**Request** (từ service khác):
+### Gửi thông báo tới user (Service-to-Service)
+**Request** (từ service khác, **KHÔNG CẦN JWT**):
 ```http
 POST /api/notifications/user/550e8400-e29b-41d4-a716-446655440000
 Content-Type: application/json
@@ -323,3 +518,8 @@ Content-Type: application/json
 ```http
 HTTP/1.1 202 Accepted
 ```
+
+**Lưu ý**: 
+- Request này **KHÔNG cần** header `Authorization: Bearer <JWT_TOKEN>`
+- Endpoint này được permit trong SecurityConfig để các service có thể gọi trực tiếp
+- Nếu gọi qua Gateway: `POST /notification/user/{userId}` (Gateway sẽ forward tới service)

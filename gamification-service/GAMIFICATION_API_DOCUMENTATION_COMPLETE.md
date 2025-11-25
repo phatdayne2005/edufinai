@@ -246,10 +246,11 @@ Gamification Service có cron job (`ChallengeResetService`) chạy trên timezon
 ```json
 {
   "userId": "550e8400-e29b-41d4-a716-446655440000",
-  "score": 100,
   "sourceType": "QUIZ",
   "lessonId": "660e8400-e29b-41d4-a716-446655440001",
   "enrollId": "enroll-123",
+  "totalQuestions": 10,
+  "correctAnswers": 8,
   "badge": "QUIZ_MASTER",
   "reason": "Hoàn thành quiz với điểm cao",
   "challengeId": "770e8400-e29b-41d4-a716-446655440002"
@@ -261,10 +262,12 @@ Gamification Service có cron job (`ChallengeResetService`) chạy trên timezon
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
 | `userId` | UUID | ✅ Yes | ID của user nhận thưởng |
-| `score` | Integer | ✅ Yes | Điểm số (raw score cho QUIZ, final score cho các loại khác) |
 | `sourceType` | Enum | ❌ No | `QUIZ`, `CHALLENGE`, `MANUAL` (default: `MANUAL`) |
 | `lessonId` | UUID | ⚠️ Yes* | Required nếu `sourceType = QUIZ` |
 | `enrollId` | String | ⚠️ Yes* | Required nếu `sourceType = QUIZ` |
+| `totalQuestions` | Integer | ⚠️ Yes* | Tổng số câu hỏi, required nếu `sourceType = QUIZ` |
+| `correctAnswers` | Integer | ⚠️ Yes* | Số câu trả lời đúng, required nếu `sourceType = QUIZ` |
+| `score` | Integer | ❌ No | Điểm số (cho QUIZ, được tính tự động từ `correctAnswers * 10`) |
 | `badge` | String | ❌ No | Tên badge (tùy chọn) |
 | `reason` | String | ❌ No | Lý do trao thưởng |
 | `challengeId` | UUID | ❌ No | ID challenge (nếu từ challenge) |
@@ -310,7 +313,8 @@ curl -X POST http://localhost:8080/gamification/reward \
     "sourceType": "QUIZ",
     "lessonId": "660e8400-e29b-41d4-a716-446655440001",
     "enrollId": "enroll-123",
-    "score": 85
+    "totalQuestions": 10,
+    "correctAnswers": 8
   }'
 
 # Manual reward
@@ -520,6 +524,207 @@ curl -X POST http://localhost:8080/gamification/reward \
 
 ---
 
+#### 3.2.4. Lấy Challenges Theo Trạng Thái Duyệt
+
+**Endpoint**: `GET /api/v1/gamify/challenge/status/{status}`  
+**Gateway**: `GET /gamification/challenge/status/{status}`
+
+**Mô tả**: Lấy danh sách challenges theo trạng thái duyệt (dành cho moderator).
+
+**Authentication**: ✅ Required
+
+**Path Parameters**:
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `status` | Enum | ✅ Yes | Trạng thái: `PENDING`, `APPROVED`, `REJECTED` |
+
+**Response** (200 OK):
+
+```json
+[
+  {
+    "id": "880e8400-e29b-41d4-a716-446655440000",
+    "title": "Hoàn thành 5 quiz trong ngày",
+    "description": "Thử thách hoàn thành 5 bài quiz trong một ngày",
+    "type": "QUIZ",
+    "scope": "DAILY",
+    "targetValue": 5,
+    "startAt": "2025-01-15T00:00:00+07:00[Asia/Ho_Chi_Minh]",
+    "endAt": "2025-01-15T23:59:59+07:00[Asia/Ho_Chi_Minh]",
+    "active": false,
+    "rule": "{\"eventType\":\"QUIZ\",\"action\":\"COMPLETE\",\"minAccuracy\":80}",
+    "rewardScore": 50,
+    "rewardBadgeCode": "DAILY_BADGE",
+    "maxProgressPerDay": 3,
+    "approvalStatus": "PENDING",
+    "createdAt": "2025-01-10T10:00:00+07:00[Asia/Ho_Chi_Minh]",
+    "updatedAt": null
+  }
+]
+```
+
+**Response Fields**:
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `approvalStatus` | Enum | Trạng thái duyệt: `PENDING`, `APPROVED`, `REJECTED` |
+| `active` | Boolean | Chỉ `true` khi `approvalStatus = APPROVED` |
+
+**Lưu ý**:
+- Chỉ challenges có `approvalStatus = APPROVED` mới được xử lý và hiển thị cho user
+- Challenges `PENDING` hoặc `REJECTED` sẽ có `active = false`
+
+---
+
+#### 3.2.5. Duyệt/Từ Chối Challenge
+
+**Endpoint**: `PATCH /api/v1/gamify/challenge/{challengeId}/approval`  
+**Gateway**: `PATCH /gamification/challenge/{challengeId}/approval`
+
+**Mô tả**: Moderator duyệt hoặc từ chối challenge (dành cho moderator).
+
+**Authentication**: ✅ Required
+
+**Path Parameters**:
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `challengeId` | UUID | ✅ Yes | ID của challenge |
+
+**Request Body**:
+
+```json
+{
+  "status": "APPROVED",
+  "note": "Challenge hợp lệ, đã kiểm tra kỹ"
+}
+```
+
+**Request Fields**:
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `status` | Enum | ✅ Yes | `APPROVED` hoặc `REJECTED` |
+| `note` | String | ❌ No | Ghi chú của moderator (max 2000 chars) |
+
+**Response** (200 OK):
+
+```json
+{
+  "challengeId": "880e8400-e29b-41d4-a716-446655440000",
+  "status": "APPROVED"
+}
+```
+
+**Response Fields**:
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `challengeId` | UUID | ID của challenge |
+| `status` | String | Trạng thái sau khi duyệt |
+
+**Hành vi**:
+- Khi `status = APPROVED`: Challenge được set `active = true` và có thể được xử lý/hiển thị
+- Khi `status = REJECTED`: Challenge được set `active = false` và không được xử lý
+- Mỗi lần duyệt/từ chối đều được ghi vào `challenge_approval_history` với `reviewerId` từ JWT token
+
+---
+
+#### 3.2.6. Xem Lịch Sử Duyệt Challenge
+
+**Endpoint**: `GET /api/v1/gamify/challenge/{challengeId}/approval-history`  
+**Gateway**: `GET /gamification/challenge/{challengeId}/approval-history`
+
+**Mô tả**: Xem lịch sử duyệt của một challenge (dành cho creator và moderator).
+
+**Authentication**: ✅ Required
+
+**Path Parameters**:
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `challengeId` | UUID | ✅ Yes | ID của challenge |
+
+**Response** (200 OK):
+
+```json
+[
+  {
+    "historyId": "990e8400-e29b-41d4-a716-446655440000",
+    "status": "APPROVED",
+    "reviewerId": "aa0e8400-e29b-41d4-a716-446655440001",
+    "note": "Challenge hợp lệ, đã kiểm tra kỹ",
+    "createdAt": "2025-01-12T14:30:00+07:00[Asia/Ho_Chi_Minh]"
+  },
+  {
+    "historyId": "bb0e8400-e29b-41d4-a716-446655440002",
+    "status": "PENDING",
+    "reviewerId": "cc0e8400-e29b-41d4-a716-446655440003",
+    "note": "Resubmitted",
+    "createdAt": "2025-01-10T10:00:00+07:00[Asia/Ho_Chi_Minh]"
+  }
+]
+```
+
+**Response Fields**:
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `historyId` | UUID | ID của history record |
+| `status` | Enum | Trạng thái: `PENDING`, `APPROVED`, `REJECTED` |
+| `reviewerId` | UUID | ID của người duyệt (moderator hoặc creator nếu resubmit) |
+| `note` | String | Ghi chú của reviewer |
+| `createdAt` | ZonedDateTime | Thời điểm tạo history record |
+
+**Lưu ý**:
+- History được sắp xếp theo `createdAt` giảm dần (mới nhất trước)
+- Creator có thể xem lịch sử để biết lý do bị từ chối
+
+---
+
+#### 3.2.7. Gửi Lại Challenge Để Duyệt
+
+**Endpoint**: `POST /api/v1/gamify/challenge/{challengeId}/resubmit`  
+**Gateway**: `POST /gamification/challenge/{challengeId}/resubmit`
+
+**Mô tả**: Creator gửi lại challenge đã bị từ chối hoặc đang pending để moderator duyệt lại.
+
+**Authentication**: ✅ Required
+
+**Path Parameters**:
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `challengeId` | UUID | ✅ Yes | ID của challenge |
+
+**Response** (200 OK):
+
+```json
+{
+  "challengeId": "880e8400-e29b-41d4-a716-446655440000",
+  "status": "RE_SUBMITTED"
+}
+```
+
+**Response Fields**:
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `challengeId` | UUID | ID của challenge |
+| `status` | String | Trạng thái: `RE_SUBMITTED` |
+
+**Hành vi**:
+- Challenge được chuyển về trạng thái `PENDING`
+- Challenge được set `active = false`
+- Tạo history record với `status = PENDING`, `note = "Resubmitted"`, `reviewerId` từ JWT token
+
+**Lưu ý**:
+- Creator có thể resubmit challenge đã bị `REJECTED` hoặc đang `PENDING`
+- Sau khi resubmit, moderator sẽ thấy challenge trong danh sách `PENDING`
+
+---
+
 ### 3.3. Challenge Progress APIs
 
 #### 3.3.1. Publish Challenge Event (Service-to-Service)
@@ -538,7 +743,10 @@ curl -X POST http://localhost:8080/gamification/reward \
   "action": "COMPLETE",
   "lessonId": "660e8400-e29b-41d4-a716-446655440001",
   "enrollId": "enroll-123",
-  "score": 85,
+  "score": 80,
+  "accuracyPercent": 80,
+  "totalQuestions": 10,
+  "correctAnswers": 8,
   "amount": 1,
   "occurredAt": "2025-01-15T10:30:00+07:00[Asia/Ho_Chi_Minh]"
 }
@@ -549,11 +757,14 @@ curl -X POST http://localhost:8080/gamification/reward \
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
 | `userId` | UUID | ✅ Yes | ID của user |
-| `eventType` | String | ✅ Yes | Loại event (`QUIZ`, `EXPENSE`, etc.) |
-| `action` | String | ✅ Yes | Hành động (`COMPLETE`, `SAVE`, etc.) |
-| `lessonId` | UUID | ❌ No | ID lesson (cho QUIZ) |
-| `enrollId` | String | ❌ No | ID enrollment (cho QUIZ) |
-| `score` | Integer | ❌ No | Điểm số (cho QUIZ) |
+| `eventType` | String | ✅ Yes | Loại event: `QUIZ`, `GOAL`, `EXPENSE` |
+| `action` | String | ✅ Yes | Hành động: `COMPLETE`, `SAVE` |
+| `lessonId` | UUID | ⚠️ Yes* | ID lesson, required cho `eventType = QUIZ` |
+| `enrollId` | String | ⚠️ Yes* | ID enrollment, required cho `eventType = QUIZ` |
+| `score` | Integer | ❌ No | Điểm số (cho QUIZ, tính từ `correctAnswers * 10`) |
+| `accuracyPercent` | Integer | ⚠️ Yes* | % chính xác (0-100), required cho `eventType = QUIZ` |
+| `totalQuestions` | Integer | ⚠️ Yes* | Tổng số câu hỏi, required cho `eventType = QUIZ` |
+| `correctAnswers` | Integer | ⚠️ Yes* | Số câu trả lời đúng, required cho `eventType = QUIZ` |
 | `amount` | Integer | ❌ No | Số lượng tăng progress (default: 1) |
 | `occurredAt` | ZonedDateTime | ❌ No | Thời gian xảy ra (default: now) |
 
@@ -705,7 +916,7 @@ curl -X POST http://localhost:8080/gamification/reward \
       "badgeCode": "QUIZ_MASTER",
       "badgeName": "Quiz Master",
       "badgeDescription": "Hoàn thành nhiều quiz",
-      "badgeType": "QUIZ",
+      "badgeType": "DAILY",
       "iconUrl": "https://example.com/badge/quiz-master.png",
       "count": 5,
       "firstEarnedAt": "2025-01-10T10:00:00",
@@ -724,7 +935,7 @@ curl -X POST http://localhost:8080/gamification/reward \
 | `badgeCode` | String | Code của badge |
 | `badgeName` | String | Tên badge |
 | `badgeDescription` | String | Mô tả badge |
-| `badgeType` | Enum | Loại badge |
+| `badgeType` | Enum | Loại badge: `DAILY`, `WEEKLY`, `MONTHLY`, `SEASONAL`, `SPECIAL` |
 | `iconUrl` | String | URL icon |
 | `count` | Integer | Số lần đạt được badge |
 | `firstEarnedAt` | LocalDateTime | Lần đầu đạt được |
@@ -750,10 +961,11 @@ curl -X POST http://localhost:8080/gamification/reward \
   "result": [
     {
       "id": "9f7b2b71-99f5-4c89-b6e5-5a1d1b8b7b26",
+      "id": "9f7b2b71-99f5-4c89-b6e5-5a1d1b8b7b26",
       "code": "DAILY_BADGE",
-      "name": "Quiz Daily Master",
+      "name": "Daily Quiz Master",
       "description": "Hoàn thành 3 quiz mỗi ngày",
-      "type": "QUIZ",
+      "type": "DAILY",
       "iconUrl": "https://cdn.example.com/badges/daily.png"
     }
   ],
@@ -768,19 +980,31 @@ curl -X POST http://localhost:8080/gamification/reward \
 **Endpoint**: `POST /api/v1/gamify/badge`  
 **Gateway**: `POST /gamification/badge`
 
-**Mô tả**: Cho phép admin/frontend tạo badge mới. Hiện chỉ cần `code`, `name`, `iconUrl`; `description` và `type` có thể dùng giá trị mặc định (`QUIZ`).
+**Mô tả**: Cho phép admin/frontend tạo badge mới. Badge được dùng làm phần thưởng khi user hoàn thành challenge.
+
+**Authentication**: ✅ Required
 
 **Request Body**:
 
 ```json
 {
   "code": "DAILY_BADGE",
-  "name": "Quiz Daily Master",
+  "name": "Daily Quiz Master",
   "description": "Hoàn thành 3 quiz mỗi ngày",
-  "type": "QUIZ",
+  "type": "DAILY",
   "iconUrl": "https://cdn.example.com/badges/daily.png"
 }
 ```
+
+**Request Fields**:
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `code` | String | ✅ Yes | Mã badge (unique, max 64 chars) |
+| `name` | String | ✅ Yes | Tên badge (max 128 chars) |
+| `description` | String | ❌ No | Mô tả badge |
+| `type` | Enum | ❌ No | Loại badge: `DAILY`, `WEEKLY`, `MONTHLY`, `SEASONAL`, `SPECIAL` (default: `DAILY`) |
+| `iconUrl` | String | ✅ Yes | URL icon badge (hỗ trợ HTTPS) |
 
 **Response** (200 OK):
 
@@ -790,13 +1014,30 @@ curl -X POST http://localhost:8080/gamification/reward \
   "result": {
     "id": "9f7b2b71-99f5-4c89-b6e5-5a1d1b8b7b26",
     "code": "DAILY_BADGE",
-    "name": "Quiz Daily Master",
+    "name": "Daily Quiz Master",
     "description": "Hoàn thành 3 quiz mỗi ngày",
-    "type": "QUIZ",
+    "type": "DAILY",
     "iconUrl": "https://cdn.example.com/badges/daily.png"
   },
   "message": "Badge created"
 }
+```
+
+**Response Fields**:
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `id` | UUID | ID của badge |
+| `code` | String | Mã badge (dùng trong `rewardBadgeCode` của challenge) |
+| `name` | String | Tên badge |
+| `description` | String | Mô tả badge |
+| `type` | Enum | Loại badge: `DAILY`, `WEEKLY`, `MONTHLY`, `SEASONAL`, `SPECIAL` |
+| `iconUrl` | String | URL icon badge |
+
+**Lưu ý**:
+- `code` phải unique trong hệ thống
+- `iconUrl` nên dùng HTTPS và CDN để tối ưu performance
+- Sau khi tạo badge, có thể dùng `code` trong field `rewardBadgeCode` khi tạo challenge
 ```
 
 **Validation & lưu ý**:
@@ -1107,30 +1348,103 @@ public ResponseEntity<QuizResult> completeQuiz(@RequestBody QuizCompletionReques
 
 ### 5.2. Integration với Finance Service
 
-**Khi User Tiết Kiệm Tiền** (ví dụ):
+**Khi User Hoàn Thành Mục Tiêu Tài Chính**:
 
-```java
-// Finance Service
-@PostMapping("/transaction/save")
-public ResponseEntity<TransactionResponse> saveMoney(@RequestBody SaveRequest req) {
-    // ... xử lý transaction ...
-    
-    // Gọi Gamification Service để publish event
-    ChallengeEventRequest event = new ChallengeEventRequest();
-    event.setUserId(userId);
-    event.setEventType("EXPENSE");
-    event.setAction("SAVE");
-    event.setAmount(amount);
-    
-    restTemplate.postForEntity(
-        "http://gamification-service/api/v1/gamify/challenge/event",
-        event,
-        ApiResponse.class
-    );
-    
-    return ResponseEntity.ok(transactionResponse);
+Finance Service tự động publish challenge event khi user xác nhận hoàn thành mục tiêu tài chính (goal).
+
+**Endpoint được gọi**: `POST /api/v1/gamify/challenge/event`
+
+**Request Body**:
+
+```json
+{
+  "userId": "880e8400-e29b-41d4-a716-446655440000",
+  "eventType": "GOAL",
+  "action": "COMPLETE",
+  "amount": 1,
+  "occurredAt": "2025-11-25T14:30:00Z"
 }
 ```
+
+**Request Fields**:
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `userId` | UUID | ✅ Yes | ID của user đạt mục tiêu |
+| `eventType` | String | ✅ Yes | Loại event: `"GOAL"` |
+| `action` | String | ✅ Yes | Hành động: `"COMPLETE"` |
+| `amount` | Integer | ✅ Yes | Số lượng mục tiêu đạt được (thường là 1) |
+| `occurredAt` | ZonedDateTime | ❌ No | Thời điểm xảy ra (default: now) |
+
+**Response** (200 OK):
+
+```json
+{
+  "code": 200,
+  "result": null,
+  "message": "Event processed successfully"
+}
+```
+
+**Ví dụ Code (Finance Service)**:
+
+```java
+// Finance Service - GoalService.confirmCompletion()
+@Transactional
+public Goal confirmCompletion(UUID goalId, UUID userId) {
+    Goal goal = goalRepository.findById(goalId)
+            .orElseThrow(() -> new RuntimeException("Goal not found"));
+    
+    // Validate và update goal status
+    goal.setStatus(GoalStatus.COMPLETED);
+    Goal savedGoal = goalRepository.save(goal);
+    
+    // Publish event to Gamification Service
+    GamificationChallengeEventRequest eventRequest = new GamificationChallengeEventRequest(
+            userId,
+            "GOAL",
+            "COMPLETE",
+            1, // Amount: 1 goal completed
+            ZonedDateTime.now(ZoneId.systemDefault())
+    );
+    
+    try {
+        gamificationServiceClient.publishChallengeEvent(eventRequest);
+    } catch (Exception e) {
+        // Log error nhưng không fail transaction
+        log.error("Failed to publish goal completion event", e);
+    }
+    
+    return savedGoal;
+}
+```
+
+**Cách Tạo Challenge Cho Finance Goals**:
+
+Để tạo challenge cho việc đạt mục tiêu tài chính, sử dụng:
+
+```json
+{
+  "title": "Hoàn thành 5 mục tiêu tài chính trong tháng",
+  "description": "Đạt được 5 mục tiêu tiết kiệm trong tháng này",
+  "type": "GOAL",
+  "scope": "MONTHLY",
+  "targetValue": 5,
+  "startAt": "2025-11-01T00:00:00Z",
+  "endAt": "2025-11-30T23:59:59Z",
+  "active": true,
+  "rule": "{\"eventType\":\"GOAL\",\"action\":\"COMPLETE\"}",
+  "rewardScore": 500,
+  "rewardBadgeCode": "GOAL_MASTER",
+  "maxProgressPerDay": null
+}
+```
+
+**Lưu ý**:
+- `eventType` trong rule phải là `"GOAL"`
+- `action` trong rule phải là `"COMPLETE"`
+- `amount` trong event request là số lượng mục tiêu đạt được (thường là 1 mỗi lần xác nhận)
+- Challenge sẽ tự động cập nhật progress khi user xác nhận hoàn thành mục tiêu tài chính
 
 ---
 
@@ -1244,8 +1558,8 @@ AI service chỉ cần forward JWT của user hiện tại qua header `Authoriza
 ```json
 {
   "userId": UUID,
-  "eventType": "QUIZ",
-  "action": "COMPLETE",
+  "eventType": "QUIZ" | "GOAL" | "EXPENSE",
+  "action": "COMPLETE" | "SAVE",
   "lessonId": UUID,
   "enrollId": String,
   "score": Integer,
@@ -1256,6 +1570,27 @@ AI service chỉ cần forward JWT của user hiện tại qua header `Authoriza
   "occurredAt": ZonedDateTime
 }
 ```
+
+**Fields Description**:
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `userId` | UUID | ✅ Yes | ID của user |
+| `eventType` | String | ✅ Yes | Loại event: `QUIZ`, `GOAL`, `EXPENSE` |
+| `action` | String | ✅ Yes | Hành động: `COMPLETE`, `SAVE` |
+| `lessonId` | UUID | ⚠️ Yes* | Required cho `eventType = QUIZ` |
+| `enrollId` | String | ⚠️ Yes* | Required cho `eventType = QUIZ` |
+| `score` | Integer | ❌ No | Điểm số (cho QUIZ, tính từ `correctAnswers * 10`) |
+| `accuracyPercent` | Integer | ⚠️ Yes* | % chính xác (0-100), required cho `eventType = QUIZ` |
+| `totalQuestions` | Integer | ⚠️ Yes* | Tổng số câu hỏi, required cho `eventType = QUIZ` |
+| `correctAnswers` | Integer | ⚠️ Yes* | Số câu trả lời đúng, required cho `eventType = QUIZ` |
+| `amount` | Integer | ❌ No | Số lượng tăng progress (default: 1) |
+| `occurredAt` | ZonedDateTime | ❌ No | Thời điểm xảy ra (default: now) |
+
+**Lưu ý**:
+- Cho `eventType = QUIZ`: Cần `totalQuestions`, `correctAnswers`, `accuracyPercent`, `lessonId`, `enrollId`
+- Cho `eventType = GOAL`: Chỉ cần `amount` (số lượng mục tiêu đạt được)
+- `score` được tính tự động từ `correctAnswers * 10` cho QUIZ
 
 ### 6.4. RewardRequest Model
 
@@ -1273,6 +1608,29 @@ AI service chỉ cần forward JWT của user hiện tại qua header `Authoriza
   "reason": String
 }
 ```
+
+**Fields Description**:
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `userId` | UUID | ✅ Yes | ID của user nhận thưởng |
+| `sourceType` | Enum | ❌ No | `QUIZ`, `CHALLENGE`, `MANUAL` (default: `MANUAL`) |
+| `lessonId` | UUID | ⚠️ Yes* | Required cho `sourceType = QUIZ` |
+| `enrollId` | String | ⚠️ Yes* | Required cho `sourceType = QUIZ` |
+| `totalQuestions` | Integer | ⚠️ Yes* | Tổng số câu hỏi, required cho `sourceType = QUIZ` |
+| `correctAnswers` | Integer | ⚠️ Yes* | Số câu trả lời đúng, required cho `sourceType = QUIZ` |
+| `score` | Integer | ❌ No | Điểm số (cho `sourceType = QUIZ`, được tính từ `correctAnswers * 10`) |
+| `challengeId` | UUID | ❌ No | ID challenge (nếu từ challenge) |
+| `badge` | String | ❌ No | Tên badge (tùy chọn) |
+| `reason` | String | ❌ No | Lý do trao thưởng |
+
+**Xử Lý Đặc Biệt cho QUIZ**:
+- Khi `sourceType = QUIZ`, hệ thống sẽ:
+  1. Validate `lessonId`, `enrollId`, `totalQuestions`, `correctAnswers` phải có
+  2. Tính `score = correctAnswers * 10`
+  3. Tính `accuracyPercent = (correctAnswers * 100) / totalQuestions`
+  4. Xử lý duplicate attempt và delta score
+  5. Tự động publish challenge event với đầy đủ thông tin quiz
 
 ### 6.5. ChallengeProgressResponse Model
 ### 6.6. ChallengeSummaryResponse Model
@@ -1328,11 +1686,23 @@ AI service chỉ cần forward JWT của user hiện tại qua header `Authoriza
 {
   "id": "UUID",
   "code": "DAILY_BADGE",
-  "name": "Quiz Daily Master",
+  "name": "Daily Quiz Master",
   "description": "Hoàn thành 3 quiz mỗi ngày",
-  "type": "QUIZ",
+  "type": "DAILY",
   "iconUrl": "https://cdn.example.com/badges/daily.png"
 }
+```
+
+**Fields Description**:
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `id` | UUID | ID của badge |
+| `code` | String | Mã badge (unique, dùng trong `rewardBadgeCode` của challenge) |
+| `name` | String | Tên badge |
+| `description` | String | Mô tả badge |
+| `type` | Enum | Loại badge: `DAILY`, `WEEKLY`, `MONTHLY`, `SEASONAL`, `SPECIAL` |
+| `iconUrl` | String | URL icon badge (nên dùng HTTPS) |
 ```
 
 ### 6.10. BadgeCreateRequest Model

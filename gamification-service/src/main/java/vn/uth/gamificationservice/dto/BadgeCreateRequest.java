@@ -17,7 +17,7 @@ public class BadgeCreateRequest {
 
     private String description;
 
-    private BadgeType type = BadgeType.QUIZ;
+    private BadgeType type = BadgeType.DAILY;
 
     @NotBlank
     private String iconUrl;

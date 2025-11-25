@@ -18,6 +18,7 @@ import vn.uth.financeservice.repository.TransactionRepository;
 import vn.uth.financeservice.repository.CategoryRepository;
 import vn.uth.financeservice.entity.Category;
 import vn.uth.financeservice.entity.CategoryType;
+import vn.uth.financeservice.client.GamificationServiceClient;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -33,6 +34,7 @@ public class GoalService {
     private final TransactionRepository transactionRepository;
     private final CategoryRepository categoryRepository;
     private final EntityManager entityManager;
+    private final GamificationServiceClient gamificationServiceClient;
 
     @Transactional
     public Goal createGoal(UUID userId, GoalRequestDto request) {
@@ -81,7 +83,12 @@ public class GoalService {
         goal.setNewStatus(GoalStatus.COMPLETED);
         goal.setUpdatedAt(LocalDateTime.now());
 
-        return goalRepository.save(goal);
+        Goal savedGoal = goalRepository.save(goal);
+
+        // Publish event đến gamification service để ghi nhận challenge progress
+        gamificationServiceClient.publishGoalAchievedEvent(userId, "GOAL", "COMPLETE");
+
+        return savedGoal;
     }
 
     /**
