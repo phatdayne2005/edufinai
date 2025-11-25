@@ -1,4 +1,12 @@
-# Learning Service API Documentation
+# Learning Service API Documentation v2.0
+
+## 🆕 What's New in v2.0
+- **Level-based Access Control**: Learners can only enroll in lessons matching their level
+- **Percentage-based EXP**: Progress shown as 0-100% instead of absolute points
+- **Improvement-only Rewards**: EXP only increases when beating previous best score
+- **Auto Level Up**: Learners automatically level up at 100% EXP
+
+---
 
 ## Base URL
 ```
@@ -19,7 +27,7 @@ The JWT token is obtained from the Auth Service (`/identity/auth/token`).
 
 ## 1. Learner APIs
 
-### 1.1 Get My Learner Profile
+### 1.1 Get My Learner Profile ⚡ UPDATED
 Retrieve the profile of the currently logged-in learner.
 
 **Endpoint:** `GET /api/learners/me`
@@ -32,8 +40,23 @@ Retrieve the profile of the currently logged-in learner.
 {
   "id": "uuid",
   "level": "BEGINNER | INTERMEDIATE | ADVANCED",
-  "totalPointsLearning": 0
+  "totalExp": 15,
+  "expPercent": 75
 }
+```
+
+**Field Descriptions:**
+- `level`: Current learner level (determines accessible lessons)
+- `totalExp`: Total correct answers in current level
+- `expPercent`: Progress percentage (0-100%) towards next level
+
+**Example Progress:**
+```
+Level: BEGINNER
+totalExp: 12 (answered 12 questions correctly)
+expPercent: 75% (75% progress to INTERMEDIATE)
+
+When expPercent reaches 100% → Level up to INTERMEDIATE → Reset to 0%
 ```
 
 ### 1.2 Get Learner by ID
@@ -50,7 +73,8 @@ Retrieve the profile of the currently logged-in learner.
   {
     "id": "uuid",
     "level": "BEGINNER",
-    "totalPointsLearning": 0
+    "totalExp": 15,
+    "expPercent": 75
   }
 ]
 ```
@@ -91,7 +115,7 @@ Retrieve the profile of the currently logged-in learner.
 
 **Response:** `200 OK` (Array of CreatorRes)
 
-### 2.4 Get My Lessons ✨ NEW
+### 2.4 Get My Lessons
 **Endpoint:** `GET /api/creators/me/lessons`
 
 **Auth:** Required (`SCOPE_ROLE_CREATOR`)
@@ -103,8 +127,8 @@ Retrieve the profile of the currently logged-in learner.
     "id": "uuid",
     "title": "Lesson Title",
     "status": "DRAFT | PENDING | APPROVED | REJECTED",
+    "difficulty": "BASIC | INTERMEDIATE | ADVANCED",
     "createdAt": "2024-01-01T10:00:00"
-    // ... other lesson fields
   }
 ]
 ```
@@ -125,14 +149,14 @@ Retrieve the profile of the currently logged-in learner.
     "description": "Learn the basics of budgeting",
     "slug": "introduction-to-budgeting",
     "content": "Full lesson content...",
-    "status": "DRAFT | PENDING | APPROVED | REJECTED",
+    "status": "APPROVED",
     "difficulty": "BASIC | INTERMEDIATE | ADVANCED",
     "durationMinutes": 30,
     "tags": ["BUDGETING", "SAVING"],
     "thumbnailUrl": "https://...",
     "videoUrl": "https://...",
-    "commentByMod": "Optional feedback from moderator",
     "quizJson": { ... },
+    "totalQuestions": 10,
     "creatorId": "uuid",
     "moderatorId": "uuid",
     "createdAt": "2024-01-01T10:00:00Z",
@@ -149,54 +173,13 @@ Retrieve the profile of the currently logged-in learner.
 
 **Response:** `200 OK` (LessonRes)
 
-### 3.3 Get Lesson by Slug ✨ NEW
+### 3.3 Get Lesson by Slug
 **Endpoint:** `GET /api/lessons/slug/{slug}`
 
 **Path Parameters:**
 - `slug`: The unique slug of the lesson (e.g., `introduction-to-budgeting`)
 
-**Response:** `200 OK`
-```json
-{
-  "id": "uuid",
-  "title": "Introduction to Budgeting",
-  "description": "Learn the basics of budgeting",
-  "slug": "introduction-to-budgeting",
-  "content": "Full lesson content...",
-  "status": "APPROVED",
-  "difficulty": "BASIC",
-  "durationMinutes": 30,
-  "tags": ["BUDGETING", "SAVING"],
-  "thumbnailUrl": "https://...",
-  "videoUrl": "https://...",
-  "commentByMod": null,
-  "quizJson": {
-    "questions": [
-      {
-        "id": 1,
-        "question": "What is budgeting?",
-        "options": ["A", "B", "C", "D"],
-        "correctAnswer": 0
-      }
-    ]
-  },
-  "creatorId": "uuid",
-  "moderatorId": "uuid",
-  "createdAt": "2024-01-01T10:00:00Z",
-  "updatedAt": "2024-01-01T10:00:00Z",
-  "publishedAt": "2024-01-01T10:00:00Z"
-}
-```
-
-**Error:** `404 Not Found` if slug doesn't exist
-```json
-{
-  "code": 9999,
-  "message": "Lesson not found with slug: introduction-to-budgeting"
-}
-```
-
-**Note:** This endpoint is useful for creating SEO-friendly URLs (e.g., `/learning/lesson/introduction-to-budgeting` instead of `/learning/lesson/550e8400-...`). The slug is automatically generated when creating a lesson.
+**Response:** `200 OK` (LessonRes)
 
 ### 3.4 Filter Lessons by Tag
 **Endpoint:** `GET /api/lessons/tags/{tag}`
@@ -217,41 +200,80 @@ Retrieve the profile of the currently logged-in learner.
 ### 3.6 Filter Lessons by Status
 **Endpoint:** `GET /api/lessons/status/{status}`
 
-  "learnerId": "uuid",
-  "lessonId": "uuid",
-  "status": "IN_PROGRESS",
-  "progressPercent": 50,
-  "score": null,
-  "attempts": 1,
-  "startedAt": "2024-01-01T10:00:00",
-  "completedAt": null,
-  "lastActivityAt": "2024-01-01T11:00:00",
-  "createdAt": "2024-01-01T10:00:00",
-  "updatedAt": "2024-01-01T11:00:00"
-}
-```
-
-**Error Responses:**
-- `404 Not Found` - Lesson with this slug doesn't exist
-- `404 Not Found` - User is not enrolled in this lesson (message: "Not enrolled in this lesson")
-
-**Note:** This endpoint uses lesson slug + JWT token to identify the enrollment, eliminating the need to pass enrollment ID in URLs. Perfect for SEO-friendly routes like `/learning/quiz/introduction-to-budgeting`.
-
-### 4.6 Update My Enrollment Progress (by Slug) ✨ NEW
-**Endpoint:** `PUT /api/enrollments/lessons/{slug}/my-enrollment/progress`
-
-**Auth:** Required (`SCOPE_ROLE_LEARNER`)
-
 **Path Parameters:**
-- `slug`: The lesson slug (e.g., `introduction-to-budgeting`)
+- `status`: `DRAFT` | `PENDING` | `APPROVED` | `REJECTED`
+
+**Response:** `200 OK` (Array of LessonRes)
+
+### 3.7 Create Lesson
+**Endpoint:** `POST /api/lessons`
+
+**Auth:** Required (`SCOPE_ROLE_CREATOR`)
 
 **Request Body:**
 ```json
 {
-  "status": "IN_PROGRESS | COMPLETED | DROPPED (required)",
-  "progressPercent": 100,
-  "score": 80,
-  "addAttempt": 1
+  "title": "New Lesson",
+  "description": "Description",
+  "content": "<h1>Content</h1>",
+  "durationMinutes": 30,
+  "difficulty": "BASIC",
+  "thumbnailUrl": "",
+  "videoUrl": "",
+  "tags": ["BUDGETING"],
+  "quizJson": {
+    "questions": [
+      {
+        "id": 1,
+        "question": "Question?",
+        "options": ["A", "B"],
+        "correctAnswer": 0
+      }
+    ]
+  }
+}
+```
+
+**Response:** `200 OK` (LessonRes)
+
+### 3.8 Update Lesson
+**Endpoint:** `PUT /api/lessons/{lessonId}`
+
+**Auth:** Required (`SCOPE_ROLE_CREATOR`)
+
+**Request Body:** (Same as Create, all fields optional)
+
+**Response:** `200 OK` (LessonRes)
+
+### 3.9 Submit Lesson
+**Endpoint:** `PUT /api/lessons/{lessonId}/submit`
+
+**Auth:** Required (`SCOPE_ROLE_CREATOR`)
+
+**Response:** `200 OK` (LessonRes with status = PENDING)
+
+### 3.10 Delete Lesson
+**Endpoint:** `DELETE /api/lessons/{lessonId}`
+
+**Auth:** Required (`SCOPE_ROLE_CREATOR`)
+
+**Response:** `204 No Content`
+
+---
+
+## 4. Enrollment APIs
+
+### 4.1 Enroll in Lesson ⚡ UPDATED
+Create a new enrollment for a lesson.
+
+**Endpoint:** `POST /api/enrollments`
+
+**Auth:** Required (`SCOPE_ROLE_LEARNER`)
+
+**Request Body:**
+```json
+{
+  "lessonId": "uuid"
 }
 ```
 
@@ -261,38 +283,178 @@ Retrieve the profile of the currently logged-in learner.
   "id": "uuid",
   "learnerId": "uuid",
   "lessonId": "uuid",
-  "status": "COMPLETED",
-  "progressPercent": 100,
-  "score": 80,
-  "attempts": 2,
+  "status": "IN_PROGRESS",
+  "progressPercent": 0,
+  "score": null,
+  "attempts": 0,
+  "correctAnswers": 0,
+  "earnedExp": 0,
   "startedAt": "2024-01-01T10:00:00",
-  "completedAt": "2024-01-01T12:00:00",
-  "lastActivityAt": "2024-01-01T12:00:00",
-  "createdAt": "2024-01-01T10:00:00",
-  "updatedAt": "2024-01-01T12:00:00"
+  "completedAt": null,
+  "lastActivityAt": "2024-01-01T10:00:00"
 }
 ```
 
-**Error Responses:**
-- `404 Not Found` - Lesson with this slug doesn't exist
-- `404 Not Found` - User is not enrolled in this lesson
+**⚠️ Validation - Level Check:**
+```json
+// Error 400 - Level insufficient
+{
+  "code": 9999,
+  "message": "Learner level BEGINNER is not sufficient to enroll in lesson with difficulty INTERMEDIATE. Required level: INTERMEDIATE"
+}
+```
 
-**Note:** Frontend can now update progress without knowing the enrollment ID. Just pass the lesson slug and the system will automatically find the correct enrollment for the authenticated user.
+**Access Rules:**
+- `BEGINNER` → Can only enroll in `BASIC` lessons
+- `INTERMEDIATE` → Can enroll in `BASIC` and `INTERMEDIATE` lessons
+- `ADVANCED` → Can enroll in all lessons
 
-**Example Usage in Frontend:**
-```javascript
-// Old way (enrollment ID in URL):
-PUT /api/enrollments/550e8400.../progress
+### 4.2 Get My Enrollments
+**Endpoint:** `GET /api/enrollments`
 
-// New way (clean URL):
-PUT /api/enrollments/lessons/introduction-to-budgeting/my-enrollment/progress
+**Auth:** Required (`SCOPE_ROLE_LEARNER`)
+
+**Response:** `200 OK`
+```json
+[
+  {
+    "id": "uuid",
+    "learnerId": "uuid",
+    "lessonId": "uuid",
+    "status": "IN_PROGRESS",
+    "progressPercent": 60,
+    "score": 80,
+    "attempts": 2,
+    "correctAnswers": 3,
+    "earnedExp": 3,
+    "startedAt": "2024-01-01T10:00:00",
+    "completedAt": null,
+    "lastActivityAt": "2024-01-01T11:00:00"
+  }
+]
+```
+
+### 4.3 Get Enrollment Detail
+**Endpoint:** `GET /api/enrollments/{enrollmentId}`
+
+**Auth:** Required (`SCOPE_ROLE_LEARNER`)
+
+**Response:** `200 OK` (EnrollmentRes)
+
+**Error:** `403 Forbidden` if not the owner
+
+### 4.4 Update Progress ⚡ UPDATED
+Update enrollment progress and earn EXP.
+
+**Endpoint:** `PUT /api/enrollments/{enrollmentId}/progress`
+
+**Auth:** Required (`SCOPE_ROLE_LEARNER`)
+
+**Request Body:**
+```json
+{
+  "status": "IN_PROGRESS | COMPLETED",
+  "progressPercent": 100,
+  "score": 100,
+  "addAttempt": 1,
+  "correctAnswers": 5
+}
+```
+
+**Field Descriptions:**
+- `status`: Current status (auto-set to COMPLETED if all questions correct)
+- `progressPercent`: Progress percentage (optional, auto-calculated)
+- `score`: Quiz score (optional)
+- `addAttempt`: Number of attempts to add (usually 1)
+- `correctAnswers`: ⚡ **REQUIRED** - Number of correct answers in this attempt
+
+**Response:** `200 OK` (GamificationRes)
+```json
+{
+  "userId": "uuid",
+  "sourceType": "QUIZ",
+  "lessonId": "uuid",
+  "enrollId": "uuid",
+  "totalQuiz": 5,
+  "correctAnswer": 5
+}
+```
+
+**⚡ New EXP Logic:**
+
+**Example - Lesson with 5 questions:**
+
+| Attempt | Correct | Previous Best | EXP Gained | New Best | Status |
+|---------|---------|---------------|------------|----------|--------|
+| 1 | 3/5 | 0 | **+3** | 3 | IN_PROGRESS |
+| 2 | 2/5 | 3 | **+0** | 3 | IN_PROGRESS (no improvement) |
+| 3 | 4/5 | 3 | **+1** | 4 | IN_PROGRESS (improved by 1) |
+| 4 | 5/5 | 4 | **+1** | 5 | ✅ COMPLETED |
+| 5 | 5/5 | 5 | **+0** | 5 | COMPLETED (already maxed) |
+
+**Rules:**
+- ✅ Only gain EXP when improving best score
+- ✅ Can retry unlimited times
+- ✅ COMPLETED only when correctAnswers = totalQuestions
+- ✅ Best score is preserved
+
+### 4.5 Get My Enrollment (by Slug) 
+**Endpoint:** `GET /api/enrollments/lessons/{slug}/my-enrollment`
+
+**Auth:** Required (`SCOPE_ROLE_LEARNER`)
+
+**Path Parameters:**
+- `slug`: Lesson slug (e.g., `introduction-to-budgeting`)
+
+**Response:** `200 OK` (EnrollmentRes)
+
+**Error:** `404 Not Found` if not enrolled
+
+### 4.6 Update Progress (by Slug)
+**Endpoint:** `PUT /api/enrollments/lessons/{slug}/my-enrollment/progress`
+
+**Auth:** Required (`SCOPE_ROLE_LEARNER`)
+
+**Request Body:** (Same as 4.4)
+
+**Response:** `200 OK` (GamificationRes)
+
+---
+
+## 5. Gamification API ⚡ NEW
+
+### 5.1 Get Gamification Response
+Get gamification data for an enrollment.
+
+**Endpoint:** `GET /api/learning/gamify-response`
+
+**Auth:** Required
+
+**Query Parameters:**
+- `enrollmentId`: UUID of the enrollment
+
+**Request:**
+```
+GET /api/learning/gamify-response?enrollmentId=uuid-here
+```
+
+**Response:** `200 OK`
+```json
+{
+  "userId": "uuid",
+  "sourceType": "QUIZ",
+  "lessonId": "uuid",
+  "enrollId": "uuid",
+  "totalQuiz": 10,
+  "correctAnswer": 8
+}
 ```
 
 ---
 
-## 5. Moderator APIs
+## 6. Moderator APIs
 
-### 5.1 List All Moderators
+### 6.1 List All Moderators
 **Endpoint:** `GET /api/moderators`
 
 **Auth:** Required (`SCOPE_ROLE_MOD`)
@@ -308,7 +470,7 @@ PUT /api/enrollments/lessons/introduction-to-budgeting/my-enrollment/progress
 ]
 ```
 
-### 5.2 List Lessons for Moderation
+### 6.2 List Lessons for Moderation
 **Endpoint:** `GET /api/moderators/lessons`
 
 **Auth:** Required (`SCOPE_ROLE_MOD`)
@@ -318,16 +480,14 @@ PUT /api/enrollments/lessons/introduction-to-budgeting/my-enrollment/progress
 
 **Response:** `200 OK` (Array of LessonRes)
 
-**Note:** Moderators cannot view `DRAFT` lessons. Attempting to filter by `DRAFT` returns `403 Forbidden`.
-
-### 5.3 View Lesson Detail
+### 6.3 View Lesson Detail
 **Endpoint:** `GET /api/moderators/lessons/{lessonId}`
 
 **Auth:** Required (`SCOPE_ROLE_MOD`)
 
-**Response:** `200 OK` (LessonRes) or `403 Forbidden` if lesson is `DRAFT`
+**Response:** `200 OK` (LessonRes)
 
-### 5.4 Moderate Lesson (Approve/Reject)
+### 6.4 Moderate Lesson
 **Endpoint:** `POST /api/moderators/lessons/{lessonId}/decision`
 
 **Auth:** Required (`SCOPE_ROLE_MOD`)
@@ -335,8 +495,8 @@ PUT /api/enrollments/lessons/introduction-to-budgeting/my-enrollment/progress
 **Request Body:**
 ```json
 {
-  "status": "APPROVED | REJECTED (required)",
-  "commentByMod": "string (max 2000 chars, feedback for creator)"
+  "status": "APPROVED | REJECTED",
+  "commentByMod": "Feedback for creator (max 2000 chars)"
 }
 ```
 
@@ -344,39 +504,116 @@ PUT /api/enrollments/lessons/introduction-to-budgeting/my-enrollment/progress
 
 ---
 
+## 📊 EXP System Guide
+
+### How EXP Works
+
+**1. EXP is percentage-based (0-100%)**
+- Each level has a threshold based on lesson difficulty
+- Reaching 100% → Level up → Reset to 0%
+
+**2. Calculation Formula:**
+```
+Threshold = 80% × Total questions in current difficulty
+EXP% = (Total correct answers / Threshold) × 100%
+```
+
+**3. Example - BASIC difficulty:**
+```
+Total BASIC lessons: 4 lessons × 5 questions = 20 questions
+Threshold: 20 × 80% = 16 questions
+Current progress: 12 correct answers
+EXP%: (12 / 16) × 100% = 75%
+```
+
+**4. Level Up:**
+```
+When EXP% = 100%:
+- BEGINNER → INTERMEDIATE
+- INTERMEDIATE → ADVANCED
+- ADVANCED → Stay at ADVANCED
+Reset totalExp and expPercent to 0
+```
+
+### Frontend Implementation
+
+**Display Progress Bar:**
+```jsx
+// Use expPercent for progress bar
+<ProgressBar 
+  value={learner.expPercent} 
+  max={100}
+  label={`${learner.expPercent}% to ${nextLevel}`}
+/>
+```
+
+**Handle Level Requirements:**
+```jsx
+// Disable enroll button if level insufficient
+const canEnroll = (learnerLevel, lessonDifficulty) => {
+  if (learnerLevel === 'BEGINNER') return lessonDifficulty === 'BASIC';
+  if (learnerLevel === 'INTERMEDIATE') return ['BASIC', 'INTERMEDIATE'].includes(lessonDifficulty);
+  return true; // ADVANCED can enroll in all
+};
+
+<Button 
+  disabled={!canEnroll(learner.level, lesson.difficulty)}
+  onClick={handleEnroll}
+>
+  {canEnroll(learner.level, lesson.difficulty) 
+    ? 'Enroll' 
+    : `Requires ${lesson.difficulty} level`}
+</Button>
+```
+
+**Show Best Score:**
+```jsx
+// Display improvement opportunity
+const enrollment = await getMyEnrollment(lessonSlug);
+const bestScore = enrollment.correctAnswers;
+const totalQuestions = lesson.totalQuestions;
+
+<div>
+  Best Score: {bestScore}/{totalQuestions}
+  {bestScore < totalQuestions && (
+    <p>Retry to improve and earn more EXP!</p>
+  )}
+</div>
+```
+
+---
+
 ## Error Responses
 
 ### 400 Bad Request
-Invalid input data (validation errors).
+Invalid input data or validation errors.
+```json
+{
+  "code": 9999,
+  "message": "Learner level BEGINNER is not sufficient..."
+}
+```
 
 ### 401 Unauthorized
 Missing or invalid JWT token.
 
 ### 403 Forbidden
-User does not have permission to access the resource.
+User does not have permission.
 
 ### 404 Not Found
-Resource (lesson, enrollment, etc.) not found.
+Resource not found.
 
 ### 500 Internal Server Error
 Server error.
-
-**Error Response Format:**
-```json
-{
-  "code": 9999,
-  "message": "Error description"
-}
-```
 
 ---
 
 ## Enums Reference
 
 ### LearnerLevel
-- `BEGINNER`
-- `INTERMEDIATE`
-- `ADVANCED`
+- `BEGINNER` - Can access BASIC lessons
+- `INTERMEDIATE` - Can access BASIC + INTERMEDIATE lessons  
+- `ADVANCED` - Can access all lessons
 
 ### LessonDifficulty
 - `BASIC`
@@ -397,115 +634,93 @@ Server error.
 - `TAX`
 
 ### EnrollmentStatus
-- `IN_PROGRESS` - Learner is currently taking the lesson
-- `COMPLETED` - Lesson completed
-- `DROPPED` - Learner stopped taking the lesson
+- `IN_PROGRESS` - Currently learning
+- `COMPLETED` - Finished with 100% correct answers
 
 ---
 
-## Notes for Frontend Integration
+## Frontend Integration Checklist
 
-1. **Authentication Flow:**
-   - Login via Auth Service: `POST /identity/auth/token`
-   - Store JWT token
-   - Include token in all subsequent requests
+### ✅ Required Updates for v2.0:
 
-2. **User Roles:**
-   - `SCOPE_ROLE_LEARNER` - Can enroll in lessons and track progress
-   - `SCOPE_ROLE_CREATOR` - Can create and manage lessons
-   - `SCOPE_ROLE_MODERATOR` - Can approve/reject lessons
+**1. Learner Profile Display:**
+```jsx
+// OLD
+<div>EXP: {learner.totalExp} points</div>
 
-3. **Lesson Workflow:**
-   - Creator: Create → Submit → (Wait for approval)
-   - Moderator: Review → Approve/Reject
-   - Learner: Enroll → Learn → Complete
-
-4. **Learning Progress:**
-   - Learners earn points by completing lessons
-   - Points are calculated based on quiz score
-   - Progress is tracked per enrollment
-
-5. **Quiz Structure:**
-   The `quizJson` field should follow this structure:
-   ```json
-   {
-     "questions": [
-       {
-         "id": 1,
-         "question": "Question text?",
-         "options": ["Option A", "Option B", "Option C", "Option D"],
-         "correctAnswer": 0
-       }
-     ]
-   }
-   ```
-
-6. **SEO-Friendly URLs with Context-Aware Endpoints:** ✨ NEW
-   
-   **Problem:** UUID-based URLs are ugly and not SEO-friendly:
-   ```
-   ❌ /learning/lesson/550e8400-e29b-41d4-a716-446655440000
-   ❌ /learning/quiz/550e8400-e29b-41d4-a716-446655440000
-   ❌ /enrollment/e7f4b8a2-3c1d-4f9e-b6a5-1234567890ab/progress
-   ```
-
-   **Solution:** Use lesson slugs + context-aware endpoints:
-   ```
-   ✅ /learning/lesson/introduction-to-budgeting
-   ✅ /learning/quiz/introduction-to-budgeting
-   ✅ Update progress via: PUT /api/enrollments/lessons/introduction-to-budgeting/my-enrollment/progress
-   ```
-
-   **How it works:**
-   - **Lesson Slug:** Automatically generated from lesson title when created
-   - **Context-Aware:** Backend uses JWT token (user ID) + slug (lesson) to find the correct resource
-   - **No ID in URL:** Enrollment ID is never exposed in URLs
-
-   **Frontend Implementation Example:**
-   ```javascript
-   // In QuizPage or LessonDetailPage component
-   const { slug } = useParams(); // Get slug from URL
-   
-   // Fetch lesson by slug
-   const lesson = await api.getLessonBySlug(slug);
-   
-   // Get my enrollment for this lesson (no need to know enrollment ID)
-   const enrollment = await api.getMyEnrollmentForLesson(slug);
-   
-   // Submit quiz results
-   await api.updateMyEnrollmentProgress(slug, {
-     status: "COMPLETED",
-     progressPercent: 100,
-     score: 80,
-     addAttempt: 1
-   });
-   ```
-
-   **Benefits:**
-   - Clean, readable URLs
-   - Better SEO
-   - Easier to share
-   - Less chance of accidentally exposing sensitive IDs
-   - Simpler frontend code
-
-
----
-
-## 6. AI Integration APIs
-
-### 6.1 Get Lessons for AI
-**Endpoint:** `GET /api/learning/ai-response`
-
-**Auth:** Required (Any role)
-
-**Response:** `200 OK`
-```json
-[
-  {
-    "lessonId": "uuid",
-    "title": "Lesson Title",
-    "description": "Lesson Description",
-    "slug": "lesson-slug"
-  }
-]
+// NEW
+<div>
+  <ProgressBar value={learner.expPercent} max={100} />
+  <span>Level {learner.level} - {learner.expPercent}% to next level</span>
+</div>
 ```
+
+**2. Enroll Validation:**
+```jsx
+// Check before allowing enrollment
+if (!canEnroll(learner.level, lesson.difficulty)) {
+  showError(`Requires ${getRequiredLevel(lesson.difficulty)} level`);
+  return;
+}
+```
+
+**3. Progress Update:**
+```jsx
+// Include correctAnswers in update
+await updateProgress(slug, {
+  status: "COMPLETED",
+  progressPercent: 100,
+  score: score,
+  addAttempt: 1,
+  correctAnswers: correctCount // ⚡ REQUIRED
+});
+```
+
+**4. Handle Level Up:**
+```jsx
+// Check if learner leveled up after update
+const newProfile = await getMyProfile();
+if (newProfile.level !== previousLevel) {
+  showLevelUpAnimation(newProfile.level);
+}
+```
+
+---
+
+## Testing Guide
+
+**Test Scenario 1: Level-based Access**
+```
+1. Login as BEGINNER learner
+2. Try to enroll in INTERMEDIATE lesson
+3. Expect: 400 error with message
+4. Try to enroll in BASIC lesson
+5. Expect: Success
+```
+
+**Test Scenario 2: EXP Improvement**
+```
+1. Enroll in 5-question lesson
+2. Answer 3/5 correct → Check EXP increased
+3. Answer 2/5 correct → Check EXP unchanged
+4. Answer 5/5 correct → Check EXP increased & COMPLETED
+5. Answer 5/5 again → Check EXP unchanged
+```
+
+**Test Scenario 3: Level Up**
+```
+1. Complete lessons until expPercent = 100%
+2. Complete one more question
+3. Check level increased
+4. Check expPercent reset to 0%
+5. Check can now access higher difficulty
+```
+
+---
+
+## Support
+
+For issues or questions:
+1. Check `EXP_SYSTEM_DOCUMENTATION.md` for detailed explanations
+2. Review `CHANGELOG.md` for recent changes
+3. Use Postman collection for API testing

@@ -87,20 +87,19 @@ public class Lesson {
     @OnDelete(action = OnDeleteAction.CASCADE)
     private Set<Tag> tags = new HashSet<>();
 
-    // Quiz payload (JSON-as-text); keep flexible for now
+    // Quiz payload (JSON-as-text)
     @Lob
     @Basic(fetch = FetchType.LAZY)
     @Column(name = "quiz_json", columnDefinition = "LONGTEXT")
     private String quizJson;
 
+    @Column(name = "total_questions")
+    private Integer totalQuestions = 0;
+
     @Lob
     @Basic(fetch = FetchType.LAZY)
     @Column(name = "comment_by_mod", columnDefinition = "LONGTEXT")
     private String commentByMod;
-
-    // Versioning & auditing
-    // @Version
-    // private Long version;
 
     @Column(name = "approved_at")
     private LocalDateTime approvedAt;

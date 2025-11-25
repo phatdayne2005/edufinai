@@ -22,8 +22,6 @@ public class EnrollmentService {
                 .orElseThrow(() -> new IllegalArgumentException("Enrollment not found: " + id));
     }
 
-    // ... (keep existing methods)
-
     public List<Enrollment> listByLearner(UUID learnerId) {
         return enrollmentRepo.findByLearner_Id(learnerId);
     }
@@ -48,84 +46,92 @@ public class EnrollmentService {
         Enrollment enrollment = enrollmentRepo.findById(enrollmentId)
                 .orElseThrow(() -> new IllegalArgumentException("Enrollment not found: " + enrollmentId));
 
-        // 1. Calculate Total Questions from Lesson Quiz JSON
-        int totalQuestions = 0;
-        try {
-            String quizJsonStr = enrollment.getLesson().getQuizJson();
-            if (quizJsonStr != null && !quizJsonStr.isBlank()) {
-                com.fasterxml.jackson.databind.JsonNode quiz = objectMapper.readTree(quizJsonStr);
-                if (quiz != null && quiz.has("questions")) {
-                    totalQuestions = quiz.get("questions").size();
+        // 1. Get total questions from lesson
+        int totalQuestions = enrollment.getLesson().getTotalQuestions() != null
+                ? enrollment.getLesson().getTotalQuestions()
+                : 0;
+
+        // Fallback if totalQuestions is 0 (for old lessons)
+        if (totalQuestions == 0) {
+            try {
+                String quizJsonStr = enrollment.getLesson().getQuizJson();
+                if (quizJsonStr != null && !quizJsonStr.isBlank()) {
+                    com.fasterxml.jackson.databind.JsonNode quiz = objectMapper.readTree(quizJsonStr);
+                    if (quiz != null) {
+                        if (quiz.has("questions")) {
+                            totalQuestions = quiz.get("questions").size();
+                        } else if (quiz.isTextual()) {
+                            com.fasterxml.jackson.databind.JsonNode parsed = objectMapper.readTree(quiz.asText());
+                            if (parsed.has("questions")) {
+                                totalQuestions = parsed.get("questions").size();
+                            }
+                        }
+                    }
                 }
+            } catch (Exception e) {
+                // ignore
             }
-        } catch (Exception e) {
-            // log error or ignore
         }
-        enrollment.setTotalQuizQuestions(totalQuestions);
 
-        // 2. Get Correct Answers Count
-        int correctAnswers = req.getCorrectAnswersCount() != null ? req.getCorrectAnswersCount() : 0;
-        enrollment.setCorrectAnswersCount(correctAnswers);
+        // 2. Get current attempt's correct answers
+        int currentCorrectAnswers = req.getCorrectAnswers() != null ? req.getCorrectAnswers() : 0;
 
-        // 3. Determine Status & Progress
-        // Only COMPLETED if correct all questions (and total > 0)
-        if (totalQuestions > 0 && correctAnswers >= totalQuestions) {
+        // 3. Get best score so far (highest correct answers achieved)
+        int previousBestScore = enrollment.getCorrectAnswers() != null ? enrollment.getCorrectAnswers() : 0;
+
+        // 4. Calculate EXP gain - only if improved
+        int correctAnswersGained = 0;
+        if (currentCorrectAnswers > previousBestScore) {
+            correctAnswersGained = currentCorrectAnswers - previousBestScore;
+            // Update best score
+            enrollment.setCorrectAnswers(currentCorrectAnswers);
+
+            // Add EXP to learner (only the improvement delta)
+            if (correctAnswersGained > 0) {
+                learnerService.addCorrectAnswers(enrollment.getLearner().getId(), correctAnswersGained);
+            }
+        }
+        // If currentCorrectAnswers <= previousBestScore, no EXP gained, best score
+        // stays same
+
+        // 5. Update status and progress
+        if (totalQuestions > 0 && currentCorrectAnswers >= totalQuestions) {
+            // Only set COMPLETED if got ALL questions correct
             enrollment.setStatus(Enrollment.Status.COMPLETED);
             enrollment.setCompletedAt(java.time.LocalDateTime.now());
             enrollment.setProgressPercent(100);
         } else {
-            // If not completed, ensure status is IN_PROGRESS (unless previously completed?
-            // User requirement: "Only change to COMPLETED if correct all".
-            // Implies if not correct all, it's not COMPLETED.
-            // But if user retries a completed lesson and gets fewer points, should we
-            // revert status?
-            // Usually no. Once completed, always completed.
+            // Not completed yet - stay IN_PROGRESS (or keep COMPLETED if already was)
             if (enrollment.getStatus() != Enrollment.Status.COMPLETED) {
                 enrollment.setStatus(Enrollment.Status.IN_PROGRESS);
                 if (totalQuestions > 0) {
-                    enrollment.setProgressPercent((correctAnswers * 100) / totalQuestions);
+                    // Progress based on BEST score, not current attempt
+                    int bestScore = enrollment.getCorrectAnswers();
+                    enrollment.setProgressPercent((bestScore * 100) / totalQuestions);
                 }
             }
         }
 
-        // Update other fields
+        // 6. Update other fields
         enrollment.setAttempts(enrollment.getAttempts() + req.getAddAttempt());
         enrollment.setLastActivityAt(java.time.LocalDateTime.now());
         if (req.getScore() != null)
             enrollment.setScore(req.getScore());
 
-        // 4. Calculate Exp
-        // Rule: 1 correct = 10 exp. Max exp = totalQuestions * 10.
-        // Accumulate exp up to max.
-        long maxExp = totalQuestions * 10L;
-        long currentAttemptExp = correctAnswers * 10L;
-
-        long previousEarned = enrollment.getEarnedExp() != null ? enrollment.getEarnedExp() : 0L;
-        long expToAdd = 0;
-
-        if (currentAttemptExp > previousEarned) {
-            expToAdd = currentAttemptExp - previousEarned;
-            // Cap at maxExp
-            if (previousEarned + expToAdd > maxExp) {
-                expToAdd = maxExp - previousEarned;
-            }
-
-            if (expToAdd > 0) {
-                enrollment.setEarnedExp(previousEarned + expToAdd);
-                learnerService.addExp(enrollment.getLearner().getId(), expToAdd);
-            }
-        }
+        // 7. Calculate earned EXP for this enrollment (cumulative best)
+        // Earned EXP = best correct answers achieved
+        enrollment.setEarnedExp((long) enrollment.getCorrectAnswers());
 
         enrollmentRepo.save(enrollment);
 
-        // 5. Return Gamification Data
+        // 8. Return gamification data
         return vn.uth.learningservice.dto.response.GamificationRes.builder()
                 .userId(enrollment.getLearner().getId())
                 .sourceType("QUIZ")
                 .lessonId(enrollment.getLesson().getId())
                 .enrollId(enrollment.getId())
                 .totalQuiz(totalQuestions)
-                .correctAnswer(correctAnswers)
+                .correctAnswer(currentCorrectAnswers)
                 .build();
     }
 

@@ -19,8 +19,7 @@ public class EnrollmentRes {
     private int progressPercent;
     private Integer score;
     private int attempts;
-    private Integer totalQuizQuestions;
-    private Integer correctAnswersCount;
+    private Integer correctAnswers;
     private Long earnedExp;
 
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")

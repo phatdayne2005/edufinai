@@ -45,6 +45,7 @@ public class CreatorController {
         return ResponseEntity.ok(dto);
     }
 
+<<<<<<< Updated upstream
     // GET /api/creators/me/lessons - Lấy danh sách bài học của chính creator đang đăng nhập
     @GetMapping("/me/lessons")
     public ResponseEntity<List<LessonRes>> getMyLessons(
@@ -58,6 +59,23 @@ public class CreatorController {
                 .map(lesson -> lessonMapper.toRes(lesson, objectMapper))
                 .collect(Collectors.toList());
         return ResponseEntity.ok(lessonResList);
+=======
+    // GET /api/creators/me/lessons - Lấy danh sách bài học của creator đang đăng
+    // nhập
+    @GetMapping("/me/lessons")
+    @org.springframework.security.access.prepost.PreAuthorize("hasAuthority('SCOPE_ROLE_CREATOR')")
+    public ResponseEntity<List<LessonRes>> getMyLessons() {
+        var userInfo = userService.getMyInfo();
+        UUID creatorId = userInfo.getId();
+
+        // Ensure creator exists
+        creatorService.getOrCreate(creatorId);
+
+        List<Lesson> lessons = lessonService.listByCreator(creatorId);
+        return ResponseEntity.ok(lessons.stream()
+                .map(lesson -> lessonMapper.toRes(lesson, objectMapper))
+                .collect(Collectors.toList()));
+>>>>>>> Stashed changes
     }
 
     // GET /api/creators/{id} - Lấy thông tin chi tiết của một creator theo ID

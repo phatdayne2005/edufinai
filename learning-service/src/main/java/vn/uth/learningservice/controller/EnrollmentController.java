@@ -37,6 +37,15 @@ public class EnrollmentController {
                 Learner learner = learnerService.getOrCreate(learnerId);
                 Lesson lesson = lessonService.getById(req.getLessonId());
 
+                // Validate learner level vs lesson difficulty
+                if (!canEnrollInLesson(learner.getLevel(), lesson.getDifficulty())) {
+                        throw new IllegalArgumentException(
+                                        String.format("Learner level %s is not sufficient to enroll in lesson with difficulty %s. Required level: %s",
+                                                        learner.getLevel(),
+                                                        lesson.getDifficulty(),
+                                                        getRequiredLevelForDifficulty(lesson.getDifficulty())));
+                }
+
                 Enrollment newEnroll = new Enrollment();
                 newEnroll.setLearner(learner);
                 newEnroll.setLesson(lesson);
@@ -46,6 +55,33 @@ public class EnrollmentController {
 
                 Enrollment saved = enrollmentService.enrollIfAbsent(newEnroll);
                 return ResponseEntity.ok(enrollmentMapper.toRes(saved));
+        }
+
+        /**
+         * Check if a learner with given level can enroll in a lesson with given
+         * difficulty
+         * BEGINNER -> BASIC only
+         * INTERMEDIATE -> BASIC, INTERMEDIATE
+         * ADVANCED -> all difficulties
+         */
+        private boolean canEnrollInLesson(Learner.Level learnerLevel, Lesson.Difficulty lessonDifficulty) {
+                return switch (learnerLevel) {
+                        case BEGINNER -> lessonDifficulty == Lesson.Difficulty.BASIC;
+                        case INTERMEDIATE -> lessonDifficulty == Lesson.Difficulty.BASIC
+                                        || lessonDifficulty == Lesson.Difficulty.INTERMEDIATE;
+                        case ADVANCED -> true; // Can enroll in any difficulty
+                };
+        }
+
+        /**
+         * Get the minimum required learner level for a lesson difficulty
+         */
+        private Learner.Level getRequiredLevelForDifficulty(Lesson.Difficulty difficulty) {
+                return switch (difficulty) {
+                        case BASIC -> Learner.Level.BEGINNER;
+                        case INTERMEDIATE -> Learner.Level.INTERMEDIATE;
+                        case ADVANCED -> Learner.Level.ADVANCED;
+                };
         }
 
         @GetMapping

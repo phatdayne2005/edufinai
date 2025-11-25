@@ -13,4 +13,5 @@ public class LearnerRes {
     private UUID id;
     private LearnerLevel level;
     private Long totalExp;
+    private Integer expPercent; // 0-100%
 }

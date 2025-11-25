@@ -48,11 +48,8 @@ public class Enrollment {
     @Column(name = "earned_exp")
     private Long earnedExp = 0L;
 
-    @Column(name = "correct_answers_count")
-    private Integer correctAnswersCount = 0;
-
-    @Column(name = "total_quiz_questions")
-    private Integer totalQuizQuestions = 0;
+    @Column(name = "correct_answers")
+    private Integer correctAnswers = 0;
 
     @Column(name = "started_at")
     private LocalDateTime startedAt;

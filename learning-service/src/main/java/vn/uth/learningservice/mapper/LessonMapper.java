@@ -25,6 +25,8 @@ public interface LessonMapper {
     @Mapping(target = "updatedAt", ignore = true)
     @Mapping(target = "publishedAt", ignore = true)
     @Mapping(target = "approvedAt", ignore = true)
+    @Mapping(target = "totalQuestions", ignore = true)
+    @Mapping(target = "commentByMod", ignore = true)
     @Mapping(target = "quizJson", source = "quizJson", qualifiedByName = "jsonNodeToString")
     Lesson toEntity(LessonCreateReq req, @Context ObjectMapper objectMapper);
 
@@ -38,6 +40,7 @@ public interface LessonMapper {
     @Mapping(target = "publishedAt", ignore = true)
     @Mapping(target = "approvedAt", ignore = true)
     @Mapping(target = "status", ignore = true)
+    @Mapping(target = "totalQuestions", ignore = true)
     @Mapping(target = "quizJson", source = "quizJson", qualifiedByName = "jsonNodeToString")
     void patch(@MappingTarget Lesson entity, LessonUpdateReq req, @Context ObjectMapper objectMapper);
 
@@ -61,6 +64,10 @@ public interface LessonMapper {
     default String jsonNodeToString(JsonNode jsonNode, @Context ObjectMapper objectMapper) {
         if (jsonNode == null) {
             return null;
+        }
+        // Nếu là TextNode (client gửi chuỗi JSON), trả về nội dung chuỗi
+        if (jsonNode.isTextual()) {
+            return jsonNode.asText();
         }
         try {
             return objectMapper.writeValueAsString(jsonNode);

@@ -23,5 +23,5 @@ public class EnrollmentProgressReq {
     private int addAttempt;
 
     @Min(0)
-    private Integer correctAnswersCount;
+    private Integer correctAnswers;
 }

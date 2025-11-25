@@ -15,9 +15,25 @@ import java.util.*;
 public class LessonService {
 
     private final LessonRepository lessonRepo;
+    private final com.fasterxml.jackson.databind.ObjectMapper objectMapper;
 
     public Lesson getById(UUID id) {
         return lessonRepo.findById(id).orElseThrow(() -> new IllegalArgumentException("Lesson not found: " + id));
+    }
+
+    private int calculateTotalQuestions(String quizJson) {
+        if (quizJson == null || quizJson.isBlank()) {
+            return 0;
+        }
+        try {
+            com.fasterxml.jackson.databind.JsonNode root = objectMapper.readTree(quizJson);
+            if (root.has("questions")) {
+                return root.get("questions").size();
+            }
+        } catch (Exception e) {
+            // ignore or log
+        }
+        return 0;
     }
 
     public Optional<Lesson> findBySlug(String slug) {
@@ -61,6 +77,7 @@ public class LessonService {
         if (lesson.getSlug() != null && lessonRepo.existsBySlug(lesson.getSlug())) {
             throw new IllegalArgumentException("Slug already exists: " + lesson.getSlug());
         }
+        lesson.setTotalQuestions(calculateTotalQuestions(lesson.getQuizJson()));
         return lessonRepo.save(lesson);
     }
 
@@ -71,6 +88,7 @@ public class LessonService {
             // Giữ nguyên status nếu đang là DRAFT, còn nếu đang PENDING/APPROVED/REJECTED
             // thì về DRAFT
         }
+        lesson.setTotalQuestions(calculateTotalQuestions(lesson.getQuizJson()));
         return lessonRepo.save(lesson);
     }
 

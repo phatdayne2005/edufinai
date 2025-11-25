@@ -665,7 +665,7 @@
                         ],
                         "body": {
                             "mode": "raw",
-                            "raw": "{\n  \"status\": \"COMPLETED\",\n  \"progressPercent\": 100,\n  \"score\": 80,\n  \"addAttempt\": 1\n}"
+                            "raw": "{\n  \"status\": \"COMPLETED\",\n  \"progressPercent\": 100,\n  \"score\": 80,\n  \"addAttempt\": 1,\n  \"correctAnswers\": 5\n}"
                         },
                         "url": {
                             "raw": "{{base_url}}/enrollments/:enrollmentId/progress",
@@ -737,7 +737,7 @@
                         ],
                         "body": {
                             "mode": "raw",
-                            "raw": "{\n  \"status\": \"COMPLETED\",\n  \"progressPercent\": 100,\n  \"score\": 80,\n  \"addAttempt\": 1\n}"
+                            "raw": "{\n  \"status\": \"COMPLETED\",\n  \"progressPercent\": 100,\n  \"score\": 80,\n  \"addAttempt\": 1,\n  \"correctAnswers\": 5\n}"
                         },
                         "url": {
                             "raw": "{{base_url}}/enrollments/lessons/:slug/my-enrollment/progress",
@@ -790,6 +790,42 @@
                             "path": [
                                 "learning",
                                 "ai-response"
+                            ]
+                        }
+                    },
+                    "response": []
+                }
+            ]
+        },
+        {
+            "name": "Gamification",
+            "item": [
+                {
+                    "name": "Get Gamification Response",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{token}}",
+                                "type": "text"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{base_url}}/learning/gamify-response?enrollmentId=uuid-here",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "learning",
+                                "gamify-response"
+                            ],
+                            "query": [
+                                {
+                                    "key": "enrollmentId",
+                                    "value": "uuid-here",
+                                    "description": "UUID of the enrollment"
+                                }
                             ]
                         }
                     },

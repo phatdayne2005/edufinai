@@ -27,6 +27,7 @@ public class LessonRes {
     private String videoUrl;
     private String commentByMod;
     private JsonNode quizJson;
+    private Integer totalQuestions;
     private UUID creatorId;
     private UUID moderatorId;
 
