@@ -85,6 +85,36 @@ class RewardServiceTest {
         verify(zSetOperations, times(1)).incrementScore("leaderboard:alltime", userId.toString(), 75.0);
         verifyNoInteractions(lessonScoreService, challengeEventPublisher);
     }
+
+    @Test
+    void shouldComputeQuizPointsFromCorrectAnswers() {
+        UUID userId = UUID.randomUUID();
+        UUID lessonId = UUID.randomUUID();
+        RewardRequest request = new RewardRequest();
+        request.setUserId(userId);
+        request.setSourceType(RewardSourceType.QUIZ);
+        request.setLessonId(lessonId);
+        request.setEnrollId("enroll-123");
+        request.setTotalQuestions(5);
+        request.setCorrectAnswers(4);
+
+        when(lessonScoreService.processAttempt(eq(userId), eq(lessonId), eq("enroll-123"), eq(40)))
+                .thenReturn(new LessonScoreService.LessonAttemptResult(false, 15, 40, 25));
+
+        RewardResponse response = rewardService.addReward(request);
+
+        assertThat(response.getStatus()).isEqualTo("SUCCESS");
+
+        verify(lessonScoreService, times(1))
+                .processAttempt(eq(userId), eq(lessonId), eq("enroll-123"), eq(40));
+        verify(challengeEventPublisher, times(1))
+                .publishLessonCompleted(userId, lessonId, "enroll-123", 40, 80, 5, 4);
+        verify(userRewardSummaryService, times(1)).addSumaryReward(userId, 15);
+        verify(zSetOperations, times(1)).incrementScore("leaderboard:daily:test", userId.toString(), 15.0);
+        verify(zSetOperations, times(1)).incrementScore("leaderboard:weekly:test", userId.toString(), 15.0);
+        verify(zSetOperations, times(1)).incrementScore("leaderboard:monthly:test", userId.toString(), 15.0);
+        verify(zSetOperations, times(1)).incrementScore("leaderboard:alltime", userId.toString(), 15.0);
+    }
 }
 
 

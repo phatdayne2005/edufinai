@@ -15,7 +15,13 @@ public class ChallengeEventPublisher {
         this.challengeProgressService = challengeProgressService;
     }
 
-    public void publishLessonCompleted(UUID userId, UUID lessonId, String enrollId, int rawScore) {
+    public void publishLessonCompleted(UUID userId,
+                                       UUID lessonId,
+                                       String enrollId,
+                                       int rawScore,
+                                       int accuracyPercent,
+                                       int totalQuestions,
+                                       int correctAnswers) {
         ChallengeEventRequest request = new ChallengeEventRequest();
         request.setUserId(userId);
         request.setEventType("QUIZ");
@@ -23,6 +29,9 @@ public class ChallengeEventPublisher {
         request.setLessonId(lessonId);
         request.setEnrollId(enrollId);
         request.setScore(rawScore);
+        request.setAccuracyPercent(accuracyPercent);
+        request.setTotalQuestions(totalQuestions);
+        request.setCorrectAnswers(correctAnswers);
         request.setAmount(1);
         request.setOccurredAt(ZonedDateTime.now());
         challengeProgressService.processEvent(request);

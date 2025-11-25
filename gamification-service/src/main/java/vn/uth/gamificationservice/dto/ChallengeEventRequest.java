@@ -22,6 +22,12 @@ public class ChallengeEventRequest {
 
     private Integer score;
 
+    private Integer accuracyPercent;
+
+    private Integer totalQuestions;
+
+    private Integer correctAnswers;
+
     private Integer amount; // default 1
 
     private ZonedDateTime occurredAt;
@@ -88,6 +94,30 @@ public class ChallengeEventRequest {
 
     public void setOccurredAt(ZonedDateTime occurredAt) {
         this.occurredAt = occurredAt;
+    }
+
+    public Integer getAccuracyPercent() {
+        return accuracyPercent;
+    }
+
+    public void setAccuracyPercent(Integer accuracyPercent) {
+        this.accuracyPercent = accuracyPercent;
+    }
+
+    public Integer getTotalQuestions() {
+        return totalQuestions;
+    }
+
+    public void setTotalQuestions(Integer totalQuestions) {
+        this.totalQuestions = totalQuestions;
+    }
+
+    public Integer getCorrectAnswers() {
+        return correctAnswers;
+    }
+
+    public void setCorrectAnswers(Integer correctAnswers) {
+        this.correctAnswers = correctAnswers;
     }
 }
 

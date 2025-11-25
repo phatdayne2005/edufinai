@@ -5,9 +5,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import vn.uth.gamificationservice.dto.ChallengeEventRequest;
-import vn.uth.gamificationservice.dto.ChallengeRule;
-import vn.uth.gamificationservice.dto.RewardRequest;
+import vn.uth.gamificationservice.dto.*;
 import vn.uth.gamificationservice.model.Challenge;
 import vn.uth.gamificationservice.model.RewardSourceType;
 import vn.uth.gamificationservice.model.UserChallengeProgress;
@@ -18,6 +16,7 @@ import java.time.LocalDate;
 import java.time.ZonedDateTime;
 import java.util.List;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 @Service
 public class ChallengeProgressService {
@@ -153,6 +152,35 @@ public class ChallengeProgressService {
 
     public UserChallengeProgress getProgress(UUID userId, UUID challengeId) {
         return progressRepository.findByUserIdAndChallenge_Id(userId, challengeId).orElse(null);
+    }
+
+    public ChallengeSummaryResponse getSummary(UUID userId) {
+        List<UserChallengeProgress> progresses = progressRepository.findByUserId(userId);
+        List<ChallengeSummaryItem> items = progresses.stream()
+                .map(this::toSummaryItem)
+                .collect(Collectors.toList());
+        long totalChallenges = challengeRepository.count();
+        return ChallengeSummaryResponse.builder()
+                .challenges(items)
+                .totalCount(totalChallenges)
+                .build();
+    }
+
+    private ChallengeSummaryItem toSummaryItem(UserChallengeProgress progress) {
+        double percent = 0;
+        Integer target = progress.getTargetProgress();
+        if (target != null && target > 0) {
+            percent = (progress.getCurrentProgress() * 100.0) / target;
+        }
+        double normalized = Math.min(100.0, Math.max(0.0, percent));
+        double rounded = Math.round(normalized * 10.0) / 10.0;
+        Challenge challenge = progress.getChallenge();
+        String content = challenge.getTitle() != null ? challenge.getTitle() : challenge.getDescription();
+        return ChallengeSummaryItem.builder()
+                .challengeId(challenge.getId())
+                .content(content)
+                .progress(rounded)
+                .build();
     }
 }
 

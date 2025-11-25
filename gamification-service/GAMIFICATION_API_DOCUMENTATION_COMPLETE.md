@@ -989,7 +989,8 @@ public ResponseEntity<QuizResult> completeQuiz(@RequestBody QuizCompletionReques
     rewardRequest.setSourceType(RewardSourceType.QUIZ);
     rewardRequest.setLessonId(lessonId);
     rewardRequest.setEnrollId(enrollId);
-    rewardRequest.setScore(score);
+    rewardRequest.setTotalQuestions(result.getTotalQuestions());
+    rewardRequest.setCorrectAnswers(result.getCorrectAnswers());
     
     restTemplate.postForEntity(
         "http://gamification-service/api/v1/gamify/reward",
@@ -1072,6 +1073,36 @@ async function getLeaderboard(type, topNumber) {
 }
 ```
 
+### 5.4. Integration với AI Service (Tóm tắt thử thách)
+
+**Khi AI cần gợi ý thử thách đang làm của user**:
+
+```http
+GET /api/challenges/summary
+Authorization: Bearer <JWT_TOKEN>
+```
+
+**Response**:
+
+```json
+{
+  "challenges": [
+    {
+      "challengeId": "9a2d1e0e-6a4f-4c08-9d8f-ffef8b2d0eba",
+      "content": "Hoàn thành 5 bài học trong tuần",
+      "progress": 60.0
+    }
+  ],
+  "totalCount": 25
+}
+```
+
+- `content`: tiêu đề challenge.
+- `progress`: % hoàn thành (làm tròn 1 chữ số thập phân).
+- `totalCount`: tổng số challenge đang có trong hệ thống (để AI biết quy mô, nếu cần random).
+
+AI service chỉ cần forward JWT của user hiện tại qua header `Authorization`.
+
 ---
 
 ## 6. Data Models
@@ -1105,7 +1136,7 @@ async function getLeaderboard(type, topNumber) {
   "eventType": "QUIZ",
   "action": "COMPLETE",
   "count": 10,
-  "minScore": 70,
+  "minAccuracy": 80,
   "maxScore": 90,
   "maxProgressPerDay": 2
 }
@@ -1121,6 +1152,9 @@ async function getLeaderboard(type, topNumber) {
   "lessonId": UUID,
   "enrollId": String,
   "score": Integer,
+  "accuracyPercent": Integer,
+  "totalQuestions": Integer,
+  "correctAnswers": Integer,
   "amount": Integer,
   "occurredAt": ZonedDateTime
 }
@@ -1131,10 +1165,12 @@ async function getLeaderboard(type, topNumber) {
 ```json
 {
   "userId": UUID,
-  "score": Integer,
   "sourceType": "QUIZ" | "CHALLENGE" | "MANUAL",
   "lessonId": UUID,
   "enrollId": String,
+  "totalQuestions": Integer,
+  "correctAnswers": Integer,
+  "score": Integer,
   "challengeId": UUID,
   "badge": String,
   "reason": String
@@ -1142,6 +1178,21 @@ async function getLeaderboard(type, topNumber) {
 ```
 
 ### 6.5. ChallengeProgressResponse Model
+### 6.6. ChallengeSummaryResponse Model
+
+```json
+{
+  "challenges": [
+    {
+      "challengeId": "UUID",
+      "content": "String",
+      "progress": 75.5
+    }
+  ],
+  "totalCount": 25
+}
+```
+
 
 ```json
 {

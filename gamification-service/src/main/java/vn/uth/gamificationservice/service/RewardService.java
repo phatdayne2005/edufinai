@@ -46,18 +46,29 @@ public class RewardService {
     public RewardResponse addReward(RewardRequest req) {
         RewardSourceType sourceType = req.getSourceType() != null ? req.getSourceType() : RewardSourceType.MANUAL;
         UUID userId = req.getUserId();
-        int pointsToAdd = req.getScore();
+        int pointsToAdd = req.getScore() != null ? req.getScore() : 0;
+
+        QuizPayload quizPayload = null;
 
         if (sourceType == RewardSourceType.QUIZ) {
             validateLessonPayload(req);
+            quizPayload = buildQuizPayload(req);
+
             LessonScoreService.LessonAttemptResult attemptResult =
-                    lessonScoreService.processAttempt(userId, req.getLessonId(), req.getEnrollId(), req.getScore());
+                    lessonScoreService.processAttempt(userId, req.getLessonId(), req.getEnrollId(), quizPayload.points());
 
             if (attemptResult.duplicate()) {
                 return new RewardResponse(null, "DUPLICATE_ATTEMPT");
             }
 
-            challengeEventPublisher.publishLessonCompleted(userId, req.getLessonId(), req.getEnrollId(), req.getScore());
+            challengeEventPublisher.publishLessonCompleted(
+                    userId,
+                    req.getLessonId(),
+                    req.getEnrollId(),
+                    quizPayload.points(),
+                    quizPayload.accuracyPercent(),
+                    quizPayload.totalQuestions(),
+                    quizPayload.correctAnswers());
 
             if (!attemptResult.hasImproved()) {
                 return new RewardResponse(null, "NO_SCORE_CHANGE");
@@ -118,6 +129,23 @@ public class RewardService {
         }
     }
 
+    private QuizPayload buildQuizPayload(RewardRequest req) {
+        Integer totalQuestions = req.getTotalQuestions();
+        Integer correctAnswers = req.getCorrectAnswers();
+
+        if (totalQuestions == null || totalQuestions <= 0) {
+            throw new IllegalArgumentException("totalQuestions must be greater than 0 for quiz rewards");
+        }
+        if (correctAnswers == null || correctAnswers < 0 || correctAnswers > totalQuestions) {
+            throw new IllegalArgumentException("correctAnswers must be between 0 and totalQuestions");
+        }
+
+        int points = correctAnswers * 10;
+        int accuracyPercent = (int) Math.round((correctAnswers * 100.0) / totalQuestions);
+
+        return new QuizPayload(totalQuestions, correctAnswers, points, accuracyPercent);
+    }
+
     private void updateLeaderboards(UUID userId, double delta) {
         String userIdStr = userId.toString();
 
@@ -130,5 +158,8 @@ public class RewardService {
         this.redisTemplate.opsForZSet().incrementScore(weeklyKey, userIdStr, delta);
         this.redisTemplate.opsForZSet().incrementScore(monthlyKey, userIdStr, delta);
         this.redisTemplate.opsForZSet().incrementScore(alltimeKey, userIdStr, delta);
+    }
+
+    private record QuizPayload(int totalQuestions, int correctAnswers, int points, int accuracyPercent) {
     }
 }

@@ -11,6 +11,8 @@ import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Import;
 import vn.uth.gamificationservice.dto.ChallengeEventRequest;
+import vn.uth.gamificationservice.dto.ChallengeSummaryItem;
+import vn.uth.gamificationservice.dto.ChallengeSummaryResponse;
 import vn.uth.gamificationservice.dto.RewardRequest;
 import vn.uth.gamificationservice.dto.RewardResponse;
 import vn.uth.gamificationservice.model.Challenge;
@@ -138,6 +140,24 @@ class ChallengeProgressServiceTest {
     }
 
     @Test
+    void shouldSummarizeChallengesForUser() {
+        Challenge challenge = createChallenge(ChallengeScope.WEEKLY, 3, 2, null, null);
+        ChallengeEventRequest event = quizEvent(USER_ONE, 90);
+
+        challengeProgressService.processEvent(event);
+        challengeProgressService.processEvent(event);
+
+        ChallengeSummaryResponse summary = challengeProgressService.getSummary(USER_ONE);
+        assertThat(summary.getTotalCount()).isEqualTo(challengeRepository.count());
+        assertThat(summary.getChallenges()).hasSize(1);
+
+        ChallengeSummaryItem item = summary.getChallenges().get(0);
+        assertThat(item.getChallengeId()).isEqualTo(challenge.getId());
+        assertThat(item.getContent()).contains(challenge.getTitle());
+        assertThat(item.getProgress()).isGreaterThan(60.0);
+    }
+
+    @Test
     void shouldSkipEventsThatDoNotMatchRule() {
         Challenge goalChallenge = createGoalChallenge();
         ChallengeEventRequest depositEvent = goalEvent(USER_ONE, "DEPOSIT", 500_000);
@@ -151,12 +171,13 @@ class ChallengeProgressServiceTest {
         assertThat(progress.getCurrentProgress()).isEqualTo(1);
     }
 
-    private ChallengeEventRequest quizEvent(UUID userId, int score) {
+    private ChallengeEventRequest quizEvent(UUID userId, int accuracyPercent) {
         ChallengeEventRequest request = new ChallengeEventRequest();
         request.setUserId(userId);
         request.setEventType("QUIZ");
         request.setAction("COMPLETE");
-        request.setScore(score);
+        request.setScore(accuracyPercent);
+        request.setAccuracyPercent(accuracyPercent);
         request.setAmount(1);
         request.setOccurredAt(ZonedDateTime.now());
         return request;
@@ -182,7 +203,7 @@ class ChallengeProgressServiceTest {
         challenge.setStartAt(ZonedDateTime.now().minusDays(1));
         challenge.setEndAt(ZonedDateTime.now().plusDays(7));
         challenge.setActive(true);
-        challenge.setRule(ruleJson("QUIZ", "COMPLETE", target, maxPerDay, 70));
+        challenge.setRule(ruleJson("QUIZ", "COMPLETE", target, maxPerDay, null, 70));
         challenge.setRewardScore(rewardScore);
         challenge.setRewardBadgeCode(badgeCode);
         challenge.setMaxProgressPerDay(maxPerDay);
@@ -199,7 +220,7 @@ class ChallengeProgressServiceTest {
         challenge.setStartAt(ZonedDateTime.now().minusDays(1));
         challenge.setEndAt(ZonedDateTime.now().plusDays(40));
         challenge.setActive(true);
-        challenge.setRule(ruleJson("GOAL", "DEPOSIT", 3, 1, null));
+        challenge.setRule(ruleJson("GOAL", "DEPOSIT", 3, 1, null, null));
         challenge.setRewardScore(300);
         challenge.setRewardBadgeCode("SAVER");
         challenge.setMaxProgressPerDay(1);
@@ -213,7 +234,7 @@ class ChallengeProgressServiceTest {
         progressRepository.saveAndFlush(progress);
     }
 
-    private String ruleJson(String eventType, String action, Integer count, Integer maxPerDay, Integer minScore) {
+    private String ruleJson(String eventType, String action, Integer count, Integer maxPerDay, Integer minScore, Integer minAccuracy) {
         Map<String, Object> payload = new LinkedHashMap<>();
         payload.put("eventType", eventType);
         payload.put("action", action);
@@ -225,6 +246,9 @@ class ChallengeProgressServiceTest {
         }
         if (minScore != null) {
             payload.put("minScore", minScore);
+        }
+        if (minAccuracy != null) {
+            payload.put("minAccuracy", minAccuracy);
         }
         try {
             return new ObjectMapper().writeValueAsString(payload);

@@ -1,5 +1,6 @@
 package vn.uth.gamificationservice.dto;
 
+import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotNull;
 import vn.uth.gamificationservice.model.RewardSourceType;
 
@@ -9,7 +10,6 @@ public class RewardRequest {
     @NotNull(message = "User ID không được để trống")
     private UUID userId;
 
-    @NotNull(message = "Score không được để trống")
     private Integer score;
 
     private RewardSourceType sourceType;
@@ -24,6 +24,12 @@ public class RewardRequest {
 
     private String reason;
 
+    @Min(value = 0, message = "totalQuestions không hợp lệ")
+    private Integer totalQuestions;
+
+    @Min(value = 0, message = "correctAnswers không hợp lệ")
+    private Integer correctAnswers;
+
     public @NotNull UUID getUserId() {
         return userId;
     }
@@ -32,11 +38,11 @@ public class RewardRequest {
         this.userId = userId;
     }
 
-    public @NotNull Integer getScore() {
+    public Integer getScore() {
         return score;
     }
 
-    public void setScore(@NotNull Integer score) {
+    public void setScore(Integer score) {
         this.score = score;
     }
 
@@ -88,6 +94,22 @@ public class RewardRequest {
         this.reason = reason;
     }
 
+    public Integer getTotalQuestions() {
+        return totalQuestions;
+    }
+
+    public void setTotalQuestions(Integer totalQuestions) {
+        this.totalQuestions = totalQuestions;
+    }
+
+    public Integer getCorrectAnswers() {
+        return correctAnswers;
+    }
+
+    public void setCorrectAnswers(Integer correctAnswers) {
+        this.correctAnswers = correctAnswers;
+    }
+
     @Override
     public String toString() {
         return "RewardRequest{" +
@@ -99,6 +121,8 @@ public class RewardRequest {
                 ", challengeId=" + challengeId +
                 ", badge='" + badge + '\'' +
                 ", reason='" + reason + '\'' +
+                ", totalQuestions=" + totalQuestions +
+                ", correctAnswers=" + correctAnswers +
                 '}';
     }
 }
