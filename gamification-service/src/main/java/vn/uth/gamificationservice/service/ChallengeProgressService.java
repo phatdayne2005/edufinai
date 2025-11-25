@@ -7,6 +7,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import vn.uth.gamificationservice.dto.*;
 import vn.uth.gamificationservice.model.Challenge;
+import vn.uth.gamificationservice.model.ChallengeApprovalStatus;
 import vn.uth.gamificationservice.model.RewardSourceType;
 import vn.uth.gamificationservice.model.UserChallengeProgress;
 import vn.uth.gamificationservice.repository.ChallengeRepository;
@@ -45,7 +46,10 @@ public class ChallengeProgressService {
     public void processEvent(ChallengeEventRequest request) {
         ZonedDateTime now = request.getOccurredAt() != null ? request.getOccurredAt() : ZonedDateTime.now();
         List<Challenge> activeChallenges = challengeRepository
-                .findByActiveTrueAndStartAtLessThanEqualAndEndAtGreaterThanEqual(now, now);
+                .findByActiveTrueAndApprovalStatusAndStartAtLessThanEqualAndEndAtGreaterThanEqual(
+                        now,
+                        now,
+                        ChallengeApprovalStatus.APPROVED);
 
         for (Challenge challenge : activeChallenges) {
             handleChallenge(challenge, request);
@@ -159,7 +163,7 @@ public class ChallengeProgressService {
         List<ChallengeSummaryItem> items = progresses.stream()
                 .map(this::toSummaryItem)
                 .collect(Collectors.toList());
-        long totalChallenges = challengeRepository.count();
+        long totalChallenges = challengeRepository.countByApprovalStatus(ChallengeApprovalStatus.APPROVED);
         return ChallengeSummaryResponse.builder()
                 .challenges(items)
                 .totalCount(totalChallenges)

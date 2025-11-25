@@ -1,6 +1,5 @@
 package vn.uth.gamificationservice.model;
 
-import com.fasterxml.jackson.databind.JsonNode;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -71,10 +70,17 @@ public class Challenge {
     @Column(name = "created_at", updatable = false)
     private ZonedDateTime createdAt;
 
+    @Column(name = "approval_status")
+    @Enumerated(EnumType.STRING)
+    private ChallengeApprovalStatus approvalStatus;
+
     @PrePersist
     protected void onCreate() {
         if (this.createdAt == null) {
             this.createdAt = ZonedDateTime.now(ZoneId.systemDefault());
+        }
+        if (this.approvalStatus == null) {
+            this.approvalStatus = ChallengeApprovalStatus.PENDING;
         }
     }
 

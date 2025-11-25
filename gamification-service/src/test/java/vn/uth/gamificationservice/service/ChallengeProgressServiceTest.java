@@ -16,6 +16,7 @@ import vn.uth.gamificationservice.dto.ChallengeSummaryResponse;
 import vn.uth.gamificationservice.dto.RewardRequest;
 import vn.uth.gamificationservice.dto.RewardResponse;
 import vn.uth.gamificationservice.model.Challenge;
+import vn.uth.gamificationservice.model.ChallengeApprovalStatus;
 import vn.uth.gamificationservice.model.ChallengeScope;
 import vn.uth.gamificationservice.model.ChallengeType;
 import vn.uth.gamificationservice.model.UserChallengeProgress;
@@ -148,7 +149,8 @@ class ChallengeProgressServiceTest {
         challengeProgressService.processEvent(event);
 
         ChallengeSummaryResponse summary = challengeProgressService.getSummary(USER_ONE);
-        assertThat(summary.getTotalCount()).isEqualTo(challengeRepository.count());
+        assertThat(summary.getTotalCount())
+                .isEqualTo(challengeRepository.countByApprovalStatus(ChallengeApprovalStatus.APPROVED));
         assertThat(summary.getChallenges()).hasSize(1);
 
         ChallengeSummaryItem item = summary.getChallenges().get(0);
@@ -203,6 +205,7 @@ class ChallengeProgressServiceTest {
         challenge.setStartAt(ZonedDateTime.now().minusDays(1));
         challenge.setEndAt(ZonedDateTime.now().plusDays(7));
         challenge.setActive(true);
+        challenge.setApprovalStatus(ChallengeApprovalStatus.APPROVED);
         challenge.setRule(ruleJson("QUIZ", "COMPLETE", target, maxPerDay, null, 70));
         challenge.setRewardScore(rewardScore);
         challenge.setRewardBadgeCode(badgeCode);

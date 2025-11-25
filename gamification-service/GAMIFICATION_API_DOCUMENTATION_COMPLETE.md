@@ -938,6 +938,26 @@ curl -X POST http://localhost:8080/gamification/reward \
 
 **Kết quả**: Challenge được tạo và tự động xử lý khi có events phù hợp.
 
+#### Quy trình duyệt challenge
+
+1. **Creator** tạo mới → trạng thái mặc định `PENDING`.
+2. **Moderator** gọi `GET /api/v1/gamify/challenge/status/PENDING` để xem danh sách chờ duyệt.
+3. **Moderator** quyết định:
+   ```http
+   PATCH /api/v1/gamify/challenge/{challengeId}/approval
+   {
+     "status": "APPROVED" | "REJECTED",
+     "note": "Lý do (optional)"
+   }
+   ```
+4. Chỉ khi `status = APPROVED`, challenge mới được đánh `active=true` và tham gia xử lý/hiển thị cho user & AI. Nếu `REJECTED`, hệ thống tự chuyển `active=false` để tránh chạy nhầm.
+5. **Creator** nếu bị từ chối có thể gửi lại duyệt bằng `POST /api/v1/gamify/challenge/{challengeId}/resubmit`. Trạng thái quay về `PENDING` và moderator sẽ xem lịch sử lý do để feedback.
+
+**Trạng thái hỗ trợ**:
+- `PENDING`: chờ moderator.
+- `APPROVED`: đã duyệt, có thể chạy.
+- `REJECTED`: từ chối, sẽ không xuất hiện với user.
+
 ---
 
 ### 4.5. Use Case 5: User Xem Leaderboard
@@ -1124,6 +1144,7 @@ AI service chỉ cần forward JWT của user hiện tại qua header `Authoriza
   "rewardScore": Integer,
   "rewardBadgeCode": String,
   "maxProgressPerDay": Integer,
+  "approvalStatus": "PENDING" | "APPROVED" | "REJECTED",
   "createdAt": ZonedDateTime,
   "updatedAt": ZonedDateTime
 }
@@ -1190,6 +1211,27 @@ AI service chỉ cần forward JWT của user hiện tại qua header `Authoriza
     }
   ],
   "totalCount": 25
+}
+```
+
+### 6.7. ChallengeApprovalRequest Model
+
+```json
+{
+  "status": "APPROVED",
+  "note": "Optional string"
+}
+```
+
+### 6.8. ChallengeApprovalHistory Model
+
+```json
+{
+  "historyId": "UUID",
+  "status": "PENDING",
+  "reviewerId": "UUID",
+  "note": "string",
+  "createdAt": "2025-01-20T10:00:00Z"
 }
 ```
 

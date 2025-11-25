@@ -1,7 +1,7 @@
 ## Firebase Notification Service API
 
 Base URL: `/api/notifications` (đi qua Gateway hoặc base URL nội bộ tùy môi trường).  
-Tất cả endpoint yêu cầu người dùng đã đăng nhập; frontend cần gửi kèm JWT token trong header `Authorization: Bearer <token>`.
+Các endpoint dành cho frontend (đăng ký/hủy token) yêu cầu người dùng đã đăng nhập (JWT). Riêng các endpoint phục vụ service-to-service như `/user/{userId}` có thể gọi **không cần JWT** (Gateway hoặc dịch vụ nội bộ có thể gọi trực tiếp).
 
 **Lưu ý quan trọng**: Backend tự động lấy `userId` (UUID) từ auth-service dựa trên JWT token, frontend không cần gửi userId trong request body.
 
@@ -95,8 +95,8 @@ await api.delete("/api/notifications/token", {
   ```
 - **Response**: `202 Accepted`.
 - **Ghi chú**: 
-  - Endpoint này dành cho **service nội bộ** hoặc **admin UI**.
-  - Frontend thường **không gọi trực tiếp** để tránh giả mạo userId.
+  - Endpoint này dành cho **service nội bộ** hoặc **admin UI** và **không yêu cầu JWT** (để AI/learning/finance service có thể gọi trực tiếp).
+  - Frontend thường **không gọi** để tránh giả mạo userId.
   - Gửi thông báo tới tất cả token FCM đang active của user đó.
 
 **Ví dụ từ service khác**:
