@@ -8,6 +8,8 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import vn.uth.financeservice.dto.SummaryResponseDto;
 import vn.uth.financeservice.dto.MonthOptimizedResponseDto;
+import vn.uth.financeservice.dto.SevenDaysResponseDto;
+import vn.uth.financeservice.dto.DailyReportResponseDto;
 import vn.uth.financeservice.service.SummaryService;
 import vn.uth.financeservice.client.AuthServiceClient;
 
@@ -53,6 +55,32 @@ public class SummaryController {
         UUID userId = authServiceClient.getCurrentUserId();
         MonthOptimizedResponseDto summary = summaryService.getMonthOptimizedSummary(userId);
         return ResponseEntity.ok(summary);
+    }
+
+    /**
+     * API: GET /api/summary/7days
+     * Lấy tổng hợp tài chính 7 ngày gần nhất
+     * 
+     * @return SevenDaysResponseDto
+     */
+    @GetMapping("/7days")
+    public ResponseEntity<SevenDaysResponseDto> get7DaysSummary() {
+        UUID userId = authServiceClient.getCurrentUserId();
+        SevenDaysResponseDto summary = summaryService.get7DaysSummary(userId);
+        return ResponseEntity.ok(summary);
+    }
+
+    /**
+     * API: GET /api/summary/daily
+     * Lấy báo cáo tài chính theo ngày (hôm nay)
+     * 
+     * @return DailyReportResponseDto
+     */
+    @GetMapping("/daily")
+    public ResponseEntity<DailyReportResponseDto> getDailyReport() {
+        UUID userId = authServiceClient.getCurrentUserId();
+        DailyReportResponseDto report = summaryService.getDailyReport(userId);
+        return ResponseEntity.ok(report);
     }
 }
 

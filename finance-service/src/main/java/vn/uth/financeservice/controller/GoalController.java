@@ -8,6 +8,7 @@ import vn.uth.financeservice.dto.GoalRequestDto;
 import vn.uth.financeservice.dto.GoalResponseDto;
 import vn.uth.financeservice.dto.GoalWithdrawRequestDto;
 import vn.uth.financeservice.dto.TransactionResponseDto;
+import vn.uth.financeservice.dto.GoalTransactionHistoryDto;
 import vn.uth.financeservice.entity.Goal;
 import vn.uth.financeservice.entity.Transaction;
 import vn.uth.financeservice.service.GoalService;
@@ -67,6 +68,18 @@ public class GoalController {
         UUID userId = authServiceClient.getCurrentUserId();
         goalService.deleteGoal(id, userId);
         return ResponseEntity.ok().build();
+    }
+
+    /**
+     * Lấy lịch sử giao dịch của goal
+     * @param id Goal ID
+     * @return Lịch sử giao dịch bao gồm thông tin goal và danh sách transactions
+     */
+    @GetMapping("/{id}/transactions")
+    public ResponseEntity<GoalTransactionHistoryDto> getGoalTransactionHistory(@PathVariable UUID id) {
+        UUID userId = authServiceClient.getCurrentUserId();
+        GoalTransactionHistoryDto history = goalService.getGoalTransactionHistory(id, userId);
+        return ResponseEntity.ok(history);
     }
 
     private GoalResponseDto toGoalResponseDto(Goal goal) {

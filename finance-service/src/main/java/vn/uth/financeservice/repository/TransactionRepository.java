@@ -58,6 +58,17 @@ public interface TransactionRepository extends JpaRepository<Transaction, UUID> 
     
     @Query("SELECT t FROM Transaction t WHERE t.category.categoryId = :categoryId")
     List<Transaction> findByCategoryId(@Param("categoryId") UUID categoryId);
+    
+    /**
+     * Lấy tất cả transactions của một category trong khoảng thời gian cụ thể
+     * Dùng cho Category Transactions API
+     */
+    @Query("SELECT t FROM Transaction t WHERE t.category.categoryId = :categoryId AND t.status = :status AND t.transactionDate >= :startDate AND t.transactionDate <= :endDate ORDER BY t.transactionDate DESC")
+    List<Transaction> findByCategoryIdAndStatusAndTransactionDateBetween(
+            @Param("categoryId") UUID categoryId,
+            @Param("status") String status,
+            @Param("startDate") LocalDateTime startDate,
+            @Param("endDate") LocalDateTime endDate);
 }
 
 

@@ -7,6 +7,8 @@ import org.springframework.transaction.annotation.Transactional;
 import vn.uth.financeservice.dto.GoalRequestDto;
 import vn.uth.financeservice.dto.GoalStatusUpDate;
 import vn.uth.financeservice.dto.GoalWithdrawRequestDto;
+import vn.uth.financeservice.dto.GoalTransactionHistoryDto;
+import vn.uth.financeservice.dto.TransactionResponseDto;
 import vn.uth.financeservice.entity.Goal;
 import vn.uth.financeservice.entity.GoalStatus;
 import vn.uth.financeservice.entity.Transaction;
@@ -239,6 +241,79 @@ public class GoalService {
 
         // Lưu transaction
         return transactionRepository.save(transaction);
+    }
+
+    /**
+     * Lấy lịch sử giao dịch của goal
+     * Bao gồm thông tin goal và danh sách tất cả transactions (nạp + rút)
+     */
+    @Transactional(readOnly = true)
+    public GoalTransactionHistoryDto getGoalTransactionHistory(UUID goalId, UUID userId) {
+        // Tìm goal
+        Goal goal = goalRepository.findById(goalId)
+                .orElseThrow(() -> new RuntimeException("Goal not found"));
+
+        // Kiểm tra quyền sở hữu
+        if (!goal.getUserId().equals(userId)) {
+            throw new RuntimeException("Forbidden");
+        }
+
+        // Lấy tất cả transactions của goal (chỉ ACTIVE)
+        List<Transaction> transactions = transactionRepository.findByGoalId(goalId)
+                .stream()
+                .filter(t -> "ACTIVE".equals(t.getStatus()))
+                .sorted((t1, t2) -> t2.getTransactionDate().compareTo(t1.getTransactionDate()))
+                .collect(Collectors.toList());
+
+        // Convert sang DTO
+        List<TransactionResponseDto> transactionDtos = transactions.stream()
+                .map(this::toTransactionResponseDto)
+                .collect(Collectors.toList());
+
+        // Tính tổng nạp và rút
+        BigDecimal totalDeposit = transactions.stream()
+                .filter(t -> t.getType() == TransactionType.INCOME)
+                .map(Transaction::getAmount)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+        BigDecimal totalWithdrawal = transactions.stream()
+                .filter(t -> t.getType() == TransactionType.WITHDRAWAL)
+                .map(Transaction::getAmount)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+        // Tạo summary
+        GoalTransactionHistoryDto.TransactionSummary summary = 
+            new GoalTransactionHistoryDto.TransactionSummary(
+                totalDeposit, 
+                totalWithdrawal, 
+                transactions.size()
+            );
+
+        // Tạo response
+        return new GoalTransactionHistoryDto(
+            goal.getTitle(),
+            goal.getAmount(),
+            goal.getSavedAmount() != null ? goal.getSavedAmount() : BigDecimal.ZERO,
+            transactionDtos,
+            summary
+        );
+    }
+
+    /**
+     * Convert Transaction entity sang TransactionResponseDto
+     */
+    private TransactionResponseDto toTransactionResponseDto(Transaction t) {
+        TransactionResponseDto dto = new TransactionResponseDto(
+                t.getTransactionId(),
+                t.getType(),
+                t.getName(),
+                t.getCategory() != null ? t.getCategory().getName() : null,
+                t.getNote(),
+                t.getAmount(),
+                t.getTransactionDate(),
+                t.getGoal() != null ? t.getGoal().getGoalId() : null
+        );
+        return dto;
     }
 
     /**
