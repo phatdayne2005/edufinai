@@ -12,9 +12,9 @@ import java.util.UUID;
 @Repository
 public interface ChallengeRepository extends JpaRepository<Challenge, UUID> {
     List<Challenge> findByActiveTrueAndApprovalStatusAndStartAtLessThanEqualAndEndAtGreaterThanEqual(
-            ZonedDateTime from,
-            ZonedDateTime to,
-            ChallengeApprovalStatus approvalStatus);
+            ChallengeApprovalStatus approvalStatus,
+            ZonedDateTime startAt,
+            ZonedDateTime endAt);
 
     List<Challenge> findByApprovalStatus(ChallengeApprovalStatus approvalStatus);
 

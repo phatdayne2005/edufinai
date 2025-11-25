@@ -47,9 +47,9 @@ public class ChallengeProgressService {
         ZonedDateTime now = request.getOccurredAt() != null ? request.getOccurredAt() : ZonedDateTime.now();
         List<Challenge> activeChallenges = challengeRepository
                 .findByActiveTrueAndApprovalStatusAndStartAtLessThanEqualAndEndAtGreaterThanEqual(
+                        ChallengeApprovalStatus.APPROVED,
                         now,
-                        now,
-                        ChallengeApprovalStatus.APPROVED);
+                        now);
 
         for (Challenge challenge : activeChallenges) {
             handleChallenge(challenge, request);

@@ -57,9 +57,7 @@ public class ChallengeRuleEvaluator {
         if (challengeTarget != null && challengeTarget > 0) {
             return challengeTarget;
         }
-        if (rule != null && rule.getCount() != null && rule.getCount() > 0) {
-            return rule.getCount();
-        }
+        // Fallback: nếu targetValue không có, dùng giá trị mặc định
         return 1;
     }
 }

@@ -26,7 +26,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"userId\": \"{{userId}}\",\n  \"sourceType\": \"QUIZ\",\n  \"lessonId\": \"{{lessonId}}\",\n  \"enrollId\": \"{{enrollId}}\",\n  \"score\": 80,\n  \"reason\": \"Quiz attempt\"\n}"
+              "raw": "{\n  \"userId\": \"{{userId}}\",\n  \"sourceType\": \"QUIZ\",\n  \"lessonId\": \"{{lessonId}}\",\n  \"enrollId\": \"{{enrollId}}\",\n  \"totalQuestions\": 10,\n  \"correctAnswers\": 8,\n  \"reason\": \"Quiz attempt\"\n}"
             },
             "url": {
               "raw": "{{baseUrl}}/reward",
@@ -91,6 +91,33 @@
       ]
     },
     {
+      "name": "Challenge Summary APIs",
+      "item": [
+        {
+          "name": "Get Challenge Summary",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{challengeSummaryBaseUrl}}/summary",
+              "host": [
+                "{{challengeSummaryBaseUrl}}"
+              ],
+              "path": [
+                "summary"
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
       "name": "Challenge APIs",
       "item": [
         {
@@ -131,7 +158,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"title\": \"Complete 10 quizzes this week\",\n  \"description\": \"Finish any 10 quizzes within the week\",\n  \"type\": \"QUIZ\",\n  \"scope\": \"WEEKLY\",\n  \"targetValue\": 10,\n  \"rewardScore\": 100,\n  \"rewardBadgeCode\": \"WEEKLY_BADGE\",\n  \"maxProgressPerDay\": 3,\n  \"startAt\": \"2025-01-13T00:00:00+07:00[Asia/Ho_Chi_Minh]\",\n  \"endAt\": \"2025-01-19T23:59:59+07:00[Asia/Ho_Chi_Minh]\",\n  \"active\": true,\n  \"rule\": \"{\\\"eventType\\\":\\\"QUIZ\\\",\\\"action\\\":\\\"COMPLETE\\\",\\\"count\\\":10,\\\"maxProgressPerDay\\\":3}\"\n}"
+              "raw": "{\n  \"title\": \"Complete 10 quizzes this week\",\n  \"description\": \"Finish any 10 quizzes within the week\",\n  \"type\": \"QUIZ\",\n  \"scope\": \"WEEKLY\",\n  \"targetValue\": 10,\n  \"rewardScore\": 100,\n  \"rewardBadgeCode\": \"WEEKLY_BADGE\",\n  \"maxProgressPerDay\": 3,\n  \"startAt\": \"2025-01-13T00:00:00+07:00[Asia/Ho_Chi_Minh]\",\n  \"endAt\": \"2025-01-19T23:59:59+07:00[Asia/Ho_Chi_Minh]\",\n  \"active\": true,\n  \"rule\": \"{\\\"eventType\\\":\\\"QUIZ\\\",\\\"action\\\":\\\"COMPLETE\\\",\\\"minAccuracy\\\":80,\\\"maxProgressPerDay\\\":3}\"\n}"
             },
             "url": {
               "raw": "{{baseUrl}}/challenge",
@@ -140,6 +167,110 @@
               ],
               "path": [
                 "challenge"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Challenges By Approval Status",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/challenge/status/{{challengeStatus}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "challenge",
+                "status",
+                "{{challengeStatus}}"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Approve or Reject Challenge",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"APPROVED\",\n  \"note\": \"Looks good\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/challenge/{{challengeId}}/approval",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "challenge",
+                "{{challengeId}}",
+                "approval"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Resubmit Challenge",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/challenge/{{challengeId}}/resubmit",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "challenge",
+                "{{challengeId}}",
+                "resubmit"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Challenge Approval History",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/challenge/{{challengeId}}/approval-history",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "challenge",
+                "{{challengeId}}",
+                "approval-history"
               ]
             }
           },
@@ -211,7 +342,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"userId\": \"{{userId}}\",\n  \"eventType\": \"QUIZ\",\n  \"action\": \"COMPLETE\",\n  \"lessonId\": \"{{lessonId}}\",\n  \"enrollId\": \"{{enrollId}}\",\n  \"score\": 85,\n  \"amount\": 1\n}"
+              "raw": "{\n  \"userId\": \"{{userId}}\",\n  \"eventType\": \"QUIZ\",\n  \"action\": \"COMPLETE\",\n  \"lessonId\": \"{{lessonId}}\",\n  \"enrollId\": \"{{enrollId}}\",\n  \"score\": 85,\n  \"totalQuestions\": 10,\n  \"correctAnswers\": 9,\n  \"accuracyPercent\": 90,\n  \"amount\": 1\n}"
             },
             "url": {
               "raw": "{{baseUrl}}/challenge/event",
@@ -401,7 +532,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"userId\": \"{{userId}}\",\n  \"eventType\": \"QUIZ\",\n  \"action\": \"COMPLETE\",\n  \"lessonId\": \"{{lessonId}}\",\n  \"enrollId\": \"{{enrollId}}\",\n  \"score\": 90,\n  \"amount\": 1,\n  \"occurredAt\": \"{{quizEventTimestamp1}}\"\n}"
+              "raw": "{\n  \"userId\": \"{{userId}}\",\n  \"eventType\": \"QUIZ\",\n  \"action\": \"COMPLETE\",\n  \"lessonId\": \"{{lessonId}}\",\n  \"enrollId\": \"{{enrollId}}\",\n  \"score\": 90,\n  \"totalQuestions\": 10,\n  \"correctAnswers\": 9,\n  \"accuracyPercent\": 90,\n  \"amount\": 1,\n  \"occurredAt\": \"{{quizEventTimestamp1}}\"\n}"
             },
             "url": {
               "raw": "{{baseUrl}}/challenge/event",
@@ -432,7 +563,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"userId\": \"{{userId}}\",\n  \"eventType\": \"QUIZ\",\n  \"action\": \"COMPLETE\",\n  \"lessonId\": \"{{lessonId}}\",\n  \"enrollId\": \"{{enrollId}}\",\n  \"score\": 95,\n  \"amount\": 1,\n  \"occurredAt\": \"{{quizEventTimestamp2}}\"\n}"
+              "raw": "{\n  \"userId\": \"{{userId}}\",\n  \"eventType\": \"QUIZ\",\n  \"action\": \"COMPLETE\",\n  \"lessonId\": \"{{lessonId}}\",\n  \"enrollId\": \"{{enrollId}}\",\n  \"score\": 95,\n  \"totalQuestions\": 10,\n  \"correctAnswers\": 10,\n  \"accuracyPercent\": 100,\n  \"amount\": 1,\n  \"occurredAt\": \"{{quizEventTimestamp2}}\"\n}"
             },
             "url": {
               "raw": "{{baseUrl}}/challenge/event",
@@ -532,6 +663,10 @@
       "value": "770e8400-e29b-41d4-a716-446655440000"
     },
     {
+      "key": "challengeStatus",
+      "value": "PENDING"
+    },
+    {
       "key": "leaderboardType",
       "value": "DAILY"
     },
@@ -554,6 +689,10 @@
     {
       "key": "goalEventTimestamp",
       "value": "2025-11-25T10:00:00+07:00[Asia/Ho_Chi_Minh]"
+    },
+    {
+      "key": "challengeSummaryBaseUrl",
+      "value": "http://localhost:8080/gamification/challenges"
     }
   ]
 }

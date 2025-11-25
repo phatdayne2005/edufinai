@@ -153,8 +153,10 @@ ChallengeProgressService.processEvent()
    ├─ Check rule matches event
    │  ├─ eventType match?
    │  ├─ action match?
-   │  ├─ minScore <= event.score?
-   │  └─ event.score <= maxScore?
+   │  ├─ minAccuracy <= event.accuracyPercent? (nếu có)
+   │  ├─ event.accuracyPercent <= maxAccuracy? (nếu có)
+   │  ├─ minScore <= event.score? (nếu có, cho backward compatibility)
+   │  └─ event.score <= maxScore? (nếu có, cho backward compatibility)
    │
    ├─ Get or create UserChallengeProgress
    │
@@ -437,7 +439,7 @@ curl -X POST http://localhost:8080/gamification/reward \
   "startAt": "2025-01-13T00:00:00+07:00[Asia/Ho_Chi_Minh]",
   "endAt": "2025-01-19T23:59:59+07:00[Asia/Ho_Chi_Minh]",
   "active": true,
-  "rule": "{\"eventType\":\"QUIZ\",\"action\":\"COMPLETE\",\"count\":10,\"minScore\":70,\"maxProgressPerDay\":2}",
+  "rule": "{\"eventType\":\"QUIZ\",\"action\":\"COMPLETE\",\"minAccuracy\":70,\"maxProgressPerDay\":2}",
   "rewardScore": 100,
   "rewardBadgeCode": "QUIZ_WEEKLY_10",
   "maxProgressPerDay": 2
@@ -467,9 +469,8 @@ curl -X POST http://localhost:8080/gamification/reward \
 {
   "eventType": "QUIZ",
   "action": "COMPLETE",
-  "count": 10,
-  "minScore": 70,
-  "maxScore": 90,
+  "minAccuracy": 80,
+  "maxAccuracy": 100,
   "maxProgressPerDay": 2
 }
 ```
@@ -477,10 +478,13 @@ curl -X POST http://localhost:8080/gamification/reward \
 **Rule Fields**:
 - `eventType`: Loại event (`QUIZ`, `EXPENSE`, etc.)
 - `action`: Hành động (`COMPLETE`, `SAVE`, etc.)
-- `count`: Số lần cần đạt (target)
-- `minScore`: Điểm tối thiểu (cho QUIZ)
-- `maxScore`: Điểm tối đa (cho QUIZ)
+- `minAccuracy`: % chính xác tối thiểu (cho QUIZ, tính theo số câu đúng/tổng số câu)
+- `maxAccuracy`: % chính xác tối đa (cho QUIZ, optional)
+- `minScore`: Điểm tối thiểu (backward compatibility, optional)
+- `maxScore`: Điểm tối đa (backward compatibility, optional)
 - `maxProgressPerDay`: Giới hạn progress mỗi ngày
+
+**Lưu ý về Target**: Số lần cần đạt (target) được lấy từ field `targetValue` của Challenge entity, **KHÔNG** lấy từ rule JSON. Rule JSON chỉ chứa điều kiện filter event, còn target được định nghĩa ở level Challenge.
 
 **Response** (200 OK):
 
@@ -920,7 +924,7 @@ curl -X POST http://localhost:8080/gamification/reward \
      "startAt": "2025-01-13T00:00:00+07:00",
      "endAt": "2025-01-19T23:59:59+07:00",
      "active": true,
-     "rule": "{\"eventType\":\"QUIZ\",\"action\":\"COMPLETE\",\"count\":10,\"minScore\":80,\"maxProgressPerDay\":3}",
+     "rule": "{\"eventType\":\"QUIZ\",\"action\":\"COMPLETE\",\"minAccuracy\":80,\"maxProgressPerDay\":3}",
      "rewardScore": 200,
      "rewardBadgeCode": "QUIZ_EXCELLENT"
    }
@@ -1156,9 +1160,8 @@ AI service chỉ cần forward JWT của user hiện tại qua header `Authoriza
 {
   "eventType": "QUIZ",
   "action": "COMPLETE",
-  "count": 10,
   "minAccuracy": 80,
-  "maxScore": 90,
+  "maxAccuracy": 100,
   "maxProgressPerDay": 2
 }
 ```
@@ -1264,18 +1267,21 @@ Check xem event có match với rule của challenge không:
 {
   "eventType": "QUIZ",
   "action": "COMPLETE",
-  "minScore": 70,
-  "maxScore": 90,
-  "count": 5,
+  "minAccuracy": 80,
+  "maxAccuracy": 100,
   "maxProgressPerDay": 1
 }
 
 // Check logic:
 1. eventType match? → event.eventType == "QUIZ" ✅
 2. action match? → event.action == "COMPLETE" ✅
-3. minScore check? → event.score >= 70 ✅
-4. maxScore check? → event.score <= 90 ✅
+3. minAccuracy check? → event.accuracyPercent >= 80 ✅
+4. maxAccuracy check? → event.accuracyPercent <= 100 ✅
 ```
+
+**Lưu ý về Accuracy vs Score:**
+- **`minAccuracy`/`maxAccuracy`**: Được tính theo % (0-100), dựa trên `correctAnswers / totalQuestions * 100`. Đây là cách **khuyến nghị** cho challenge QUIZ vì công bằng cho mọi bài (bài ít câu và nhiều câu đều được đánh giá theo %).
+- **`minScore`/`maxScore`**: Được tính theo điểm tuyệt đối (số câu đúng * 10). Vẫn được hỗ trợ cho **backward compatibility**, nhưng không khuyến nghị dùng mới.
 
 **Nếu tất cả đều pass → Rule match → Tiếp tục Bước 2**
 
@@ -1320,10 +1326,12 @@ private boolean canIncrease(UserChallengeProgress progress, Challenge challenge,
   "type": "QUIZ",
   "scope": "DAILY",
   "targetValue": 7,
-  "rule": "{\"eventType\":\"QUIZ\",\"action\":\"COMPLETE\",\"count\":7,\"maxProgressPerDay\":1}",
+  "rule": "{\"eventType\":\"QUIZ\",\"action\":\"COMPLETE\",\"maxProgressPerDay\":1}",
   "maxProgressPerDay": 1
 }
 ```
+
+**Lưu ý**: Target progress được lấy từ `targetValue: 7` (cần hoàn thành 7 quiz), không lấy từ rule JSON. Rule JSON chỉ chứa điều kiện filter event.
 
 **Flow xử lý**:
 
@@ -1335,7 +1343,8 @@ private boolean canIncrease(UserChallengeProgress progress, Challenge challenge,
 2. Rule matching:
    - eventType = "QUIZ" ✅
    - action = "COMPLETE" ✅
-   - minScore/maxScore: không có → pass ✅
+   - minAccuracy/maxAccuracy: không có → pass ✅
+   - minScore/maxScore: không có → pass ✅ (backward compatibility)
    │
    ▼
 3. canIncrease() check:
