@@ -5,6 +5,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import vn.uth.learningservice.dto.request.LessonCreateReq;
 import vn.uth.learningservice.dto.response.CreatorRes;
@@ -15,6 +16,7 @@ import vn.uth.learningservice.model.Creator;
 import vn.uth.learningservice.model.Lesson;
 import vn.uth.learningservice.service.CreatorService;
 import vn.uth.learningservice.service.LessonService;
+import vn.uth.learningservice.service.UserService;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -30,7 +32,7 @@ public class CreatorController {
     private final CreatorMapper mapper;
     private final LessonService lessonService;
     private final LessonMapper lessonMapper;
-    private final vn.uth.learningservice.service.UserService userService;
+    private final UserService userService;
     private final ObjectMapper objectMapper;
 
     // GET /api/creators/me - Lấy thông tin của chính creator đang đăng nhập
@@ -45,25 +47,10 @@ public class CreatorController {
         return ResponseEntity.ok(dto);
     }
 
-<<<<<<< Updated upstream
-    // GET /api/creators/me/lessons - Lấy danh sách bài học của chính creator đang đăng nhập
-    @GetMapping("/me/lessons")
-    public ResponseEntity<List<LessonRes>> getMyLessons(
-            org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken auth) {
-        UUID id = UUID.fromString(auth.getToken().getSubject());
-        // Ensure creator exists
-        creatorService.getOrCreate(id);
-        
-        List<Lesson> lessons = lessonService.listByCreator(id);
-        List<LessonRes> lessonResList = lessons.stream()
-                .map(lesson -> lessonMapper.toRes(lesson, objectMapper))
-                .collect(Collectors.toList());
-        return ResponseEntity.ok(lessonResList);
-=======
     // GET /api/creators/me/lessons - Lấy danh sách bài học của creator đang đăng
     // nhập
     @GetMapping("/me/lessons")
-    @org.springframework.security.access.prepost.PreAuthorize("hasAuthority('SCOPE_ROLE_CREATOR')")
+    @PreAuthorize("hasAuthority('SCOPE_ROLE_CREATOR')")
     public ResponseEntity<List<LessonRes>> getMyLessons() {
         var userInfo = userService.getMyInfo();
         UUID creatorId = userInfo.getId();
@@ -75,7 +62,6 @@ public class CreatorController {
         return ResponseEntity.ok(lessons.stream()
                 .map(lesson -> lessonMapper.toRes(lesson, objectMapper))
                 .collect(Collectors.toList()));
->>>>>>> Stashed changes
     }
 
     // GET /api/creators/{id} - Lấy thông tin chi tiết của một creator theo ID
