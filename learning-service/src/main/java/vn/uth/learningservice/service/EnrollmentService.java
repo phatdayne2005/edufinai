@@ -1,8 +1,16 @@
 package vn.uth.learningservice.service;
 
 import lombok.RequiredArgsConstructor;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.client.RestClientException;
+import org.springframework.web.client.RestTemplate;
+import vn.uth.learningservice.dto.request.RewardRequest;
 import vn.uth.learningservice.model.Enrollment;
 import vn.uth.learningservice.repository.EnrollmentRepository;
 
@@ -12,9 +20,11 @@ import java.util.*;
 @RequiredArgsConstructor
 public class EnrollmentService {
 
+    private static final Logger log = LoggerFactory.getLogger(EnrollmentService.class);
+
     private final EnrollmentRepository enrollmentRepo;
     private final LearnerService learnerService;
-
+    private final RestTemplate restTemplate;
     private final com.fasterxml.jackson.databind.ObjectMapper objectMapper;
 
     public Enrollment getById(UUID id) {
@@ -124,7 +134,17 @@ public class EnrollmentService {
 
         enrollmentRepo.save(enrollment);
 
-        // 8. Return gamification data
+        // 8. Call Gamification Service (chỉ gọi khi có cải thiện điểm hoặc lần đầu làm)
+        // Gọi với currentCorrectAnswers (lần làm hiện tại) để gamification xử lý duplicate và delta score
+        if (currentCorrectAnswers > 0) {
+            callGamificationService(enrollment.getLearner().getId(),
+                    enrollment.getLesson().getId(),
+                    enrollment.getId().toString(),
+                    totalQuestions,
+                    currentCorrectAnswers);
+        }
+
+        // 9. Return gamification data
         return vn.uth.learningservice.dto.response.GamificationRes.builder()
                 .userId(enrollment.getLearner().getId())
                 .sourceType("QUIZ")
@@ -133,6 +153,46 @@ public class EnrollmentService {
                 .totalQuiz(totalQuestions)
                 .correctAnswer(currentCorrectAnswers)
                 .build();
+    }
+
+    /**
+     * Gọi Gamification Service để cập nhật điểm thưởng và challenge progress
+     * 
+     * @param userId ID của user
+     * @param lessonId ID của lesson
+     * @param enrollId ID của enrollment (dạng String)
+     * @param totalQuestions Tổng số câu hỏi
+     * @param correctAnswers Số câu trả lời đúng trong lần làm hiện tại
+     */
+    private void callGamificationService(UUID userId, UUID lessonId, String enrollId,
+                                       int totalQuestions, int correctAnswers) {
+        try {
+            RewardRequest rewardRequest = new RewardRequest();
+            rewardRequest.setUserId(userId);
+            rewardRequest.setSourceType("QUIZ");
+            rewardRequest.setLessonId(lessonId);
+            rewardRequest.setEnrollId(enrollId);
+            rewardRequest.setTotalQuestions(totalQuestions);
+            rewardRequest.setCorrectAnswers(correctAnswers);
+            // Không set score - gamification service sẽ tự tính từ correctAnswers * 10
+
+            String url = "http://gamification-service/api/v1/gamify/reward";
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.APPLICATION_JSON);
+            HttpEntity<RewardRequest> entity = new HttpEntity<>(rewardRequest, headers);
+
+            restTemplate.postForEntity(url, entity, Object.class);
+            log.debug("Successfully called gamification service for user {} lesson {}: {}/{} correct", 
+                     userId, lessonId, correctAnswers, totalQuestions);
+        } catch (RestClientException e) {
+            log.error("Failed to call gamification service for user {} lesson {}: {}", 
+                     userId, lessonId, e.getMessage());
+            // Không throw exception để không ảnh hưởng flow chính
+        } catch (Exception e) {
+            log.error("Unexpected error calling gamification service for user {} lesson {}: {}", 
+                     userId, lessonId, e.getMessage(), e);
+            // Không throw exception để không ảnh hưởng flow chính
+        }
     }
 
     public long countCompletedByLearner(UUID learnerId) {
