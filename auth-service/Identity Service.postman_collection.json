@@ -24,7 +24,7 @@
           }
         },
         "url": {
-          "raw": "http://localhost:9000/identity/users",
+          "raw": "http://localhost:8080/auth/users",
           "protocol": "http",
           "host": [
             "localhost"
@@ -63,7 +63,7 @@
           }
         },
         "url": {
-          "raw": "http://localhost:9000/identity/users/admin/users",
+          "raw": "http://localhost:8080/auth/users/admin/users",
           "protocol": "http",
           "host": [
             "localhost"
@@ -105,7 +105,7 @@
           }
         },
         "url": {
-          "raw": "http://localhost:9000/identity/users/admin/users",
+          "raw": "http://localhost:8080/auth/users/admin/users",
           "protocol": "http",
           "host": [
             "localhost"
@@ -147,7 +147,7 @@
           }
         },
         "url": {
-          "raw": "http://localhost:9000/identity/users/admin/users",
+          "raw": "http://localhost:8080/auth/users/admin/users",
           "protocol": "http",
           "host": [
             "localhost"
@@ -189,7 +189,7 @@
           }
         },
         "url": {
-          "raw": "http://localhost:9000/identity/users/admin/users",
+          "raw": "http://localhost:8080/auth/users/admin/users",
           "protocol": "http",
           "host": [
             "localhost"
@@ -231,7 +231,7 @@
           }
         },
         "url": {
-          "raw": "http://localhost:9000/identity/users/:userId",
+          "raw": "http://localhost:8080/auth/users/:userId",
           "protocol": "http",
           "host": [
             "localhost"
@@ -270,7 +270,7 @@
         "method": "DELETE",
         "header": [],
         "url": {
-          "raw": "http://localhost:9000/identity/users/:userId",
+          "raw": "http://localhost:8080/auth/users/:userId",
           "protocol": "http",
           "host": [
             "localhost"
@@ -309,7 +309,7 @@
         "method": "GET",
         "header": [],
         "url": {
-          "raw": "http://localhost:9000/identity/users/:userId",
+          "raw": "http://localhost:8080/auth/users/:userId",
           "protocol": "http",
           "host": [
             "localhost"
@@ -348,7 +348,7 @@
         "method": "GET",
         "header": [],
         "url": {
-          "raw": "http://localhost:9000/identity/users/my-info",
+          "raw": "http://localhost:8080/auth/users/my-info",
           "protocol": "http",
           "host": [
             "localhost"
@@ -379,7 +379,7 @@
         "method": "GET",
         "header": [],
         "url": {
-          "raw": "http://localhost:9000/identity/users",
+          "raw": "http://localhost:8080/auth/users",
           "protocol": "http",
           "host": [
             "localhost"
@@ -409,7 +409,7 @@
           }
         },
         "url": {
-          "raw": "http://localhost:9000/identity/auth/token",
+          "raw": "http://localhost:8080/auth/auth/token",
           "protocol": "http",
           "host": [
             "localhost"
@@ -442,7 +442,7 @@
           }
         },
         "url": {
-          "raw": "http://localhost:9000/identity/auth/refresh",
+          "raw": "http://localhost:8080/auth/auth/refresh",
           "protocol": "http",
           "host": [
             "localhost"
@@ -475,7 +475,7 @@
           }
         },
         "url": {
-          "raw": "http://localhost:9000/identity/auth/introspect",
+          "raw": "http://localhost:8080/auth/auth/introspect",
           "protocol": "http",
           "host": [
             "localhost"
@@ -508,7 +508,7 @@
           }
         },
         "url": {
-          "raw": "http://localhost:9000/identity/auth/logout",
+          "raw": "http://localhost:8080/auth/auth/logout",
           "protocol": "http",
           "host": [
             "localhost"
@@ -548,7 +548,7 @@
           }
         },
         "url": {
-          "raw": "http://localhost:9000/identity/permissions",
+          "raw": "http://localhost:8080/auth/permissions",
           "protocol": "http",
           "host": [
             "localhost"
@@ -578,7 +578,7 @@
         "method": "GET",
         "header": [],
         "url": {
-          "raw": "http://localhost:9000/identity/permissions",
+          "raw": "http://localhost:8080/auth/permissions",
           "protocol": "http",
           "host": [
             "localhost"
@@ -617,7 +617,7 @@
           }
         },
         "url": {
-          "raw": "http://localhost:9000/identity/permissions/CREATE_DATA",
+          "raw": "http://localhost:8080/auth/permissions/CREATE_DATA",
           "protocol": "http",
           "host": [
             "localhost"
@@ -657,7 +657,7 @@
           }
         },
         "url": {
-          "raw": "http://localhost:9000/identity/roles",
+          "raw": "http://localhost:8080/auth/roles",
           "protocol": "http",
           "host": [
             "localhost"
@@ -687,7 +687,7 @@
         "method": "GET",
         "header": [],
         "url": {
-          "raw": "http://localhost:9000/identity/roles",
+          "raw": "http://localhost:8080/auth/roles",
           "protocol": "http",
           "host": [
             "localhost"
@@ -726,7 +726,7 @@
           }
         },
         "url": {
-          "raw": "http://localhost:9000/identity/roles/ADMIN",
+          "raw": "http://localhost:8080/auth/roles/ADMIN",
           "protocol": "http",
           "host": [
             "localhost"
@@ -756,7 +756,7 @@
           }
         },
         "url": {
-          "raw": "http://localhost:9000/identity/auth/forgot-password",
+          "raw": "http://localhost:8080/auth/auth/forgot-password",
           "protocol": "http",
           "host": [
             "localhost"
@@ -786,7 +786,7 @@
           }
         },
         "url": {
-          "raw": "http://localhost:9000/identity/auth/verify-otp",
+          "raw": "http://localhost:8080/auth/auth/verify-otp",
           "protocol": "http",
           "host": [
             "localhost"
@@ -816,7 +816,7 @@
           }
         },
         "url": {
-          "raw": "http://localhost:9000/identity/auth/reset-password",
+          "raw": "http://localhost:8080/auth/auth/reset-password",
           "protocol": "http",
           "host": [
             "localhost"
@@ -853,7 +853,7 @@
           }
         ],
         "url": {
-          "raw": "http://localhost:9000/identity/users/:userId",
+          "raw": "http://localhost:8080/auth/users/:userId",
           "protocol": "http",
           "host": [
             "localhost"
@@ -878,3 +878,4 @@
     }
   ]
 }
+

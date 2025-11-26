@@ -1,0 +1,163 @@
+{
+    "info": {
+        "_postman_id": "auth-service-api-v2",
+        "name": "Identity Service - Auth APIs (Fixed)",
+        "description": "Auth Service API - Gọi qua Gateway ở localhost:8080/auth/**",
+        "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+    },
+    "item": [
+        {
+            "name": "Login (Get Token)",
+            "request": {
+                "method": "POST",
+                "header": [
+                    {
+                        "key": "Content-Type",
+                        "value": "application/json"
+                    }
+                ],
+                "body": {
+                    "mode": "raw",
+                    "raw": "{\n    \"username\": \"admin\",\n    \"password\": \"admin\"\n}"
+                },
+                "url": {
+                    "raw": "http://localhost:8080/auth/auth/token",
+                    "protocol": "http",
+                    "host": [
+                        "localhost"
+                    ],
+                    "port": "8080",
+                    "path": [
+                        "auth",
+                        "auth",
+                        "token"
+                    ]
+                },
+                "description": "Login to get JWT token"
+            }
+        },
+        {
+            "name": "Register User",
+            "request": {
+                "method": "POST",
+                "header": [
+                    {
+                        "key": "Content-Type",
+                        "value": "application/json"
+                    }
+                ],
+                "body": {
+                    "mode": "raw",
+                    "raw": "{\n    \"username\": \"testuser\",\n    \"password\": \"12345678\",\n    \"firstName\": \"Test\",\n    \"lastName\": \"User\",\n    \"dob\": \"2000-01-01\",\n    \"email\": \"test@example.com\",\n    \"phone\": \"0987654321\"\n}"
+                },
+                "url": {
+                    "raw": "http://localhost:8080/auth/users",
+                    "protocol": "http",
+                    "host": [
+                        "localhost"
+                    ],
+                    "port": "8080",
+                    "path": [
+                        "auth",
+                        "users"
+                    ]
+                },
+                "description": "Register new user"
+            }
+        },
+        {
+            "name": "Get My Info",
+            "request": {
+                "method": "GET",
+                "header": [
+                    {
+                        "key": "Authorization",
+                        "value": "Bearer {{token}}",
+                        "type": "text"
+                    }
+                ],
+                "url": {
+                    "raw": "http://localhost:8080/auth/users/my-info",
+                    "protocol": "http",
+                    "host": [
+                        "localhost"
+                    ],
+                    "port": "8080",
+                    "path": [
+                        "auth",
+                        "users",
+                        "my-info"
+                    ]
+                },
+                "description": "Get current user info (requires token)"
+            }
+        },
+        {
+            "name": "Introspect Token",
+            "request": {
+                "method": "POST",
+                "header": [
+                    {
+                        "key": "Content-Type",
+                        "value": "application/json"
+                    }
+                ],
+                "body": {
+                    "mode": "raw",
+                    "raw": "{\n    \"token\": \"{{token}}\"\n}"
+                },
+                "url": {
+                    "raw": "http://localhost:8080/auth/auth/introspect",
+                    "protocol": "http",
+                    "host": [
+                        "localhost"
+                    ],
+                    "port": "8080",
+                    "path": [
+                        "auth",
+                        "auth",
+                        "introspect"
+                    ]
+                },
+                "description": "Validate token"
+            }
+        },
+        {
+            "name": "Logout",
+            "request": {
+                "method": "POST",
+                "header": [
+                    {
+                        "key": "Content-Type",
+                        "value": "application/json"
+                    }
+                ],
+                "body": {
+                    "mode": "raw",
+                    "raw": "{\n    \"token\": \"{{token}}\"\n}"
+                },
+                "url": {
+                    "raw": "http://localhost:8080/auth/auth/logout",
+                    "protocol": "http",
+                    "host": [
+                        "localhost"
+                    ],
+                    "port": "8080",
+                    "path": [
+                        "auth",
+                        "auth",
+                        "logout"
+                    ]
+                },
+                "description": "Logout and invalidate token"
+            }
+        }
+    ],
+    "variable": [
+        {
+            "key": "token",
+            "value": "",
+            "type": "string"
+        }
+    ]
+}

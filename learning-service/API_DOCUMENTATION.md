@@ -252,10 +252,46 @@ When expPercent reaches 100% → Level up to INTERMEDIATE → Reset to 0%
 
 **Response:** `200 OK` (LessonRes with status = PENDING)
 
-### 3.10 Delete Lesson
+### 3.10 Update Lesson by Slug
+**Endpoint:** `PUT /api/lessons/slug/{slug}`
+
+**Auth:** Required (`SCOPE_ROLE_CREATOR`)
+
+**Path Parameters:**
+- `slug`: Lesson slug (e.g., `introduction-to-budgeting`)
+
+**Request Body:** (Same as Update Le, all fields optional)
+
+**Response:** `200 OK` (LessonRes)
+
+**Note:** Alternative to update by ID, using SEO-friendly slug
+
+### 3.11 Submit Lesson by Slug
+**Endpoint:** `PUT /api/lessons/slug/{slug}/submit`
+
+**Auth:** Required (`SCOPE_ROLE_CREATOR`)
+
+**Path Parameters:**
+- `slug`: Lesson slug
+
+**Response:** `200 OK` (LessonRes with status = PENDING)
+
+**Note:** Changes lesson status from DRAFT to PENDING for moderator review
+
+### 3.12 Delete Lesson
 **Endpoint:** `DELETE /api/lessons/{lessonId}`
 
 **Auth:** Required (`SCOPE_ROLE_CREATOR`)
+
+**Response:** `204 No Content`
+
+### 3.13 Delete Lesson by Slug
+**Endpoint:** `DELETE /api/lessons/slug/{slug}`
+
+**Auth:** Required (`SCOPE_ROLE_CREATOR`)
+
+**Path Parameters:**
+- `slug`: Lesson slug
 
 **Response:** `204 No Content`
 
@@ -421,40 +457,9 @@ Update enrollment progress and earn EXP.
 
 ---
 
-## 5. Gamification API ⚡ NEW
+## 5. Moderator APIs
 
-### 5.1 Get Gamification Response
-Get gamification data for an enrollment.
-
-**Endpoint:** `GET /api/learning/gamify-response`
-
-**Auth:** Required
-
-**Query Parameters:**
-- `enrollmentId`: UUID of the enrollment
-
-**Request:**
-```
-GET /api/learning/gamify-response?enrollmentId=uuid-here
-```
-
-**Response:** `200 OK`
-```json
-{
-  "userId": "uuid",
-  "sourceType": "QUIZ",
-  "lessonId": "uuid",
-  "enrollId": "uuid",
-  "totalQuiz": 10,
-  "correctAnswer": 8
-}
-```
-
----
-
-## 6. Moderator APIs
-
-### 6.1 List All Moderators
+### 5.1 List All Moderators
 **Endpoint:** `GET /api/moderators`
 
 **Auth:** Required (`SCOPE_ROLE_MOD`)
@@ -470,7 +475,7 @@ GET /api/learning/gamify-response?enrollmentId=uuid-here
 ]
 ```
 
-### 6.2 List Lessons for Moderation
+### 5.2 List Lessons for Moderation
 **Endpoint:** `GET /api/moderators/lessons`
 
 **Auth:** Required (`SCOPE_ROLE_MOD`)
@@ -480,14 +485,16 @@ GET /api/learning/gamify-response?enrollmentId=uuid-here
 
 **Response:** `200 OK` (Array of LessonRes)
 
-### 6.3 View Lesson Detail
+**Note:** Moderators cannot view `DRAFT` lessons. Attempting to filter by `DRAFT` returns `403 Forbidden`.
+
+### 5.3 View Lesson Detail
 **Endpoint:** `GET /api/moderators/lessons/{lessonId}`
 
 **Auth:** Required (`SCOPE_ROLE_MOD`)
 
-**Response:** `200 OK` (LessonRes)
+**Response:** `200 OK` (LessonRes) or `403 Forbidden` if lesson is `DRAFT`
 
-### 6.4 Moderate Lesson
+### 5.4 Moderate Lesson
 **Endpoint:** `POST /api/moderators/lessons/{lessonId}/decision`
 
 **Auth:** Required (`SCOPE_ROLE_MOD`)
